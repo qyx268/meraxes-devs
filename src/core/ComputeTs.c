@@ -959,14 +959,14 @@ void _ComputeTs(int snapshot)
     if (fabs(run_globals.params.physics.SpecIndexXrayAGNHard - 1.0) < REL_TOL) {
       Luminosity_converstion_factor_AGN_hard =
         (run_globals.params.physics.NuXrayThreshold * NU_over_EV) *
-        log(run_globals.params.physics.NuXraySoftCut /
-            run_globals.params.physics.NuXrayThreshold);
+        log(run_globals.params.physics.NuXrayMax /
+            run_globals.params.physics.NuXraySoftCut);
       Luminosity_converstion_factor_AGN_hard = 1.0 / Luminosity_converstion_factor_AGN_hard;
     } else {
       Luminosity_converstion_factor_AGN_hard =
-        pow(run_globals.params.physics.NuXraySoftCut * NU_over_EV,
+        pow(run_globals.params.physics.NuXrayMax * NU_over_EV,
             1.0 - run_globals.params.physics.SpecIndexXrayAGNHard) -
-        pow(run_globals.params.physics.NuXrayThreshold * NU_over_EV,
+        pow(run_globals.params.physics.NuXraySoftCut * NU_over_EV,
             1.0 - run_globals.params.physics.SpecIndexXrayAGNHard);
       Luminosity_converstion_factor_AGN_hard = 1.0 / Luminosity_converstion_factor_AGN_hard;
       Luminosity_converstion_factor_AGN_hard *=
