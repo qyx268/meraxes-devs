@@ -217,11 +217,10 @@ void calculate_BHemissivity(double BlackHoleMass, double accreted_mass,
   *quasar_lx      = Lbol / kb_hard;
   *quasar_lx_soft = Lbol / kb_soft;
 
-  /* break_factor = (NU_LL/NU_1450)^-SpecIndexUVAGNSoft */
   double break_factor = pow(NU_LL / NU_1450, -physics->SpecIndexUVAGNSoft);
 
   // Approximation using the emissivity at the MIDDLE of accretion time
-  *emissivity = physics->quasar_fobs * *quasar_luv * LB2EMISSIVITY * break_factor / physics->SpecIndexUVAGNHard
+  *emissivity = physics->quasar_fobs * *quasar_luv * LUV2EMISSIVITY * break_factor / physics->SpecIndexUVAGNHard
                * *accretion_time * run_globals.units.UnitTime_in_s
                / run_globals.params.Hubble_h;
 }
