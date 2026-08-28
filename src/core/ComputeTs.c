@@ -1078,9 +1078,7 @@ void _ComputeTs(int snapshot)
 
             m_xHII_low = locate_xHII_index((float)xHII_call);
             m_xHII_high = m_xHII_low + 1;
-
-      
-      
+  
             // heat
             freq_int_heat_GAL[R_ct] =
               (freq_int_heat_tbl_GAL[m_xHII_high][R_ct] - freq_int_heat_tbl_GAL[m_xHII_low][R_ct]) /
@@ -1125,23 +1123,23 @@ void _ComputeTs(int snapshot)
 #endif
 
             if (agn_soft_needed) {
-            freq_int_heat_AGN_soft[R_ct] =
-              (freq_int_heat_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_heat_tbl_AGN_soft[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_heat_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_heat_AGN_soft[R_ct] += freq_int_heat_tbl_AGN_soft[m_xHII_low][R_ct];
+              freq_int_heat_AGN_soft[R_ct] =
+                (freq_int_heat_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_heat_tbl_AGN_soft[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_heat_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_heat_AGN_soft[R_ct] += freq_int_heat_tbl_AGN_soft[m_xHII_low][R_ct];
 
-            freq_int_ion_AGN_soft[R_ct] =
-              (freq_int_ion_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_ion_tbl_AGN_soft[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_ion_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_ion_AGN_soft[R_ct] += freq_int_ion_tbl_AGN_soft[m_xHII_low][R_ct];
+              freq_int_ion_AGN_soft[R_ct] =
+                (freq_int_ion_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_ion_tbl_AGN_soft[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_ion_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_ion_AGN_soft[R_ct] += freq_int_ion_tbl_AGN_soft[m_xHII_low][R_ct];
 
-            freq_int_lya_AGN_soft[R_ct] =
-              (freq_int_lya_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_lya_tbl_AGN_soft[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_lya_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_lya_AGN_soft[R_ct] += freq_int_lya_tbl_AGN_soft[m_xHII_low][R_ct];
+              freq_int_lya_AGN_soft[R_ct] =
+                (freq_int_lya_tbl_AGN_soft[m_xHII_high][R_ct] - freq_int_lya_tbl_AGN_soft[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_lya_AGN_soft[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_lya_AGN_soft[R_ct] += freq_int_lya_tbl_AGN_soft[m_xHII_low][R_ct];
             } else {
               freq_int_heat_AGN_soft[R_ct] = 0.0;
               freq_int_ion_AGN_soft[R_ct]  = 0.0;
@@ -1149,23 +1147,23 @@ void _ComputeTs(int snapshot)
             }
 
             if (agn_hard_needed) {
-            freq_int_heat_AGN_hard[R_ct] =
-              (freq_int_heat_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_heat_tbl_AGN_hard[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_heat_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_heat_AGN_hard[R_ct] += freq_int_heat_tbl_AGN_hard[m_xHII_low][R_ct];
+              freq_int_heat_AGN_hard[R_ct] =
+                (freq_int_heat_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_heat_tbl_AGN_hard[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_heat_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_heat_AGN_hard[R_ct] += freq_int_heat_tbl_AGN_hard[m_xHII_low][R_ct];
 
-            freq_int_ion_AGN_hard[R_ct] =
-              (freq_int_ion_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_ion_tbl_AGN_hard[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_ion_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_ion_AGN_hard[R_ct] += freq_int_ion_tbl_AGN_hard[m_xHII_low][R_ct];
+              freq_int_ion_AGN_hard[R_ct] =
+                (freq_int_ion_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_ion_tbl_AGN_hard[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_ion_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_ion_AGN_hard[R_ct] += freq_int_ion_tbl_AGN_hard[m_xHII_low][R_ct];
 
-            freq_int_lya_AGN_hard[R_ct] =
-              (freq_int_lya_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_lya_tbl_AGN_hard[m_xHII_low][R_ct]) /
-              (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
-            freq_int_lya_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
-            freq_int_lya_AGN_hard[R_ct] += freq_int_lya_tbl_AGN_hard[m_xHII_low][R_ct];
+              freq_int_lya_AGN_hard[R_ct] =
+                (freq_int_lya_tbl_AGN_hard[m_xHII_high][R_ct] - freq_int_lya_tbl_AGN_hard[m_xHII_low][R_ct]) /
+                (x_int_XHII[m_xHII_high] - x_int_XHII[m_xHII_low]);
+              freq_int_lya_AGN_hard[R_ct] *= (xHII_call - x_int_XHII[m_xHII_low]);
+              freq_int_lya_AGN_hard[R_ct] += freq_int_lya_tbl_AGN_hard[m_xHII_low][R_ct];
             } else {
               freq_int_heat_AGN_hard[R_ct] = 0.0;
               freq_int_ion_AGN_hard[R_ct]  = 0.0;
@@ -1174,9 +1172,7 @@ void _ComputeTs(int snapshot)
 
           }
 
-          // Perform the calculation of the heating/ionisation integrals, updating relevant quantities etc. GET BACK AT
-          // THIS FOR USE_MINI_HALOS!!
-          {
+          // Perform the calculation of the heating/ionisation integrals, updating relevant quantities etc. 
 #if USE_MINI_HALOS
           evolveInt((float)zp,
                     run_globals.reion_grids.deltax[i_padded],
@@ -1221,7 +1217,6 @@ void _ComputeTs(int snapshot)
 #endif
           Xheat_ave_AGN_soft += dansdz[11];
           Xheat_ave_AGN_hard += dansdz[12];
-          }
 
           x_e_box_prev[i_padded] += dansdz[0] * dzp; // remember dzp is negative
           if (x_e_box_prev[i_padded] > 1)            // can do this late in evolution if dzp is too large
@@ -1239,21 +1234,17 @@ void _ComputeTs(int snapshot)
             JLW_boxII[i_real] = dansdz[10];
           }
 #endif
-          if (Tk_box[i_real] <
-              MIN_TK) { // spurious bahaviour of the trapazoidalintegrator. generally overcooling in underdensities.
-                        // Floored at MIN_TK (not just < 0) because 1/TK and 1/TK^2 in Salpha_tilde()/Tc_eff()
-                        // (get_Ts(), spin-temperature coupling) blow up to Inf/NaN as TK -> 0, even while still
-                        // nominally positive — most easily triggered when AGN heating (sparse) can't fill in for
-                        // suppressed HMXB heating (normally spatially-widespread) in underdense cells.
+          // spurious bahaviour of the trapazoidalintegrator. generally overcooling in underdensities.
+          // Floored at MIN_TK (not just < 0) because 1/TK and 1/TK^2 in Salpha_tilde()/Tc_eff()
+          // (get_Ts(), spin-temperature coupling) blow up to Inf/NaN as TK -> 0, even while still
+          // nominally positive — most easily triggered when AGN heating (sparse) can't fill in for
+          // suppressed HMXB heating (normally spatially-widespread) in underdense cells.
+          if (Tk_box[i_real]  MIN_TK)
             Tk_box[i_real] = (float)(TCMB * (1 + zp));
-          }
 
 #if USE_MINI_HALOS
-          if (Tk_boxII[i_real] <
-              MIN_TK) { // spurious bahaviour of the trapazoidalintegrator. generally overcooling in underdensities.
-                        // See MIN_TK comment above.
+          if (Tk_boxII[i_real] < MIN_TK) 
             Tk_boxII[i_real] = (float)(TCMB * (1 + zp));
-          }
 #endif
 
           TS_box[i_real] = get_Ts((float)zp,
