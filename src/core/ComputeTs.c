@@ -130,48 +130,27 @@ void _ComputeTs(int snapshot)
   float curr_xalpha;
   int TsNumFilterSteps = run_globals.params.TsNumFilterSteps;
 
+  double freq_int_heat_AGN_soft[TsNumFilterSteps], freq_int_ion_AGN_soft[TsNumFilterSteps], freq_int_lya_AGN_soft[TsNumFilterSteps],
+    freq_int_heat_AGN_hard[TsNumFilterSteps], freq_int_ion_AGN_hard[TsNumFilterSteps], freq_int_lya_AGN_hard[TsNumFilterSteps];
   double freq_int_heat_GAL[TsNumFilterSteps], freq_int_ion_GAL[TsNumFilterSteps], freq_int_lya_GAL[TsNumFilterSteps];
-
 #if USE_MINI_HALOS
   double freq_int_heat_III[TsNumFilterSteps], freq_int_ion_III[TsNumFilterSteps], freq_int_lya_III[TsNumFilterSteps];
 #endif
 
+  double freq_int_heat_tbl_AGN_soft[x_int_NXHII][TsNumFilterSteps], freq_int_ion_tbl_AGN_soft[x_int_NXHII][TsNumFilterSteps], 
+    freq_int_lya_tbl_AGN_soft[x_int_NXHII][TsNumFilterSteps], freq_int_heat_tbl_AGN_hard[x_int_NXHII][TsNumFilterSteps], 
+    freq_int_ion_tbl_AGN_hard[x_int_NXHII][TsNumFilterSteps], freq_int_lya_tbl_AGN_hard[x_int_NXHII][TsNumFilterSteps];
   double freq_int_heat_tbl_GAL[x_int_NXHII][TsNumFilterSteps], freq_int_ion_tbl_GAL[x_int_NXHII][TsNumFilterSteps],
     freq_int_lya_tbl_GAL[x_int_NXHII][TsNumFilterSteps];
+#if USE_MINI_HALOS
+  double freq_int_heat_tbl_III[x_int_NXHII][TsNumFilterSteps], freq_int_ion_tbl_III[x_int_NXHII][TsNumFilterSteps],
+    freq_int_lya_tbl_III[x_int_NXHII][TsNumFilterSteps];
+#endif
 
   bool agn_soft_needed = (run_globals.params.physics.Flag_IncludeAGNXray == 1 ||
                           run_globals.params.physics.Flag_IncludeAGNXray == 3);
   bool agn_hard_needed = (run_globals.params.physics.Flag_IncludeAGNXray == 1 ||
                           run_globals.params.physics.Flag_IncludeAGNXray == 2);
-
-  double (*freq_int_heat_tbl_AGN_soft)[TsNumFilterSteps] = NULL;
-  double (*freq_int_ion_tbl_AGN_soft)[TsNumFilterSteps] = NULL;
-  double (*freq_int_lya_tbl_AGN_soft)[TsNumFilterSteps] = NULL;
-  double (*freq_int_heat_tbl_AGN_hard)[TsNumFilterSteps] = NULL;
-  double (*freq_int_ion_tbl_AGN_hard)[TsNumFilterSteps] = NULL;
-  double (*freq_int_lya_tbl_AGN_hard)[TsNumFilterSteps] = NULL;
-  if (agn_soft_needed) {
-    freq_int_heat_tbl_AGN_soft = malloc(sizeof(*freq_int_heat_tbl_AGN_soft) * x_int_NXHII);
-    freq_int_ion_tbl_AGN_soft  = malloc(sizeof(*freq_int_ion_tbl_AGN_soft)  * x_int_NXHII);
-    freq_int_lya_tbl_AGN_soft  = malloc(sizeof(*freq_int_lya_tbl_AGN_soft)  * x_int_NXHII);
-  }
-  if (agn_hard_needed) {
-    freq_int_heat_tbl_AGN_hard = malloc(sizeof(*freq_int_heat_tbl_AGN_hard) * x_int_NXHII);
-    freq_int_ion_tbl_AGN_hard  = malloc(sizeof(*freq_int_ion_tbl_AGN_hard)  * x_int_NXHII);
-    freq_int_lya_tbl_AGN_hard  = malloc(sizeof(*freq_int_lya_tbl_AGN_hard)  * x_int_NXHII);
-  }
-
-  double freq_int_heat_AGN_soft[TsNumFilterSteps];
-  double freq_int_ion_AGN_soft[TsNumFilterSteps];
-  double freq_int_lya_AGN_soft[TsNumFilterSteps];
-  double freq_int_heat_AGN_hard[TsNumFilterSteps];
-  double freq_int_ion_AGN_hard[TsNumFilterSteps];
-  double freq_int_lya_AGN_hard[TsNumFilterSteps];
-
-#if USE_MINI_HALOS
-  double freq_int_heat_tbl_III[x_int_NXHII][TsNumFilterSteps], freq_int_ion_tbl_III[x_int_NXHII][TsNumFilterSteps],
-    freq_int_lya_tbl_III[x_int_NXHII][TsNumFilterSteps];
-#endif
 
   double R_values[TsNumFilterSteps];
   int snapshot_counter_backwards[TsNumFilterSteps];
@@ -219,7 +198,7 @@ void _ComputeTs(int snapshot)
 #endif
 
   double* SMOOTHED_SFR_GAL = run_globals.reion_grids.SMOOTHED_SFR_GAL;
-  double* SMOOTHED_AGN_hard      = run_globals.reion_grids.SMOOTHED_AGN_hard;
+  double* SMOOTHED_AGN_hard  = run_globals.reion_grids.SMOOTHED_AGN_hard;
   double* SMOOTHED_AGN_soft = run_globals.reion_grids.SMOOTHED_AGN_soft;
 #if USE_MINI_HALOS
   double* SMOOTHED_AGN_LW   = run_globals.reion_grids.SMOOTHED_AGN_LW;
@@ -1441,12 +1420,6 @@ void _ComputeTs(int snapshot)
        run_globals.params.physics.Flag_IncludeAGNXray);
 #endif
 
-  free(freq_int_heat_tbl_AGN_soft);
-  free(freq_int_ion_tbl_AGN_soft);
-  free(freq_int_lya_tbl_AGN_soft);
-  free(freq_int_heat_tbl_AGN_hard);
-  free(freq_int_ion_tbl_AGN_hard);
-  free(freq_int_lya_tbl_AGN_hard);
 }
 
 // This function makes sure that the right version of ComputeTs() gets called.
