@@ -1045,21 +1045,10 @@ void create_master_file()
     H5LTmake_dataset_double(file_id, "NHfrac", 2, nhfrac_dims, nhfrac_table);
     free(nhfrac_table);
 
-    double* xray_hard_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    double* xray_soft_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    double* xray_hmxb_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    for (int i_out = 0; i_out < run_globals.NOutputSnaps; i_out++) {
-      xray_hard_all[i_out] = stored_XrayEmissivity_hard[run_globals.ListOutputSnaps[i_out]];
-      xray_soft_all[i_out] = stored_XrayEmissivity_soft[run_globals.ListOutputSnaps[i_out]];
-      xray_hmxb_all[i_out] = stored_XrayEmissivity_HMXB[run_globals.ListOutputSnaps[i_out]];
-    }
-    hsize_t n_xray_snaps = (hsize_t)run_globals.NOutputSnaps;
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_hard", 1, &n_xray_snaps, xray_hard_all);
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_soft", 1, &n_xray_snaps, xray_soft_all);
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_HMXB", 1, &n_xray_snaps, xray_hmxb_all);
-    free(xray_hard_all);
-    free(xray_soft_all);
-    free(xray_hmxb_all);
+    hsize_t n_xray_snaps = (hsize_t)run_globals.params.SnaplistLength;
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_hard", 1, &n_xray_snaps, stored_XrayEmissivity_hard);
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_soft", 1, &n_xray_snaps, stored_XrayEmissivity_soft);
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_HMXB", 1, &n_xray_snaps, stored_XrayEmissivity_HMXB);
   }
 
   char target_group[50];
