@@ -194,7 +194,7 @@ void calculate_BHemissivity(double BlackHoleMass, double accreted_mass,
                             double *quasar_lx_soft, double *xray_emissivity)
 {
   double Lbol;
-  double kb;
+  double kb_uv;
   double kb_hard;
   double kb_soft;
   physics_params_t* physics = &(run_globals.params.physics);
@@ -208,13 +208,12 @@ void calculate_BHemissivity(double BlackHoleMass, double accreted_mass,
          * physics->EddingtonRatio * BlackHoleMass
          / run_globals.params.Hubble_h * LUMINOSITY_CONVERTOR;
   // bolometric correction from Shen et al. 2020
-  kb      = 1.862 * pow(Lbol, -0.361) + 4.870 * pow(Lbol, -0.0063);
+  kb_uv   = 1.862 * pow(Lbol, -0.361) + 4.870 * pow(Lbol, -0.0063);
   kb_hard = 4.073 * pow(Lbol, -0.026) + 12.60 * pow(Lbol,  0.278);
   kb_soft = 5.712 * pow(Lbol, -0.026) + 17.67 * pow(Lbol,  0.278);
 
   // Return UV luminosity LUV = Lbol/kb in 1e10 Lsun
-  // (Can be converted to M1450 magnitude via: M1450 = -19.826 - 2.5*log10(LUV))
-  *quasar_luv     = Lbol / kb;
+  *quasar_luv     = Lbol / kb_uv;
   *quasar_lx      = Lbol / kb_hard;
   *quasar_lx_soft = Lbol / kb_soft;
 
