@@ -67,7 +67,6 @@ double const_zp_prefactor_GAL;
 double const_zp_prefactor_III;
 double const_zp_prefactor_AGN_soft;
 double const_zp_prefactor_AGN_hard;
-double const_zp_prefactor_AGN_LW;
 float x_int_XHII[x_int_NXHII];
 #else
 extern double x_e_ave;
@@ -90,7 +89,6 @@ extern double const_zp_prefactor_GAL;
 extern double const_zp_prefactor_III;
 extern double const_zp_prefactor_AGN_soft;
 extern double const_zp_prefactor_AGN_hard;
-extern double const_zp_prefactor_AGN_LW;
 extern float x_int_XHII[x_int_NXHII];
 #endif
 

@@ -839,7 +839,7 @@ void _ComputeTs(int snapshot)
 
           /* (nuprime*Ly_alpha_HZ/NU_LL)^-SpecIndexUVAGNSoft */
           sum_lyn_LW_AGN[R_ct] +=
-            pow(nuprime * Ly_alpha_HZ / NU_LL, -run_globals.params.physics.SpecIndexUVAGNSoft);
+            pow(nuprime * Ly_alpha_HZ / NU_LL, -run_globals.params.physics.SpecIndexUVAGNSoft) / (PLANCK * NU_LW);
         }
 
 #endif
@@ -1239,7 +1239,7 @@ void _ComputeTs(int snapshot)
           // (get_Ts(), spin-temperature coupling) blow up to Inf/NaN as TK -> 0, even while still
           // nominally positive — most easily triggered when AGN heating (sparse) can't fill in for
           // suppressed HMXB heating (normally spatially-widespread) in underdense cells.
-          if (Tk_box[i_real]  MIN_TK)
+          if (Tk_box[i_real] < MIN_TK)
             Tk_box[i_real] = (float)(TCMB * (1 + zp));
 
 #if USE_MINI_HALOS

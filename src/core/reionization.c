@@ -500,9 +500,9 @@ void init_reion_grids()
   ptrdiff_t* slab_nix = run_globals.reion_grids.slab_nix;
   ptrdiff_t slab_n_real = slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim;
   ptrdiff_t slab_n_complex = run_globals.reion_grids.slab_n_complex[run_globals.mpi_rank];
-  ptrdiff_t slab_n_real_smoothedSFR;
+  ptrdiff_t slab_n_real_smoothedHeating;
   if (run_globals.params.Flag_IncludeSpinTemp) {
-    slab_n_real_smoothedSFR =
+    slab_n_real_smoothedHeating =
       slab_nix[run_globals.mpi_rank] * run_globals.params.TsNumFilterSteps * ReionGridDim * ReionGridDim;
   }
   ptrdiff_t slab_n_real_LC;
@@ -583,7 +583,7 @@ void init_reion_grids()
 
   if (run_globals.params.Flag_IncludeSpinTemp) {
 
-    for (int ii = 0; ii < slab_n_real_smoothedSFR; ii++) {
+    for (int ii = 0; ii < slab_n_real_smoothedHeating; ii++) {
       grids->SMOOTHED_SFR_GAL[ii] = 0.0;
 #if USE_MINI_HALOS
       grids->SMOOTHED_SFR_III[ii] = 0.0;
@@ -854,9 +854,9 @@ void malloc_reionization_grids()
     ptrdiff_t slab_n_real = slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim;
     ptrdiff_t slab_n_complex = run_globals.reion_grids.slab_n_complex[run_globals.mpi_rank];
 
-    ptrdiff_t slab_n_real_smoothedSFR;
+    ptrdiff_t slab_n_real_smoothedHeating;
     if (run_globals.params.Flag_IncludeSpinTemp) {
-      slab_n_real_smoothedSFR =
+      slab_n_real_smoothedHeating =
         slab_nix[run_globals.mpi_rank] * run_globals.params.TsNumFilterSteps * ReionGridDim * ReionGridDim;
     }
 
@@ -1088,7 +1088,7 @@ void malloc_reionization_grids()
             grids->bh_xray_histories_hard[ii] = 0.0f;
 
           // Same size as SMOOTHED_SFR_GAL; calloc ensures zeroed on allocation.
-          grids->SMOOTHED_AGN_hard = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+          grids->SMOOTHED_AGN_hard = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
         }
 
         if (agn_soft_needed) {
@@ -1123,7 +1123,7 @@ void malloc_reionization_grids()
           for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
             grids->bh_xray_histories_soft[ii] = 0.0f;
 
-          grids->SMOOTHED_AGN_soft = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+          grids->SMOOTHED_AGN_soft = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
         }
       }
 
@@ -1159,7 +1159,7 @@ void malloc_reionization_grids()
         for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
           grids->bh_lw_histories[ii] = 0.0f;
 
-        grids->SMOOTHED_AGN_LW = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+        grids->SMOOTHED_AGN_LW = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
       }
 #endif
 
@@ -1208,12 +1208,12 @@ void malloc_reionization_grids()
       grids->Tk_box = fftwf_alloc_real((size_t)slab_n_real);
       grids->TS_box = fftwf_alloc_real((size_t)slab_n_real);
 
-      grids->SMOOTHED_SFR_GAL = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+      grids->SMOOTHED_SFR_GAL = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
 #if USE_MINI_HALOS
       grids->Tk_boxII = fftwf_alloc_real((size_t)slab_n_real);
       grids->TS_boxII = fftwf_alloc_real((size_t)slab_n_real);
 
-      grids->SMOOTHED_SFR_III = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+      grids->SMOOTHED_SFR_III = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
 #endif
     }
 
@@ -2031,7 +2031,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     prop_sfrIII,
 #endif
     prop_sfr,
-    prop_bh_xray_emissivity,
+    prop_bh_xray_emissivity_hard,
     prop_bh_xray_emissivity_soft,
 #if USE_MINI_HALOS
     prop_bh_lw_emissivity
@@ -2052,7 +2052,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     if ((!run_globals.params.Flag_IncludeSpinTemp) && (prop == prop_sfr))
       continue;
 
-    if (prop == prop_bh_xray_emissivity && (!run_globals.params.Flag_IncludeSpinTemp || !agn_hard_needed))
+    if (prop == prop_bh_xray_emissivity_hard && (!run_globals.params.Flag_IncludeSpinTemp || !agn_hard_needed))
       continue;
     if (prop == prop_bh_xray_emissivity_soft && (!run_globals.params.Flag_IncludeSpinTemp || !agn_soft_needed))
       continue;
@@ -2209,7 +2209,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
              *   contributions from all galaxies on all ranks.
              *   The BlackHoleMassLimitReion guard is applied consistency with prop_effective_bhar.
              */
-            case prop_bh_xray_emissivity:
+            case prop_bh_xray_emissivity_hard:
               if (gal->BlackHoleMass >= run_globals.params.physics.BlackHoleMassLimitReion)
                 buffer[ind] += gal->BHXrayEmissivity_hard;
               break;
@@ -2302,7 +2302,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
             break;
 
 
-          case prop_bh_xray_emissivity:
+          case prop_bh_xray_emissivity_hard:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
@@ -2313,8 +2313,6 @@ void construct_baryon_grids(int snapshot, int local_ngals)
                 }
             break;
 
-          /* Same as prop_bh_xray_emissivity above, but for the independently
-           * obscured soft-band emissivity — see the block comment there. */
           case prop_bh_xray_emissivity_soft:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)

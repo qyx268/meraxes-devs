@@ -1037,14 +1037,13 @@ void create_master_file()
     for (int ilx = 0; ilx < n_lx_bins_nhfrac; ilx++) {
       lx_log_center = run_globals.params.XrayLF_MinLogL + (ilx + 0.5) * lx_bin_width_nhfrac;
       lx_lin_1e10Lsun = pow(10.0, lx_log_center - 10.0 - LOG_10_SOLAR_LUM);
-      get_nh_fracs(lx_lin_1e10Lsun, 2.0, f_det);
+      get_nh_fracs(lx_lin_1e10Lsun, 2.0, f_det); // this model assume the z-dependency plateaus at z>=2.0
       for (int ib = 0; ib < 5; ib++)
         nhfrac_table[ilx * 5 + ib] = f_det[ib];
     }
     hsize_t nhfrac_dims[2] = { (hsize_t)n_lx_bins_nhfrac, 5 };
     H5LTmake_dataset_double(file_id, "NHfrac", 2, nhfrac_dims, nhfrac_table);
     free(nhfrac_table);
-
 
     double* xray_hard_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
     double* xray_soft_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
