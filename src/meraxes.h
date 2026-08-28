@@ -531,8 +531,8 @@ typedef struct reion_grids_t
   double* SMOOTHED_AGN_LW;    //!< per-cell AGN Lyman-Werner luminosity density per shell [erg/s/cm^3]
 #endif
 
-  float* BHXrayEmissivity;        //!< Per-cell AGN X-ray emissivity grid (current snapshot, hard band) [slab_n_complex*2]
-  float* bh_xray_histories;       //!< Ring-buffer of NstoreSnapshots_Heating past BHXrayEmissivity snapshots
+  float* BHXrayEmissivity_hard;        //!< Per-cell AGN X-ray emissivity grid (current snapshot, hard band) [slab_n_complex*2]
+  float* bh_xray_histories_hard;       //!< Ring-buffer of NstoreSnapshots_Heating past BHXrayEmissivity_hard snapshots
   float* BHXrayEmissivity_soft;   //!< Per-cell AGN X-ray emissivity grid (current snapshot, soft band) [slab_n_complex*2]
   float* bh_xray_histories_soft;  //!< Ring-buffer of NstoreSnapshots_Heating past BHXrayEmissivity_soft snapshots
 #if USE_MINI_HALOS
@@ -540,10 +540,10 @@ typedef struct reion_grids_t
   float* bh_lw_histories;         //!< Ring-buffer of NstoreSnapshots_Heating past BHLWEmissivity snapshots
 #endif
 
-  fftwf_complex* BHXrayEmissivity_unfiltered;
-  fftwf_complex* BHXrayEmissivity_filtered;
-  fftwf_plan BHXrayEmissivity_forward_plan;
-  fftwf_plan BHXrayEmissivity_filtered_reverse_plan;
+  fftwf_complex* BHXrayEmissivity_hard_unfiltered;
+  fftwf_complex* BHXrayEmissivity_hard_filtered;
+  fftwf_plan BHXrayEmissivity_hard_forward_plan;
+  fftwf_plan BHXrayEmissivity_hard_filtered_reverse_plan;
   fftwf_complex* BHXrayEmissivity_soft_unfiltered;
   fftwf_complex* BHXrayEmissivity_soft_filtered;
   fftwf_plan BHXrayEmissivity_soft_forward_plan;
@@ -722,7 +722,7 @@ typedef struct galaxy_t
   double QuasarLX;               //!< Intrinsic hard X-ray luminosity [1e10 Lsun]; 0 if inactive
   int    NHbin;                  //!< Which of the 5 NH bins this snapshot's stochastic draw landed in (0-4; logNH 20-21/21-22/22-23/23-24/24-26 CTK), or -1 if no AGN.
                                   //!<This (bin, luminosity) pair replaces the old QuasarLX_obs0-4/NHfrac0-4 fields (5 mostly-zero doubles each, every galaxy).
-  double BHXrayEmissivity;       //!< Observed hard X-ray emissivity [1e10 Lsun], obscuration-weighted
+  double BHXrayEmissivity_hard;  //!< Observed hard X-ray emissivity [1e10 Lsun], obscuration-weighted
   double BHXrayEmissivity_soft;  //!< Observed soft X-ray emissivity [1e10 Lsun], obscuration-weighted
   double EffectiveBHM;
   double EffectiveBHAR;

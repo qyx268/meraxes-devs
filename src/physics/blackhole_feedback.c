@@ -444,7 +444,7 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
     gal->QuasarLuv        += quasar_luv;
     gal->QuasarLX         += quasar_lx;
     gal->NHbin              = NH_bin; /* -1 if no AGN activity this step */
-    gal->BHXrayEmissivity      += quasar_lx      * obs_fraction_hard;
+    gal->BHXrayEmissivity_hard += quasar_lx      * obs_fraction_hard;
     gal->BHXrayEmissivity_soft += quasar_lx_soft * obs_fraction_soft;
     gal->EffectiveBHAR += BHemissivity;
     // quasar mode feedback

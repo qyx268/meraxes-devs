@@ -81,7 +81,7 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.826 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
   galout->QuasarLX     = (float)gal.QuasarLX;
   galout->NHbin = gal.NHbin;
-  galout->BHXrayEmissivity = (float)gal.BHXrayEmissivity;
+  galout->BHXrayEmissivity = (float)gal.BHXrayEmissivity_hard;
   galout->DutyCycleAGN = (float)(gal.DutyCycleAGN);
   galout->EffectiveBHM = (float)(gal.EffectiveBHM);
   galout->BlackHoleAccretedHotMass = (float)(gal.BlackHoleAccretedHotMass);

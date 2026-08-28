@@ -183,8 +183,8 @@ void _ComputeTs(int snapshot)
   fftwf_complex* sfr_unfiltered = run_globals.reion_grids.sfr_unfiltered;
   fftwf_complex* sfr_filtered = run_globals.reion_grids.sfr_filtered;
 
-  fftwf_complex* BHXrayEmissivity_unfiltered = run_globals.reion_grids.BHXrayEmissivity_unfiltered;
-  fftwf_complex* BHXrayEmissivity_filtered = run_globals.reion_grids.BHXrayEmissivity_filtered;
+  fftwf_complex* BHXrayEmissivity_hard_unfiltered = run_globals.reion_grids.BHXrayEmissivity_hard_unfiltered;
+  fftwf_complex* BHXrayEmissivity_hard_filtered = run_globals.reion_grids.BHXrayEmissivity_hard_filtered;
   fftwf_complex* BHXrayEmissivity_soft_unfiltered = run_globals.reion_grids.BHXrayEmissivity_soft_unfiltered;
   fftwf_complex* BHXrayEmissivity_soft_filtered = run_globals.reion_grids.BHXrayEmissivity_soft_filtered;
 #if USE_MINI_HALOS
@@ -441,9 +441,9 @@ void _ComputeTs(int snapshot)
   #endif
 
       if (agn_hard_needed) {
-        fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_forward_plan);
+        fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_hard_forward_plan);
         for (int ii = 0; ii < slab_n_complex; ii++)
-          BHXrayEmissivity_unfiltered[ii] /= (float)total_n_cells;
+          BHXrayEmissivity_hard_unfiltered[ii] /= (float)total_n_cells;
       }
       if (agn_soft_needed) {
         fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_soft_forward_plan);
@@ -463,7 +463,7 @@ void _ComputeTs(int snapshot)
       memcpy(sfrIII_filtered, sfrIII_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
   #endif
       if (agn_hard_needed)
-        memcpy(BHXrayEmissivity_filtered, BHXrayEmissivity_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
+        memcpy(BHXrayEmissivity_hard_filtered, BHXrayEmissivity_hard_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
       if (agn_soft_needed)
         memcpy(BHXrayEmissivity_soft_filtered, BHXrayEmissivity_soft_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
 #if USE_MINI_HALOS
@@ -479,7 +479,7 @@ void _ComputeTs(int snapshot)
         filter(sfrIII_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
   #endif
         if (agn_hard_needed)
-          filter(BHXrayEmissivity_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
+          filter(BHXrayEmissivity_hard_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
         if (agn_soft_needed)
           filter(BHXrayEmissivity_soft_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
 #if USE_MINI_HALOS
@@ -494,7 +494,7 @@ void _ComputeTs(int snapshot)
       fftwf_execute(run_globals.reion_grids.sfrIII_filtered_reverse_plan);
   #endif
       if (agn_hard_needed)
-        fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_filtered_reverse_plan);
+        fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_hard_filtered_reverse_plan);
       if (agn_soft_needed)
         fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_soft_filtered_reverse_plan);
 #if USE_MINI_HALOS
@@ -530,9 +530,9 @@ void _ComputeTs(int snapshot)
 #endif
 
               if (agn_hard_needed) {
-                ((float*)BHXrayEmissivity_filtered)[i_padded] = fmaxf(((float*)BHXrayEmissivity_filtered)[i_padded], 0.0);
+                ((float*)BHXrayEmissivity_hard_filtered)[i_padded] = fmaxf(((float*)BHXrayEmissivity_hard_filtered)[i_padded], 0.0);
 
-                bh = ((float*)BHXrayEmissivity_filtered)[i_padded];
+                bh = ((float*)BHXrayEmissivity_hard_filtered)[i_padded];
                 SMOOTHED_AGN_hard[i_smoothed_heating] = (double)bh * 1e10 * SOLAR_LUM / pixel_volume
                                               * pow(units->UnitLength_in_cm, -3.0);
                 agn_xray_hard_ave += SMOOTHED_AGN_hard[i_smoothed_heating];
@@ -631,9 +631,9 @@ void _ComputeTs(int snapshot)
 #endif
 
               if (agn_hard_needed) {
-                ((float*)BHXrayEmissivity_filtered)[i_padded] = fmaxf(((float*)BHXrayEmissivity_filtered)[i_padded], 0.0);
+                ((float*)BHXrayEmissivity_hard_filtered)[i_padded] = fmaxf(((float*)BHXrayEmissivity_hard_filtered)[i_padded], 0.0);
 
-                bh = ((float*)BHXrayEmissivity_filtered)[i_padded];
+                bh = ((float*)BHXrayEmissivity_hard_filtered)[i_padded];
                 SMOOTHED_AGN_hard[i_smoothed_heating] = (double)bh * 1e10 * SOLAR_LUM / pixel_volume
                                               * pow(units->UnitLength_in_cm, -3.0);
               }
