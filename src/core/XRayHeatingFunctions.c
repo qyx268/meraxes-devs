@@ -1254,6 +1254,9 @@ int locate_xHII_index(float xHII_call)
 void evolveInt(float zp,
                float curr_delNL0,
                const double SFR_GAL[],
+#if USE_STOCHASTICITY
+               const double XRAY_LUMINOSITY_GAL[],
+#endif
                const double SFR_III[],
                const double XAGN_soft[],
                const double XAGN_hard[],
@@ -1278,6 +1281,9 @@ void evolveInt(float zp,
 void evolveInt(float zp,
                float curr_delNL0,
                const double SFR_GAL[],
+#if USE_STOCHASTICITY
+               const double XRAY_LUMINOSITY_GAL[],
+#endif
                const double XAGN_soft[],
                const double XAGN_hard[],
                const double freq_int_heat_GAL[],
@@ -1341,6 +1347,8 @@ void evolveInt(float zp,
   dstarlya_dt_III = 0;
   dstarlyLW_dt_III = 0;
 #endif
+  deriv[11] = 0.0;
+  deriv[12] = 0.0;
 
   if (!COMPUTE_Ts) {
     for (zpp_ct = 0; zpp_ct < run_globals.params.TsNumFilterSteps; zpp_ct++) {
@@ -1355,9 +1363,14 @@ void evolveInt(float zp,
       }
       dt_dzpp = dtdz(zpp);
 
+#if USE_STOCHASTICITY
+      zpp_integrand_GAL = XRAY_LUMINOSITY_GAL[zpp_ct] *
+                          pow(1 + zpp, -run_globals.params.physics.SpecIndexXrayGal);
+#else
       // Use this when using the SFR provided by Meraxes
       // Units should be M_solar/s. Factor of (dt_dzp * dzpp) converts from per s to per z'
       zpp_integrand_GAL = SFR_GAL[zpp_ct] * pow(1 + zpp, -run_globals.params.physics.SpecIndexXrayGal);
+#endif
 
 #if USE_MINI_HALOS
       zpp_integrand_III = SFR_III[zpp_ct] * pow(1 + zpp, -run_globals.params.physics.SpecIndexXrayIII);
