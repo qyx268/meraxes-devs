@@ -63,7 +63,7 @@ SpecIndexXrayAGNSoft       : 2.2             # Soft-band spectral index (nu^{-al
 SpecIndexXrayAGNHard       : 1.7             # Hard-band spectral index (nu^{-alpha}, E >= E_break)
 SpecIndexUVAGNSoft         : 0.61            # AGN NUV/FUV continuum slope (nu^{-alpha}, lambda > 912A) — Lusso et al. 2015 (MNRAS 449, 4204; arXiv:1503.02075). 
 SpecIndexUVAGNHard         : 1.70            # AGN EUV continuum slope (nu^{-alpha}, lambda <= 912A)
-AGNLWEfficiency            : 1.0             # Tunable scale factor on the AGN LW amplitude only
+AGNLWEfficiency            : 1.0             # Tunable scale factor on the AGN LW amplitude only, should be 1 for physical models
 Flag_BHARExponentialCut    : 0               # 0=duty-cycle weighted emissivity, 1=exponential cut with random on-time
 Flag_OutputXrayLF          : 0               # 0=off, 1=output X-ray luminosity function histograms
 XrayLF_MinLogL             : 38.0            # minimum log10(LX/erg/s) for X-ray LF histogram

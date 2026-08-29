@@ -168,7 +168,7 @@ void _ComputeTs(int snapshot)
   double XAGN_soft[TsNumFilterSteps];
   double XAGN_hard[TsNumFilterSteps];
 #if USE_MINI_HALOS
-  double AGN_UV[TsNumFilterSteps];
+  double AGN_LW[TsNumFilterSteps];
 #endif
 
 #if USE_MINI_HALOS
@@ -600,8 +600,8 @@ void _ComputeTs(int snapshot)
                 ((float*)BHUVEmissivity_filtered)[i_padded] = fmaxf(((float*)BHUVEmissivity_filtered)[i_padded], 0.0);
 
                 bh_uv = ((float*)BHUVEmissivity_filtered)[i_padded];
-                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 * SOLAR_LUM / pixel_volume / NU_1450
-                                                  * pow(units->UnitLength_in_cm, -3.0); // [erg/s/Hz/cm^3]
+                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e-11 * SOLAR_LUM / NU_1450 / pixel_volume
+                                                  * pow(units->UnitLength_in_cm, -3.0); // 1e21 erg/s/Hz/cm^3
               }
 #endif
 
@@ -1131,7 +1131,7 @@ void _ComputeTs(int snapshot)
             }
 #if USE_MINI_HALOS
             SFR_III[R_ct] = SMOOTHED_SFR_III[i_smoothed_heating];
-            AGN_UV[R_ct] = run_globals.params.Flag_IncludeLymanWerner ? SMOOTHED_AGN_UV[i_smoothed_heating] : 0.0;
+            AGN_LW[R_ct] = run_globals.params.Flag_IncludeLymanWerner ? run_globals.params.physics.AGNLWEfficiency * SMOOTHED_AGN_UV[i_smoothed_heating] : 0.0;
 #endif
             xHII_call = x_e_box_prev[i_padded];
 
@@ -1249,7 +1249,7 @@ void _ComputeTs(int snapshot)
                     SFR_III,
                     XAGN_soft,
                     XAGN_hard,
-                    AGN_UV,
+                    AGN_LW,
                     freq_int_heat_GAL,
                     freq_int_ion_GAL,
                     freq_int_lya_GAL,
