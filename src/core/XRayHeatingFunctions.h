@@ -32,12 +32,6 @@
               // to one..
 #define T21 (double)(0.0628)                /* temperature corresponding to the 21cm photon */
 #define A10_HYPERFINE (double)(2.85e-15)    /* spontaneous emission coefficient in s^-1 */
-#define Ly_alpha_HZ (double)(2.46606727e15) /* frequency of Lyalpha */
-#define NU_over_EV (double)(1.60217646e-12 / PLANCK)
-#define NUIONIZATION (double)(13.60 * NU_over_EV)     /* ionization frequency of H */
-#define HeI_NUIONIZATION (double)(24.59 * NU_over_EV) /* ionization frequency of HeI */
-#define HeII_NUIONIZATION (double)(NUIONIZATION * 4)  /* ionization frequency of HeII */
-// LW band edges NU_LW/NU_LL already defined in meraxes.h; reused, not redefined.
 
 // Define some global variables; yeah i know it isn't "good practice" but doesn't matter
 // NB. Not written by smutch!!! ;)
@@ -59,7 +53,6 @@ double* sum_lyn;
 double* sum_lyn_LW;
 double* sum_lyn_III;
 double* sum_lyn_LW_III;
-/* (nu/NU_LL)^-SpecIndexUVAGNSoft */
 double* sum_lyn_LW_AGN;
 double growth_factor_zp;
 double dgrowth_factor_dzp;

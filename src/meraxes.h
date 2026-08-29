@@ -28,18 +28,22 @@
 #define GAS_CONST 8.31425e7
 #define SPEED_OF_LIGHT 2.9979e10 // [cm/s]
 #define PLANCK 6.6262e-27        // [erg/s]
-#define PROTONMASS 1.6726e-24
+#define PROTONMASS 1.6726e-24 //[g]
 #define HUBBLE 3.2407789e-18 // [h/sec]
 #define SEC_PER_MEGAYEAR 3.155e13
 #define SEC_PER_YEAR 3.155e7
 #define MPC 3.086e24
 #define TCMB 2.728
-#define NU_LL (double)(3.29e15)
-#define NU_LW (double)(2.71e15)
-#define NU_1450 (double)(2.0675e15)
+#define Ly_alpha_HZ (double)(2.46606727e15) /* frequency of Lyalpha */
+#define NU_over_EV (double)(1.60217646e-12 / PLANCK)
+#define NUIONIZATION (double)(13.60 * NU_over_EV)     /* ionization frequency of H */
+#define HeI_NUIONIZATION (double)(24.59 * NU_over_EV) /* ionization frequency of HeI */
+#define HeII_NUIONIZATION (double)(NUIONIZATION * 4)  /* ionization frequency of HeII */
+#define NU_LW (double)(11.2 * NU_over_EV) /* lower frequency of Lyman-Werner band */
+#define NU_1450 (double)(SPEED_OF_LIGHT / 1450e-8) /* frequency of 1450 Angstroms */
 #define PLANCK_EV (double)(4.1357e-15)
-#define T_RE 1e4
-#define EDDINGTON_TIME_SCALE 450.514890  // Eddington timescale in Megayears
+#define T_RE (double)(1e4)
+#define EDDINGTON_TIME_SCALE (double)(450.514890)  // Eddington timescale in Megayears
 #define SIGMA_T_CGS (double)(6.652e-25)
 #define EnergySN (double)(1e51) // Energy of a single supernova in ergs
 // Pop III stuff (Atm ENOVA_CC and ENOVA_PISN are the same but you could change)
@@ -528,7 +532,7 @@ typedef struct reion_grids_t
   double* SMOOTHED_AGN_soft;  //!< per-cell AGN X-ray luminosity density per shell [erg/s/cm^3] (soft band)
 #if USE_MINI_HALOS
   double* SMOOTHED_SFR_III;
-  double* SMOOTHED_AGN_LW;    //!< per-cell AGN Lyman-Werner luminosity density per shell [erg/s/cm^3]
+  double* SMOOTHED_AGN_UV;    //!< per-cell AGN UV luminosity density per shell [1e21 erg/s/Hz/cm^3]
 #endif
 
   float* BHXrayEmissivity_hard;        //!< Per-cell AGN X-ray emissivity grid (current snapshot, hard band) [slab_n_complex*2]
@@ -536,8 +540,8 @@ typedef struct reion_grids_t
   float* BHXrayEmissivity_soft;   //!< Per-cell AGN X-ray emissivity grid (current snapshot, soft band) [slab_n_complex*2]
   float* bh_xray_histories_soft;  //!< Ring-buffer of NstoreSnapshots_Heating past BHXrayEmissivity_soft snapshots
 #if USE_MINI_HALOS
-  float* BHLWEmissivity;          //!< Per-cell AGN LW emissivity grid (current snapshot) [slab_n_complex*2]
-  float* bh_lw_histories;         //!< Ring-buffer of NstoreSnapshots_Heating past BHLWEmissivity snapshots
+  float* BHUVEmissivity;          //!< Per-cell AGN UV emissivity grid (current snapshot) [slab_n_complex*2]
+  float* bh_uv_histories;         //!< Ring-buffer of NstoreSnapshots_Heating past BHUVEmissivity snapshots
 #endif
 
   fftwf_complex* BHXrayEmissivity_hard_unfiltered;
@@ -549,10 +553,10 @@ typedef struct reion_grids_t
   fftwf_plan BHXrayEmissivity_soft_forward_plan;
   fftwf_plan BHXrayEmissivity_soft_filtered_reverse_plan;
 #if USE_MINI_HALOS
-  fftwf_complex* BHLWEmissivity_unfiltered;
-  fftwf_complex* BHLWEmissivity_filtered;
-  fftwf_plan BHLWEmissivity_forward_plan;
-  fftwf_plan BHLWEmissivity_filtered_reverse_plan;
+  fftwf_complex* BHUVEmissivity_unfiltered;
+  fftwf_complex* BHUVEmissivity_filtered;
+  fftwf_plan BHUVEmissivity_forward_plan;
+  fftwf_plan BHUVEmissivity_filtered_reverse_plan;
 #endif
 
   // Grids necessary for LW background and future disentangling between MC/AC Pop3/Pop2 stuff
@@ -953,7 +957,6 @@ typedef struct run_globals_t
   double G;
   double Csquare;
   double EddingtonTimescale;
-  double QuasarLWScale;      //!< pow(NU_LL/NU_1450, 1-SpecIndexUVAGNSoft) * AGNLWEfficiency (nu*L_nu scaling, see init.c)
   loiii_params_t loiii_params;
   // PopIII stuff
 
