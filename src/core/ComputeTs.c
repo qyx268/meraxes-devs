@@ -830,8 +830,8 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
         sum_lyn_III[R_ct] += frecycle(n_ct) * spectral_emissivity(nuprime, 0, 3);
         if (run_globals.params.Flag_IncludeLymanWerner) {
-          if (nuprime < NU_LW / NU_LL)
-            nuprime = NU_LW / NU_LL;
+          if (nuprime < NU_LW / Ly_alpha_HZ)
+            nuprime = NU_LW / Ly_alpha_HZ;
           if (nuprime > nu_n(n_ct + 1))
             continue;
           // photons per stellar baryon
