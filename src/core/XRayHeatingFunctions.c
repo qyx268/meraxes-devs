@@ -1524,8 +1524,8 @@ void evolveInt(float zp,
   deriv[8] = dxheat_dzp_II;
 
   if (run_globals.params.Flag_IncludeLymanWerner) {
-    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III + dstarlyLW_dt_AGN) * (PLANCK * 1e21);
-    deriv[10] = (dstarlyLW_dt_GAL + dstarlyLW_dt_AGN) * (PLANCK * 1e21);
+    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * (PLANCK * 1e21) + dstarlyLW_dt_AGN;
+    deriv[10] = dstarlyLW_dt_GAL * (PLANCK * 1e21) + dstarlyLW_dt_AGN;
   }
 
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III

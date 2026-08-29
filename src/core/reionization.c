@@ -801,9 +801,9 @@ void malloc_reionization_grids()
   grids->SMOOTHED_AGN_soft      = NULL;
 
 #if USE_MINI_HALOS
-  grids->BHLWEmissivity  = NULL;
-  grids->bh_lw_histories = NULL;
-  grids->SMOOTHED_AGN_LW = NULL;
+  grids->BHUVEmissivity  = NULL;
+  grids->bh_uv_histories = NULL;
+  grids->SMOOTHED_AGN_UV = NULL;
 
   grids->Tk_boxII = NULL;
   grids->TS_boxII = NULL;
@@ -1129,37 +1129,37 @@ void malloc_reionization_grids()
 
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner) {
-        grids->BHLWEmissivity  = fftwf_alloc_real((size_t)slab_n_complex * 2);
-        grids->bh_lw_histories = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
+        grids->BHUVEmissivity  = fftwf_alloc_real((size_t)slab_n_complex * 2);
+        grids->bh_uv_histories = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
 
-        grids->BHLWEmissivity_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
-        grids->BHLWEmissivity_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
-        grids->BHLWEmissivity_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
+        grids->BHUVEmissivity_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
+        grids->BHUVEmissivity_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
+        grids->BHUVEmissivity_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
                                                                         ReionGridDim,
                                                                         ReionGridDim,
-                                                                        grids->BHLWEmissivity,
-                                                                        grids->BHLWEmissivity_unfiltered,
+                                                                        grids->BHUVEmissivity,
+                                                                        grids->BHUVEmissivity_unfiltered,
                                                                         run_globals.mpi_comm,
                                                                         plan_flags);
-        grids->BHLWEmissivity_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
+        grids->BHUVEmissivity_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
                                                                                  ReionGridDim,
                                                                                  ReionGridDim,
-                                                                                 grids->BHLWEmissivity_filtered,
-                                                                                 (float*)grids->BHLWEmissivity_filtered,
+                                                                                 grids->BHUVEmissivity_filtered,
+                                                                                 (float*)grids->BHUVEmissivity_filtered,
                                                                                  run_globals.mpi_comm,
                                                                                  plan_flags);
 
-        if (grids->BHLWEmissivity == NULL || grids->bh_lw_histories == NULL ||
-            grids->BHLWEmissivity_unfiltered == NULL || grids->BHLWEmissivity_filtered == NULL) {
+        if (grids->BHUVEmissivity == NULL || grids->bh_uv_histories == NULL ||
+            grids->BHUVEmissivity_unfiltered == NULL || grids->BHUVEmissivity_filtered == NULL) {
           mlog_error("Failed to allocate AGN Lyman-Werner emissivity grids.");
           ABORT(EXIT_FAILURE);
         }
         for (size_t ii = 0; ii < (size_t)slab_n_complex * 2; ii++)
-          grids->BHLWEmissivity[ii] = 0.0f;
+          grids->BHUVEmissivity[ii] = 0.0f;
         for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
-          grids->bh_lw_histories[ii] = 0.0f;
+          grids->bh_uv_histories[ii] = 0.0f;
 
-        grids->SMOOTHED_AGN_LW = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
+        grids->SMOOTHED_AGN_UV = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
       }
 #endif
 
@@ -1415,13 +1415,13 @@ void free_reionization_grids()
     free(grids->SMOOTHED_SFR_III);
 
     if (run_globals.params.Flag_IncludeLymanWerner) {
-      free(grids->SMOOTHED_AGN_LW);
-      fftwf_destroy_plan(grids->BHLWEmissivity_filtered_reverse_plan);
-      fftwf_destroy_plan(grids->BHLWEmissivity_forward_plan);
-      fftwf_free(grids->BHLWEmissivity_filtered);
-      fftwf_free(grids->BHLWEmissivity_unfiltered);
-      fftwf_free(grids->BHLWEmissivity);
-      fftwf_free(grids->bh_lw_histories);
+      free(grids->SMOOTHED_AGN_UV);
+      fftwf_destroy_plan(grids->BHUVEmissivity_filtered_reverse_plan);
+      fftwf_destroy_plan(grids->BHUVEmissivity_forward_plan);
+      fftwf_free(grids->BHUVEmissivity_filtered);
+      fftwf_free(grids->BHUVEmissivity_unfiltered);
+      fftwf_free(grids->BHUVEmissivity);
+      fftwf_free(grids->bh_uv_histories);
     }
 #endif
 
@@ -1931,8 +1931,8 @@ void construct_baryon_grids(int snapshot, int local_ngals)
   float* bh_xray_grid_soft = run_globals.reion_grids.BHXrayEmissivity_soft;
   float* bh_xray_hist_grid_soft = run_globals.reion_grids.bh_xray_histories_soft;
 #if USE_MINI_HALOS
-  float* bh_lw_grid      = run_globals.reion_grids.BHLWEmissivity;
-  float* bh_lw_hist_grid = run_globals.reion_grids.bh_lw_histories;
+  float* bh_uv_grid      = run_globals.reion_grids.BHUVEmissivity;
+  float* bh_uv_hist_grid = run_globals.reion_grids.bh_uv_histories;
 #endif
 
   gal_to_slab_t* galaxy_to_slab_map = run_globals.reion_grids.galaxy_to_slab_map;
@@ -2002,10 +2002,10 @@ void construct_baryon_grids(int snapshot, int local_ngals)
       }
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner) {
-        bh_lw_grid[ii] = 0.0f;
+        bh_uv_grid[ii] = 0.0f;
         for (int snap = run_globals.NstoreSnapshots_Heating - 2; snap >= 0; snap--)
-          bh_lw_hist_grid[(snap+1)*local_n_complex * 2 + ii] =
-              bh_lw_hist_grid[snap*local_n_complex * 2 + ii];
+          bh_uv_hist_grid[(snap+1)*local_n_complex * 2 + ii] =
+              bh_uv_hist_grid[snap*local_n_complex * 2 + ii];
       }
 #endif
     }
@@ -2034,11 +2034,11 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     prop_bh_xray_emissivity_hard,
     prop_bh_xray_emissivity_soft,
 #if USE_MINI_HALOS
-    prop_bh_lw_emissivity
+    prop_bh_uv_emissivity
 #endif
   };
 #if USE_MINI_HALOS
-  for (int prop = prop_stellar; prop <= prop_bh_lw_emissivity; prop++) {
+  for (int prop = prop_stellar; prop <= prop_bh_uv_emissivity; prop++) {
 #else
   for (int prop = prop_stellar; prop <= prop_bh_xray_emissivity_soft; prop++) {
 #endif
@@ -2058,8 +2058,8 @@ void construct_baryon_grids(int snapshot, int local_ngals)
       continue;
 
 #if USE_MINI_HALOS
-    // AGN LW: independent of Flag_IncludeAGNXray, gated on Flag_IncludeLymanWerner instead.
-    if (prop == prop_bh_lw_emissivity &&
+    // AGN UV: independent of Flag_IncludeAGNXray, gated on Flag_IncludeLymanWerner instead.
+    if (prop == prop_bh_uv_emissivity &&
         (!run_globals.params.Flag_IncludeSpinTemp || !run_globals.params.Flag_IncludeLymanWerner))
       continue;
 #endif
@@ -2220,9 +2220,9 @@ void construct_baryon_grids(int snapshot, int local_ngals)
               break;
 
 #if USE_MINI_HALOS
-            case prop_bh_lw_emissivity:
+            case prop_bh_uv_emissivity:
               if (gal->BlackHoleMass >= run_globals.params.physics.BlackHoleMassLimitReion)
-                buffer[ind] += gal->QuasarLuv * run_globals.QuasarLWScale;
+                buffer[ind] += gal->QuasarLuv;
               break;
 #endif
 
@@ -2325,14 +2325,14 @@ void construct_baryon_grids(int snapshot, int local_ngals)
             break;
 
 #if USE_MINI_HALOS
-          case prop_bh_lw_emissivity:
+          case prop_bh_uv_emissivity:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
                   float val = buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
                   CLAMP_NEGATIVE(val);
-                  bh_lw_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)]      = val;
-                  bh_lw_hist_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
+                  bh_uv_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)]      = val;
+                  bh_uv_hist_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
                 }
             break;
 #endif
@@ -2611,8 +2611,8 @@ void load_reion_bh_grids(int snapshot_counter_backwards, float weight, const int
      for (int ii = 0; ii < local_nix; ii++)
         for (int jj = 0; jj < ReionGridDim; jj++)
           for (int kk = 0; kk < ReionGridDim; kk++){     
-              (grids->BHLWEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
-                  grids->bh_lw_histories[snapshot_counter_backwards * local_n_complex * 2 +
+              (grids->BHUVEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
+                  grids->bh_uv_histories[snapshot_counter_backwards * local_n_complex * 2 +
                                          grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
                   }
 #endif
@@ -2640,8 +2640,8 @@ void load_reion_bh_grids(int snapshot_counter_backwards, float weight, const int
      for (int ii = 0; ii < local_nix; ii++)
         for (int jj = 0; jj < ReionGridDim; jj++)
           for (int kk = 0; kk < ReionGridDim; kk++){     
-              (grids->BHLWEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
-                  grids->bh_lw_histories[snapshot_counter_backwards * local_n_complex * 2 +
+              (grids->BHUVEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
+                  grids->bh_uv_histories[snapshot_counter_backwards * local_n_complex * 2 +
                                          grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
                   }
 #endif

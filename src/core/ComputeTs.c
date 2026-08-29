@@ -114,7 +114,7 @@ void _ComputeTs(int snapshot)
   double Luminosity_converstion_factor_AGN_hard;  /* hard band: nu_break  -> nu_hard_cut */
   float bh, bh_soft;                /* per-cell BHXrayEmissivity(_soft), read while building SMOOTHED_AGN_hard(_soft) */
 #if USE_MINI_HALOS
-  float bh_lw;                      /* per-cell BHLWEmissivity, read while building SMOOTHED_AGN_LW */
+  float bh_uv;                      /* per-cell BHUVEmissivity, read while building SMOOTHED_AGN_UV */
 #endif
 
 #if USE_MINI_HALOS
@@ -161,7 +161,7 @@ void _ComputeTs(int snapshot)
   double XAGN_soft[TsNumFilterSteps];
   double XAGN_hard[TsNumFilterSteps];
 #if USE_MINI_HALOS
-  double AGN_LW[TsNumFilterSteps];
+  double AGN_UV[TsNumFilterSteps];
 #endif
 
 #if USE_MINI_HALOS
@@ -188,8 +188,8 @@ void _ComputeTs(int snapshot)
   fftwf_complex* BHXrayEmissivity_soft_unfiltered = run_globals.reion_grids.BHXrayEmissivity_soft_unfiltered;
   fftwf_complex* BHXrayEmissivity_soft_filtered = run_globals.reion_grids.BHXrayEmissivity_soft_filtered;
 #if USE_MINI_HALOS
-  fftwf_complex* BHLWEmissivity_unfiltered = run_globals.reion_grids.BHLWEmissivity_unfiltered;
-  fftwf_complex* BHLWEmissivity_filtered = run_globals.reion_grids.BHLWEmissivity_filtered;
+  fftwf_complex* BHUVEmissivity_unfiltered = run_globals.reion_grids.BHUVEmissivity_unfiltered;
+  fftwf_complex* BHUVEmissivity_filtered = run_globals.reion_grids.BHUVEmissivity_filtered;
 #endif
 
 #if USE_MINI_HALOS
@@ -201,7 +201,7 @@ void _ComputeTs(int snapshot)
   double* SMOOTHED_AGN_hard  = run_globals.reion_grids.SMOOTHED_AGN_hard;
   double* SMOOTHED_AGN_soft = run_globals.reion_grids.SMOOTHED_AGN_soft;
 #if USE_MINI_HALOS
-  double* SMOOTHED_AGN_LW   = run_globals.reion_grids.SMOOTHED_AGN_LW;
+  double* SMOOTHED_AGN_UV   = run_globals.reion_grids.SMOOTHED_AGN_UV;
 #endif
 #if USE_MINI_HALOS
   double* SMOOTHED_SFR_III = run_globals.reion_grids.SMOOTHED_SFR_III;
@@ -452,9 +452,9 @@ void _ComputeTs(int snapshot)
       }
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner) {
-        fftwf_execute(run_globals.reion_grids.BHLWEmissivity_forward_plan);
+        fftwf_execute(run_globals.reion_grids.BHUVEmissivity_forward_plan);
         for (int ii = 0; ii < slab_n_complex; ii++)
-          BHLWEmissivity_unfiltered[ii] /= (float)total_n_cells;
+          BHUVEmissivity_unfiltered[ii] /= (float)total_n_cells;
       }
 #endif
 
@@ -468,7 +468,7 @@ void _ComputeTs(int snapshot)
         memcpy(BHXrayEmissivity_soft_filtered, BHXrayEmissivity_soft_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner)
-        memcpy(BHLWEmissivity_filtered, BHLWEmissivity_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
+        memcpy(BHUVEmissivity_filtered, BHUVEmissivity_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
 #endif
 
       if (R_ct > 0) {
@@ -484,7 +484,7 @@ void _ComputeTs(int snapshot)
           filter(BHXrayEmissivity_soft_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
 #if USE_MINI_HALOS
         if (run_globals.params.Flag_IncludeLymanWerner)
-          filter(BHLWEmissivity_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
+          filter(BHUVEmissivity_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
 #endif
       }
 
@@ -499,7 +499,7 @@ void _ComputeTs(int snapshot)
         fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_soft_filtered_reverse_plan);
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner)
-        fftwf_execute(run_globals.reion_grids.BHLWEmissivity_filtered_reverse_plan);
+        fftwf_execute(run_globals.reion_grids.BHUVEmissivity_filtered_reverse_plan);
 #endif
 
       // Compute and store the collapse fraction and average electron fraction. Necessary for evaluating the integrals
@@ -548,11 +548,11 @@ void _ComputeTs(int snapshot)
               }
 #if USE_MINI_HALOS
               if (run_globals.params.Flag_IncludeLymanWerner) {
-                ((float*)BHLWEmissivity_filtered)[i_padded] = fmaxf(((float*)BHLWEmissivity_filtered)[i_padded], 0.0);
+                ((float*)BHUVEmissivity_filtered)[i_padded] = fmaxf(((float*)BHUVEmissivity_filtered)[i_padded], 0.0);
 
-                bh_lw = ((float*)BHLWEmissivity_filtered)[i_padded];
-                SMOOTHED_AGN_LW[i_smoothed_heating] = (double)bh_lw * 1e10 * SOLAR_LUM / pixel_volume
-                                                  * pow(units->UnitLength_in_cm, -3.0);
+                bh_uv = ((float*)BHUVEmissivity_filtered)[i_padded];
+                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 * SOLAR_LUM / pixel_volume / NU_1450
+                                                  * pow(units->UnitLength_in_cm, -3.0); // [erg/s/Hz/cm^3]
               }
 #endif
 
@@ -647,11 +647,11 @@ void _ComputeTs(int snapshot)
               }
 #if USE_MINI_HALOS
               if (run_globals.params.Flag_IncludeLymanWerner) {
-                ((float*)BHLWEmissivity_filtered)[i_padded] = fmaxf(((float*)BHLWEmissivity_filtered)[i_padded], 0.0);
+                ((float*)BHUVEmissivity_filtered)[i_padded] = fmaxf(((float*)BHUVEmissivity_filtered)[i_padded], 0.0);
 
-                bh_lw = ((float*)BHLWEmissivity_filtered)[i_padded];
-                SMOOTHED_AGN_LW[i_smoothed_heating] = (double)bh_lw * 1e10 * SOLAR_LUM / pixel_volume
-                                                  * pow(units->UnitLength_in_cm, -3.0);
+                bh_uv = ((float*)BHUVEmissivity_filtered)[i_padded];
+                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e-11 * SOLAR_LUM / NU_1450 / pixel_volume
+                                                  * pow(units->UnitLength_in_cm, -3.0); // 1e21 erg/s/Hz/cm^3
               }
 #endif
             }
@@ -834,12 +834,19 @@ void _ComputeTs(int snapshot)
             nuprime = NU_LW / NU_LL;
           if (nuprime > nu_n(n_ct + 1))
             continue;
-          sum_lyn_LW[R_ct] += spectral_emissivity(nuprime, 2, 2);
+          // photons per stellar baryon
+          sum_lyn_LW[R_ct] += spectral_emissivity(nuprime, 2, 2); 
           sum_lyn_LW_III[R_ct] += spectral_emissivity(nuprime, 2, 3);
 
-          /* (nuprime*Ly_alpha_HZ/NU_LL)^-SpecIndexUVAGNSoft */
-          sum_lyn_LW_AGN[R_ct] +=
-            pow(nuprime * Ly_alpha_HZ / NU_LL, -run_globals.params.physics.SpecIndexUVAGNSoft) / (PLANCK * NU_LW);
+          if (fabs(run_globals.params.physics.SpecIndexUVAGNSoft - 1.0) < REL_TOL) {
+            sum_lyn_LW_AGN[R_ct] +=
+              log(nu_n(n_ct + 1) / nuprime); //unitless
+          } else {
+            sum_lyn_LW_AGN[R_ct] +=
+              (pow(nu_n(n_ct + 1) * Ly_alpha_HZ / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft) - 
+               pow(nuprime * Ly_alpha_HZ / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft)) /
+              (1-run_globals.params.physics.SpecIndexUVAGNSoft);
+          }
         }
 
 #endif
@@ -1065,7 +1072,7 @@ void _ComputeTs(int snapshot)
             }
 #if USE_MINI_HALOS
             SFR_III[R_ct] = SMOOTHED_SFR_III[i_smoothed_heating];
-            AGN_LW[R_ct] = run_globals.params.Flag_IncludeLymanWerner ? SMOOTHED_AGN_LW[i_smoothed_heating] : 0.0;
+            AGN_UV[R_ct] = run_globals.params.Flag_IncludeLymanWerner ? SMOOTHED_AGN_UV[i_smoothed_heating] : 0.0;
 #endif
             xHII_call = x_e_box_prev[i_padded];
 
@@ -1180,7 +1187,7 @@ void _ComputeTs(int snapshot)
                     SFR_III,
                     XAGN_soft,
                     XAGN_hard,
-                    AGN_LW,
+                    AGN_UV,
                     freq_int_heat_GAL,
                     freq_int_ion_GAL,
                     freq_int_lya_GAL,
