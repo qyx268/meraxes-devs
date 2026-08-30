@@ -655,6 +655,8 @@ typedef struct reion_grids_t
   double volume_ave_xalpha;
   double volume_ave_Xheat;
   double volume_ave_Xion;
+  double volume_ave_Xheat_AGN_soft;
+  double volume_ave_Xheat_AGN_hard;
   double volume_ave_TS;
   double volume_ave_TK;
   double volume_ave_xe;
@@ -664,7 +666,9 @@ typedef struct reion_grids_t
   double volume_ave_J_alphaII;
   double volume_ave_J_LW;
   double volume_ave_J_LWII;
+  double volume_ave_J_LW_AGN;
   double volume_ave_XheatII;
+  double volume_ave_XionII;
   double volume_ave_TSII;
   double volume_ave_TKII;
   double volume_ave_TbII;

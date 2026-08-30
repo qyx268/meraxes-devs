@@ -530,6 +530,8 @@ void init_reion_grids()
   grids->volume_ave_xalpha = 0.0;
   grids->volume_ave_Xheat = 0.0;
   grids->volume_ave_Xion = 0.0;
+  grids->volume_ave_Xheat_AGN_soft = 0.0;
+  grids->volume_ave_Xheat_AGN_hard = 0.0;
   grids->volume_ave_TS = 0.0;
   grids->volume_ave_TK = 0.0;
   grids->volume_ave_xe = 0.0;
@@ -537,8 +539,10 @@ void init_reion_grids()
 #if USE_MINI_HALOS
   grids->volume_ave_J_alphaII = 0.0;
   grids->volume_ave_XheatII = 0.0;
+  grids->volume_ave_XionII = 0.0;
   grids->volume_ave_J_LW = 0.0;
   grids->volume_ave_J_LWII = 0.0;
+  grids->volume_ave_J_LW_AGN = 0.0;
   grids->volume_ave_TKII = 0.0;
   grids->volume_ave_TSII = 0.0;
   grids->volume_ave_TbII = 0.0;
@@ -3191,6 +3195,8 @@ void save_reion_output_attributes(int snapshot)
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_xalpha", &(grids->volume_ave_xalpha), 1);
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat", &(grids->volume_ave_Xheat), 1);
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xion", &(grids->volume_ave_Xion), 1);
+    H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat_AGN_soft", &(grids->volume_ave_Xheat_AGN_soft), 1);
+    H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat_AGN_hard", &(grids->volume_ave_Xheat_AGN_hard), 1);
 
 #if USE_MINI_HALOS
     ENSURE_DATASET("TS_boxII");
@@ -3199,6 +3205,7 @@ void save_reion_output_attributes(int snapshot)
     H5LTset_attribute_double(file_id, "Tk_boxII", "volume_ave_TKII", &(grids->volume_ave_TKII), 1);
     H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_J_alphaII", &(grids->volume_ave_J_alphaII), 1);
     H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_XheatII", &(grids->volume_ave_XheatII), 1);
+    H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_XionII", &(grids->volume_ave_XionII), 1);
 #endif
   }
 
@@ -3208,6 +3215,7 @@ void save_reion_output_attributes(int snapshot)
     ENSURE_DATASET("JLW_boxII");
     H5LTset_attribute_double(file_id, "JLW_box", "volume_ave_JLW", &(grids->volume_ave_J_LW), 1);
     H5LTset_attribute_double(file_id, "JLW_boxII", "volume_ave_JLW_II", &(grids->volume_ave_J_LWII), 1);
+    H5LTset_attribute_double(file_id, "JLW_box", "volume_ave_JLW_AGN", &(grids->volume_ave_J_LW_AGN), 1);
   }
 #endif
 

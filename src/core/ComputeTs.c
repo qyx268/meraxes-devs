@@ -158,7 +158,7 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
   double ans[3], dansdz[14];
 #else
-  double ans[2], dansdz[14];
+  double ans[2], dansdz[7];
 #endif
   double xHII_call;
   double SFR_GAL[TsNumFilterSteps];
@@ -233,8 +233,8 @@ void _ComputeTs(int snapshot)
   double Xheat_ave_AGN_hard = 0.0;
 
 #if USE_MINI_HALOS
-  double J_alpha_aveII, xalpha_aveII, Xheat_aveII, J_LW_aveII;
-  J_alpha_aveII = xalpha_aveII = Xheat_aveII = J_LW_aveII = 0.0;
+  double J_alpha_aveII, xalpha_aveII, Xheat_aveII, Xion_aveII, J_LW_aveII, J_LW_ave_AGN;
+  J_alpha_aveII = xalpha_aveII = Xheat_aveII = Xion_aveII = J_LW_aveII = J_LW_ave_AGN = 0.0;
 #endif
 
   // Place current redshift in 21cmFAST nomenclature (zp), delta zp (dzp) and delta z in seconds (dt_dzp)
@@ -1340,9 +1340,11 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
           J_alpha_aveII += dansdz[10];
           Xheat_aveII += dansdz[11];
+          Xion_aveII += dansdz[12];
           if (run_globals.params.Flag_IncludeLymanWerner) {
             J_LW_ave += dansdz[8];
             J_LW_aveII += dansdz[13];
+            J_LW_ave_AGN += dansdz[7];
           }
 #endif
         }
@@ -1356,8 +1358,10 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
     MPI_Allreduce(MPI_IN_PLACE, &J_alpha_aveII, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(MPI_IN_PLACE, &Xheat_aveII, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
+    MPI_Allreduce(MPI_IN_PLACE, &Xion_aveII, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(MPI_IN_PLACE, &J_LW_ave, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(MPI_IN_PLACE, &J_LW_aveII, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
+    MPI_Allreduce(MPI_IN_PLACE, &J_LW_ave_AGN, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
 #endif
 
     J_alpha_ave /= total_n_cells;
@@ -1369,9 +1373,11 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
     J_alpha_aveII /= total_n_cells;
     Xheat_aveII /= total_n_cells;
+    Xion_aveII /= total_n_cells;
     if (run_globals.params.Flag_IncludeLymanWerner) {
       J_LW_ave /= total_n_cells;
       J_LW_aveII /= total_n_cells;
+      J_LW_ave_AGN /= total_n_cells;
     }
 #endif
 
@@ -1379,12 +1385,16 @@ void _ComputeTs(int snapshot)
     run_globals.reion_grids.volume_ave_xalpha = xalpha_ave;
     run_globals.reion_grids.volume_ave_Xheat = Xheat_ave;
     run_globals.reion_grids.volume_ave_Xion = Xion_ave;
+    run_globals.reion_grids.volume_ave_Xheat_AGN_soft = Xheat_ave_AGN_soft;
+    run_globals.reion_grids.volume_ave_Xheat_AGN_hard = Xheat_ave_AGN_hard;
 #if USE_MINI_HALOS
     run_globals.reion_grids.volume_ave_J_alphaII = J_alpha_aveII;
     run_globals.reion_grids.volume_ave_XheatII = Xheat_aveII;
+    run_globals.reion_grids.volume_ave_XionII = Xion_aveII;
     if (run_globals.params.Flag_IncludeLymanWerner) {
       run_globals.reion_grids.volume_ave_J_LW = J_LW_ave;
       run_globals.reion_grids.volume_ave_J_LWII = J_LW_aveII;
+      run_globals.reion_grids.volume_ave_J_LW_AGN = J_LW_ave_AGN;
     }
 #endif
   }
@@ -1449,7 +1459,7 @@ void _ComputeTs(int snapshot)
        Ave_TkII,
        Ave_x_e);
   mlog("zp = %e J_alpha_ave = %e J_alpha_ave (PopII) = %e xalpha_ave = %e Xheat_ave = %e Xheat_ave (PopII) = %e "
-       "Xion_ave = %e J_LW_ave = %e J_LW_ave (PopII) = %e",
+       "Xion_ave = %e Xion_ave (PopII) = %e J_LW_ave = %e J_LW_ave (PopII) = %e J_LW_ave (AGN) = %e",
        MLOG_MESG,
        zp,
        J_alpha_ave,
@@ -1458,8 +1468,10 @@ void _ComputeTs(int snapshot)
        Xheat_ave,
        Xheat_aveII,
        Xion_ave,
+       Xion_aveII,
        J_LW_ave,
-       J_LW_aveII);
+       J_LW_aveII,
+       J_LW_ave_AGN);
   mlog("zp = %e  AGN_Xheat_soft = %e  AGN_Xheat_hard = %e  (Flag_IncludeAGNXray=%d)",
        MLOG_MESG, zp, Xheat_ave_AGN_soft, Xheat_ave_AGN_hard,
        run_globals.params.physics.Flag_IncludeAGNXray);
