@@ -620,9 +620,9 @@ double spectral_emissivity(double nu_norm, int flag, int flag_Pop)
       for (i = 1; i < (NSPEC_MAX - 1); i++) {
         if ((nu_norm >= nu_n[i]) && (nu_norm < nu_n[i + 1])) {
           if (flag_Pop == 2) {
-            ans = N0_2[i] / (alpha_S_2[i] + 1) * (pow(nu_n[i + 1], alpha_S_2[i] + 1) - pow(nu_norm, alpha_S_2[i] + 1));
+            ans = N0_2[i] / (alpha_S_2[i] + 2) * (pow(nu_n[i + 1], alpha_S_2[i] + 2) - pow(nu_norm, alpha_S_2[i] + 2));
           } else if (flag_Pop == 3) {
-            ans = N0_3[i] / (alpha_S_3[i] + 1) * (pow(nu_n[i + 1], alpha_S_3[i] + 1) - pow(nu_norm, alpha_S_3[i] + 1));
+            ans = N0_3[i] / (alpha_S_3[i] + 2) * (pow(nu_n[i + 1], alpha_S_3[i] + 2) - pow(nu_norm, alpha_S_3[i] + 2));
           } else {
             mlog("Invalid value for Stellar Population", MLOG_MESG);
           }
@@ -678,15 +678,15 @@ double spectral_emissivity(double nu_norm, int flag, int flag_Pop)
           else
             ans = N0_3[i] * pow(nu_norm, alpha_S_3[i]);
 
-          return ans / Ly_alpha_HZ;
+          return ans / NU_LA;
         }
       }
 
       i = NSPEC_MAX - 1;
       if (flag_Pop == 2)
-        return N0_2[i] * pow(nu_norm, alpha_S_2[i]) / Ly_alpha_HZ;
+        return N0_2[i] * pow(nu_norm, alpha_S_2[i]) / NU_LA;
       else
-        return N0_3[i] * pow(nu_norm, alpha_S_3[i]) / Ly_alpha_HZ;
+        return N0_3[i] * pow(nu_norm, alpha_S_3[i]) / NU_LA;
   }
 }
 
@@ -821,7 +821,7 @@ double integrate_over_nu(double zp,
 
   // if it is the Lya integral, add prefactor
   if (FLAG == 2)
-    return result * SPEED_OF_LIGHT / (4 * M_PI) / Ly_alpha_HZ / hubble((float)zp);
+    return result * SPEED_OF_LIGHT / (4 * M_PI) / NU_LA / hubble((float)zp);
 
   return result;
 }
@@ -1537,8 +1537,9 @@ void evolveInt(float zp,
   deriv[8] = dxheat_dzp_II;
 
   if (run_globals.params.Flag_IncludeLymanWerner) {
-    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * (PLANCK * 1e21) + dstarlyLW_dt_AGN;
-    deriv[10] = dstarlyLW_dt_GAL * (PLANCK * 1e21) + dstarlyLW_dt_AGN;
+    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[10] = dstarlyLW_dt_GAL * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[13] = dstarlyLW_dt_AGN;
   }
 
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III

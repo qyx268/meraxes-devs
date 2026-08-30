@@ -156,9 +156,9 @@ void _ComputeTs(int snapshot)
   int snapshot_counter_backwards[TsNumFilterSteps];
   double zedge;
 #if USE_MINI_HALOS
-  double ans[3], dansdz[13];
+  double ans[3], dansdz[14];
 #else
-  double ans[2], dansdz[13];
+  double ans[2], dansdz[14];
 #endif
   double xHII_call;
   double SFR_GAL[TsNumFilterSteps];
@@ -884,8 +884,8 @@ void _ComputeTs(int snapshot)
 #if USE_MINI_HALOS
         sum_lyn_III[R_ct] += frecycle(n_ct) * spectral_emissivity(nuprime, 0, 3);
         if (run_globals.params.Flag_IncludeLymanWerner) {
-          if (nuprime < NU_LW / Ly_alpha_HZ)
-            nuprime = NU_LW / Ly_alpha_HZ;
+          if (nuprime < NU_LW / NU_LA)
+            nuprime = NU_LW / NU_LA;
           if (nuprime > nu_n(n_ct + 1))
             continue;
           // photons per stellar baryon
@@ -897,8 +897,8 @@ void _ComputeTs(int snapshot)
               log(nu_n(n_ct + 1) / nuprime); //unitless
           } else {
             sum_lyn_LW_AGN[R_ct] +=
-              (pow(nu_n(n_ct + 1) * Ly_alpha_HZ / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft) - 
-               pow(nuprime * Ly_alpha_HZ / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft)) /
+              (pow(nu_n(n_ct + 1) * NU_LA / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft) - 
+               pow(nuprime * NU_LA / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft)) /
               (1-run_globals.params.physics.SpecIndexUVAGNSoft);
           }
         }

@@ -37,11 +37,11 @@
 #define XRAY_LUMINOSITY_UNIT 1.0e40 // [erg/s]
 #endif
 #define TCMB 2.728
-#define Ly_alpha_HZ (double)(2.46606727e15) /* frequency of Lyalpha */
 #define NU_over_EV (double)(1.60217646e-12 / PLANCK)
 #define NUIONIZATION (double)(13.60 * NU_over_EV)     /* ionization frequency of H */
 #define HeI_NUIONIZATION (double)(24.59 * NU_over_EV) /* ionization frequency of HeI */
 #define HeII_NUIONIZATION (double)(NUIONIZATION * 4)  /* ionization frequency of HeII */
+#define NU_LA (double)(10.2 * NU_over_EV) /* frequency of Lyalpha */
 #define NU_LW (double)(11.2 * NU_over_EV) /* lower frequency of Lyman-Werner band */
 #define NU_1450 (double)(SPEED_OF_LIGHT / 1450e-8) /* frequency of 1450 Angstroms */
 #define PLANCK_EV (double)(4.1357e-15)
