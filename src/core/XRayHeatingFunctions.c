@@ -1347,8 +1347,8 @@ void evolveInt(float zp,
   dstarlya_dt_III = 0;
   dstarlyLW_dt_III = 0;
 #endif
-  deriv[11] = 0.0;
-  deriv[12] = 0.0;
+  deriv[5] = 0.0;
+  deriv[6] = 0.0;
 
   if (!COMPUTE_Ts) {
     for (zpp_ct = 0; zpp_ct < run_globals.params.TsNumFilterSteps; zpp_ct++) {
@@ -1503,30 +1503,30 @@ void evolveInt(float zp,
 
   /* dT_K/dz = dT_K/dz|_adiabatic + |_Compton + |_species + |_Xray,GAL + |_Xray,AGN, where
    *   dT_K/dz|_Xray,AGN = dxheat_dt_AGN × (dt/dz) × (2/3)/k_B/(1+x_e) */
-  deriv[11] = dxheat_dt_AGN_soft * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
-  deriv[12] = dxheat_dt_AGN_hard * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
+  deriv[5] = dxheat_dt_AGN_soft * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
+  deriv[6] = dxheat_dt_AGN_hard * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
 #if USE_MINI_HALOS
   dxheat_dzp = (dxheat_dt_GAL + dxheat_dt_III)
                * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
   dxheat_dzp_II = (dxheat_dt_GAL)
                   * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
-  dxheat_dzp_II += deriv[11] + deriv[12];
+  dxheat_dzp_II += deriv[5] + deriv[6];
 #else
   dxheat_dzp = (dxheat_dt_GAL)
                * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
 #endif
-  dxheat_dzp += deriv[11] + deriv[12];
+  dxheat_dzp += deriv[5] + deriv[6];
 
   // summing them up...
   deriv[1] = dxheat_dzp + dcomp_dzp + dspec_dzp + dadia_dzp;
 
   // *** Finally, if we are at the last redshift step, Lya *** //
 #if USE_MINI_HALOS
-  deriv[6] = dxheat_dzp_II + dcomp_dzp_II + dspec_dzp_II + dadia_dzp_II;
+  deriv[9] = dxheat_dzp_II + dcomp_dzp_II + dspec_dzp_II + dadia_dzp_II;
 
   deriv[2] = (dxlya_dt_GAL + dxlya_dt_III + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard)
              + (dstarlya_dt_GAL + dstarlya_dt_III);
-  deriv[7] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
+  deriv[10] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
 #else
   deriv[2] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
 #endif
@@ -1534,17 +1534,17 @@ void evolveInt(float zp,
   // stuff for marcos
   deriv[3] = dxheat_dzp;
 #if USE_MINI_HALOS
-  deriv[8] = dxheat_dzp_II;
+  deriv[11] = dxheat_dzp_II;
 
   if (run_globals.params.Flag_IncludeLymanWerner) {
-    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
-    deriv[10] = dstarlyLW_dt_GAL * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
-    deriv[13] = dstarlyLW_dt_AGN;
+    deriv[8] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[13] = dstarlyLW_dt_GAL * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[7] = dstarlyLW_dt_AGN;
   }
 
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III
                        + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
-  deriv[9] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
+  deriv[12] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
 #else
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
 #endif

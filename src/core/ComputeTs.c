@@ -1287,8 +1287,8 @@ void _ComputeTs(int snapshot)
                     ans,
                     dansdz);
 #endif
-          Xheat_ave_AGN_soft += dansdz[11];
-          Xheat_ave_AGN_hard += dansdz[12];
+          Xheat_ave_AGN_soft += dansdz[5];
+          Xheat_ave_AGN_hard += dansdz[6];
 
           x_e_box_prev[i_padded] += dansdz[0] * dzp; // remember dzp is negative
           if (x_e_box_prev[i_padded] > 1)            // can do this late in evolution if dzp is too large
@@ -1300,10 +1300,10 @@ void _ComputeTs(int snapshot)
 
 #if USE_MINI_HALOS
           if (Tk_boxII[i_real] < MAX_TK)
-            Tk_boxII[i_real] += dansdz[6] * dzp;
+            Tk_boxII[i_real] += dansdz[9] * dzp;
           if (run_globals.params.Flag_IncludeLymanWerner) {
-            JLW_box[i_real] = dansdz[5];
-            JLW_boxII[i_real] = dansdz[10];
+            JLW_box[i_real] = dansdz[8];
+            JLW_boxII[i_real] = dansdz[13];
           }
 #endif
           // spurious bahaviour of the trapazoidalintegrator. generally overcooling in underdensities.
@@ -1330,7 +1330,7 @@ void _ComputeTs(int snapshot)
                                     run_globals.reion_grids.deltax[i_padded],
                                     Tk_boxII[i_real],
                                     x_e_box_prev[i_padded],
-                                    (float)dansdz[7],
+                                    (float)dansdz[10],
                                     &curr_xalpha); // It should be correct, probably I don't need a new curr_xalphaII
 #endif
           J_alpha_ave += dansdz[2];
@@ -1338,11 +1338,11 @@ void _ComputeTs(int snapshot)
           Xheat_ave += dansdz[3];
           Xion_ave += dansdz[4];
 #if USE_MINI_HALOS
-          J_alpha_aveII += dansdz[7];
-          Xheat_aveII += dansdz[8];
+          J_alpha_aveII += dansdz[10];
+          Xheat_aveII += dansdz[11];
           if (run_globals.params.Flag_IncludeLymanWerner) {
-            J_LW_ave += dansdz[5];
-            J_LW_aveII += dansdz[10];
+            J_LW_ave += dansdz[8];
+            J_LW_aveII += dansdz[13];
           }
 #endif
         }
