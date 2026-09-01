@@ -97,10 +97,19 @@ static int read_swift(const enum grid_prop property, const int snapshot, float* 
     if (use_resampled_file) {
       grid_dim = run_globals.params.ReionGridDim;
     } else {
-      char data[20] = { '\0' };
-      status = H5LTget_attribute_string(file_id, "/Parameters", "DensityGrids:grid_dim", data);
+      hsize_t dims[3];
+      H5T_class_t type_class;
+      size_t type_size;
+
+      status = H5LTget_dataset_info(file_id,
+                                    "/PartType1/Grids/Density",
+                                    dims,
+                                    &type_class,
+                                    &type_size);
       assert(status >= 0);
-      grid_dim = atoi(data);
+      assert(dims[0] == dims[1] && dims[1] == dims[2]);
+
+      grid_dim = (int)dims[0];
     }
 
     status = H5LTget_attribute_double(file_id, "/Header", "BoxSize", box_size);
