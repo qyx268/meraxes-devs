@@ -1246,6 +1246,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
   // Volume will be set during initialization
   double df_volume = (run_globals.params.BoxSize / run_globals.params.Hubble_h);
   df_volume = df_volume * df_volume * df_volume;
+  df_volume *= run_globals.params.VolumeFactor;
 
   mlog("Writing output file (n_write = %d)...", MLOG_OPEN | MLOG_TIMERSTART, n_write);
 
@@ -1528,7 +1529,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
       if (run_globals.params.Flag_OutputHMF && !output_buffer[buffer_count].GhostFlag) {
         // Extract HMF value (log10 halo mass in solar masses/h)
         val = log10(output_buffer[buffer_count].Mvir * 1e10 / run_globals.params.Hubble_h);
-        if (val >= hmf.x_min && val <= hmf.x_max) {
+        if (val >= hmf.x_min && val < hmf.x_max) {
           bin_idx = (int)((val - hmf.x_min) / hmf.bin_width);
           hmf.bin_counts[bin_idx] += 1.0;
         }
@@ -1539,7 +1540,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         val = output_buffer[buffer_count].StellarMass * 1e10 / run_globals.params.Hubble_h;
         if (val > 0.0) {
           val = log10(val);
-          if (val >= smf.x_min && val <= smf.x_max) {
+          if (val >= smf.x_min && val < smf.x_max) {
             bin_idx = (int)((val - smf.x_min) / smf.bin_width);
             smf.bin_counts[bin_idx] += 1.0;
           }
@@ -1551,7 +1552,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         // Extract UVLF value (UV magnitude)
         if (isfinite(output_buffer[buffer_count].Mags[0])) {
           val = output_buffer[buffer_count].Mags[0];
-          if (val >= uvlf.x_min && val <= uvlf.x_max) {
+          if (val >= uvlf.x_min && val < uvlf.x_max) {
             bin_idx = (int)((val - uvlf.x_min) / uvlf.bin_width);
             uvlf.bin_counts[bin_idx] += 1.0;
           }
@@ -1562,7 +1563,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         // Extract DustyLF value (dusty UV magnitude)
         if (isfinite(output_buffer[buffer_count].DustyMags[0])) {
           val = output_buffer[buffer_count].DustyMags[0];
-          if (val >= dustylf.x_min && val <= dustylf.x_max) {
+          if (val >= dustylf.x_min && val < dustylf.x_max) {
             bin_idx = (int)((val - dustylf.x_min) / dustylf.bin_width);
             dustylf.bin_counts[bin_idx] += 1.0;
           }
@@ -1576,7 +1577,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         weight = output_buffer[buffer_count].DutyCycleAGN * run_globals.params.physics.quasar_fobs;
         // Only include quasars that are "on" (QuasarMag < 999) and have positive duty cycle
         if (val < 900.0 && weight > 0.0 && isfinite(val)) {
-          if (val >= quasarlf.x_min && val <= quasarlf.x_max) {
+          if (val >= quasarlf.x_min && val < quasarlf.x_max) {
             bin_idx = (int)((val - quasarlf.x_min) / quasarlf.bin_width);
             quasarlf.bin_counts[bin_idx] += weight;  // Weight by duty cycle
             quasarlf.bin_variance[bin_idx] += weight * (1.0 - weight);  // Bernoulli variance
@@ -1588,7 +1589,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         val = output_buffer[buffer_count].LOIII;
         if (val > 0.0 && isfinite(val)) {
           val = log10(val) + 40;
-          if (val >= oiiilf.x_min && val <= oiiilf.x_max) {
+          if (val >= oiiilf.x_min && val < oiiilf.x_max) {
             bin_idx = (int)((val - oiiilf.x_min) / oiiilf.bin_width);
             oiiilf.bin_counts[bin_idx] += 1.0;
           }
@@ -1600,7 +1601,7 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
         val = output_buffer[buffer_count].LOIII_dusty;
         if (val > 0.0 && isfinite(val)) {
           val = log10(val) + 40;
-          if (val >= oiiidustylf.x_min && val <= oiiidustylf.x_max) {
+          if (val >= oiiidustylf.x_min && val < oiiidustylf.x_max) {
             bin_idx = (int)((val - oiiidustylf.x_min) / oiiidustylf.bin_width);
             oiiidustylf.bin_counts[bin_idx] += 1.0;
           }
