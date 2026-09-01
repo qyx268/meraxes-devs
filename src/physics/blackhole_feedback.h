@@ -25,6 +25,7 @@
 // then dot Nion =  Lnu(912) / planck constant (6.62607015e-27 erg/Hz) / SpecIndexUVAGNHard
 // so LUV2EMISSIVITY = 1.851239e28 / 6.62607015e-27 / SpecIndexUVAGNHard * (912/1450)**SpecIndexUVAGNSoft
 //  = 2.79387171897e54 / SpecIndexUVAGNHard * (912/1450)**SpecIndexUVAGNSoft 
+// finally divided by 1e60 to convert to 1e60 photons
 
 /* Morrison & McCammon (1983) Table 2: photoelectric cross-section coefficients.
  * σ(E) = (C0 + C1·E + C2·E²) × E^{-3} × 10^{-24} cm²,  E in keV.
