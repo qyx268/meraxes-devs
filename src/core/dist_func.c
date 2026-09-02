@@ -82,10 +82,38 @@ void df_mpi_reduce(distribution_function_t* df, int mpi_rank, int mpi_size)
       MPI_Reduce(df->bin_variance, NULL, df->n_bins, MPI_DOUBLE, MPI_SUM, 0, run_globals.mpi_comm);
     }
   }
+
+  if (mpi_rank == 0)
+    df_finalize(df);
 }
 
-void df_write_hdf5(hid_t file_id, const char* group_name, const distribution_function_t* df,
-                   const char* dataset_prefix, const char* units)
+void df_finalize(distribution_function_t* df)
+{
+  assert(df != NULL);
+  assert(df->bins != NULL);
+
+  double total_variance = 0.0;
+  for (int i = 0; i < df->n_bins; i++)
+    total_variance += df->bin_variance[i];
+
+  const int use_bernoulli = total_variance > 0.0;
+  const double normalization = df->volume * df->bin_width;
+
+  for (int i = 0; i < df->n_bins; i++) {
+    const double count = df->bin_counts[i];
+    df->bins[i].number_density = count / normalization;
+    if (use_bernoulli)
+      df->bins[i].uncertainty = sqrt(df->bin_variance[i]) / normalization;
+    else
+      df->bins[i].uncertainty = count > 0.0 ? sqrt(count) / normalization : 0.0;
+  }
+}
+
+void df_write_hdf5(hid_t file_id,
+                   const char* group_name,
+                   const distribution_function_t* df,
+                   const char* dataset_prefix,
+                   const char* units)
 {
   assert(df != NULL);
   assert(df->bins != NULL);

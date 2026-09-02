@@ -114,6 +114,7 @@ extern "C"
   void calc_hdf5_props(void);
   void prep_hdf5_file(void);
   void create_master_file(void);
+  void prepare_luminosity_function_cache(int snapshot);
   void write_snapshot(int n_write, int i_out, int* last_n_write);
 
 #ifdef __cplusplus

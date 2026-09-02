@@ -931,6 +931,18 @@ extern "C"
 {
 #endif
 
+  typedef enum meraxes_lf_kind_t
+  {
+    MERAXES_LF_DUSTY = 0,
+    MERAXES_LF_OIII = 1,
+    MERAXES_LF_QUASAR = 2,
+    MERAXES_LF_HMF = 3,
+    MERAXES_LF_SMF = 4,
+    MERAXES_LF_UV = 5,
+    MERAXES_LF_OIII_DUSTY = 6,
+    MERAXES_N_LFS = 7
+  } meraxes_lf_kind_t;
+
   // core/dracarys.c
   void dracarys(void);
 
@@ -948,6 +960,17 @@ extern "C"
   // core/magnitudes.c
   void get_output_magnitudes(float* mags, float* dusty_mags, galaxy_t* gal, int snapshot);
   void get_output_magnitudesIII(float* mags, galaxy_t* gal, int snapshot);
+
+  // Cached luminosity functions calculated for the current output snapshot.
+  // These accessors return data only on Meraxes MPI rank 0.
+  int meraxes_luminosity_function_n_bins(int snapshot, meraxes_lf_kind_t kind);
+  int meraxes_copy_luminosity_function(int snapshot,
+                                       meraxes_lf_kind_t kind,
+                                       int n_bins,
+                                       double* centers,
+                                       double* number_density,
+                                       double* uncertainty);
+  void clear_luminosity_function_cache(void);
 
 // MCMC related
 // meraxes_mhysa_hook must be implemented by the calling code (Mhysa)!

@@ -16,6 +16,8 @@ void cleanup()
 {
   mlog("Running cleanup...", MLOG_OPEN);
 
+  clear_luminosity_function_cache();
+
   free_grids_cache();
 
   if (run_globals.RequestedMassRatioModifier != -1)

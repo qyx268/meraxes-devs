@@ -467,8 +467,10 @@ void dracarys()
     check_pointers(halo, fof_group, &trees_info);
 #endif
 
-    if (run_globals.params.FlagMCMC)
+    if (run_globals.params.FlagMCMC) {
+      prepare_luminosity_function_cache(snapshot);
       meraxes_mhysa_hook(run_globals.mhysa_self, snapshot, nout_gals);
+    }
 
     mlog("...done", MLOG_CLOSE | MLOG_TIMERSTOP);
   }

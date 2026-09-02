@@ -48,6 +48,10 @@ extern "C"
   //! \param[in] mpi_size Total number of MPI processes
   void df_mpi_reduce(distribution_function_t* df, int mpi_rank, int mpi_size);
 
+  //! Convert reduced counts and variances into number densities and uncertainties
+  //! on the MPI root process.
+  void df_finalize(distribution_function_t* df);
+
   //! Free distribution function structure
   //! \param[in,out] df Pointer to distribution function to be freed
   void df_free(distribution_function_t* df);
@@ -58,7 +62,7 @@ extern "C"
   //! \param[in] df Pointer to distribution function structure
   //! \param[in] dataset_prefix Dataset name (e.g., "HMF")
   //! \param[in] units Unit string for the data (e.g., "per Mpc^3 per dex" for HMF/SMF)
-  //! 
+  //!
   //! Creates a 2D dataset with shape (n_bins, 3) where columns are:
   //!   [0] = bin centers, [1] = number density, [2] = Poisson uncertainty
   void df_write_hdf5(hid_t file_id, const char* group_name, const distribution_function_t* df, 

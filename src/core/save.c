@@ -15,6 +15,273 @@
 #include "metal_evo.h"
 #endif
 
+typedef struct luminosity_function_cache_t
+{
+  int snapshot;
+  int valid[MERAXES_N_LFS];
+  distribution_function_t functions[MERAXES_N_LFS];
+} luminosity_function_cache_t;
+
+static luminosity_function_cache_t luminosity_function_cache = { .snapshot = -1 };
+
+static double luminosity_function_volume(void)
+{
+  double side_length = run_globals.params.BoxSize / run_globals.params.Hubble_h;
+  return side_length * side_length * side_length * run_globals.params.VolumeFactor;
+}
+
+static int is_requested_output_snapshot(int snapshot)
+{
+  for (int i_out = 0; i_out < run_globals.NOutputSnaps; i_out++)
+    if (run_globals.ListOutputSnaps[i_out] == snapshot)
+      return 1;
+  return 0;
+}
+
+#ifdef CALC_MAGS
+static int is_magnitude_target_snapshot(int snapshot)
+{
+  for (int i_snap = 0; i_snap < MAGS_N_SNAPS; i_snap++)
+    if (run_globals.mag_params.targetSnap[i_snap] == snapshot)
+      return 1;
+  return 0;
+}
+#endif
+
+void clear_luminosity_function_cache(void)
+{
+  for (int kind = 0; kind < MERAXES_N_LFS; kind++) {
+    if (luminosity_function_cache.valid[kind]) {
+      df_free(&luminosity_function_cache.functions[kind]);
+      luminosity_function_cache.valid[kind] = 0;
+    }
+  }
+  luminosity_function_cache.snapshot = -1;
+}
+
+static void initialize_cached_luminosity_function(meraxes_lf_kind_t kind,
+                                                  double x_min,
+                                                  double x_max,
+                                                  int bins_per_unit,
+                                                  const char* description)
+{
+  if (x_max <= x_min) {
+    mlog_error("%s maximum must be greater than its minimum.", description);
+    ABORT(EXIT_FAILURE);
+  }
+  if (bins_per_unit <= 0) {
+    mlog_error("%s bins per unit must be greater than zero.", description);
+    ABORT(EXIT_FAILURE);
+  }
+
+  distribution_function_t* function = &luminosity_function_cache.functions[kind];
+  df_init(function, x_min, x_max, bins_per_unit, description);
+  function->volume = luminosity_function_volume();
+  luminosity_function_cache.valid[kind] = 1;
+}
+
+static void initialize_luminosity_function_cache(int snapshot)
+{
+  clear_luminosity_function_cache();
+  luminosity_function_cache.snapshot = snapshot;
+
+  if (run_globals.params.Flag_OutputHMF)
+    initialize_cached_luminosity_function(MERAXES_LF_HMF,
+                                          run_globals.params.HMF_MinMass,
+                                          run_globals.params.HMF_MaxMass,
+                                          run_globals.params.HMF_BinsPerDex,
+                                          "Halo Mass Function");
+
+  if (run_globals.params.Flag_OutputSMF)
+    initialize_cached_luminosity_function(MERAXES_LF_SMF,
+                                          run_globals.params.SMF_MinMass,
+                                          run_globals.params.SMF_MaxMass,
+                                          run_globals.params.SMF_BinsPerDex,
+                                          "Stellar Mass Function");
+
+#ifdef CALC_MAGS
+  if (run_globals.params.Flag_OutputUVLF && is_magnitude_target_snapshot(snapshot))
+    initialize_cached_luminosity_function(MERAXES_LF_UV,
+                                          run_globals.params.UVLF_MinMag,
+                                          run_globals.params.UVLF_MaxMag,
+                                          run_globals.params.UVLF_BinsPerMag,
+                                          "UV Luminosity Function");
+
+  if (run_globals.params.Flag_OutputDustyLF && is_magnitude_target_snapshot(snapshot))
+    initialize_cached_luminosity_function(MERAXES_LF_DUSTY,
+                                          run_globals.params.UVLF_MinMag,
+                                          run_globals.params.UVLF_MaxMag,
+                                          run_globals.params.UVLF_BinsPerMag,
+                                          "Dusty UV Luminosity Function");
+
+  if (run_globals.params.Flag_OutputOIIILF && is_magnitude_target_snapshot(snapshot) &&
+      run_globals.loiii_rest_band_mag_index >= 0)
+    initialize_cached_luminosity_function(MERAXES_LF_OIII_DUSTY,
+                                          run_globals.params.OIIILF_MinLogL,
+                                          run_globals.params.OIIILF_MaxLogL,
+                                          run_globals.params.OIIILF_BinsPerDex,
+                                          "Dusty OIII Luminosity Function");
+#endif
+
+  if (run_globals.params.Flag_OutputOIIILF)
+    initialize_cached_luminosity_function(MERAXES_LF_OIII,
+                                          run_globals.params.OIIILF_MinLogL,
+                                          run_globals.params.OIIILF_MaxLogL,
+                                          run_globals.params.OIIILF_BinsPerDex,
+                                          "OIII Luminosity Function");
+
+  if (run_globals.params.Flag_OutputQuasarLF)
+    initialize_cached_luminosity_function(MERAXES_LF_QUASAR,
+                                          run_globals.params.UVLF_MinMag,
+                                          run_globals.params.UVLF_MaxMag,
+                                          run_globals.params.UVLF_BinsPerMag,
+                                          "Quasar UV Luminosity Function");
+}
+
+static void add_to_cached_luminosity_function(meraxes_lf_kind_t kind, double value, double weight)
+{
+  if (!luminosity_function_cache.valid[kind] || !isfinite(value))
+    return;
+
+  distribution_function_t* function = &luminosity_function_cache.functions[kind];
+  if (value < function->x_min || value >= function->x_max)
+    return;
+
+  const int bin_index = (int)((value - function->x_min) / function->bin_width);
+  function->bin_counts[bin_index] += weight;
+  if (kind == MERAXES_LF_QUASAR)
+    function->bin_variance[bin_index] += weight * (1.0 - weight);
+}
+
+static void accumulate_cached_luminosity_functions(const galaxy_output_t* galaxy)
+{
+  if (galaxy->GhostFlag)
+    return;
+
+  if (luminosity_function_cache.valid[MERAXES_LF_HMF] && galaxy->Mvir > 0.0f)
+    add_to_cached_luminosity_function(
+      MERAXES_LF_HMF, log10(galaxy->Mvir * 1e10 / run_globals.params.Hubble_h), 1.0);
+
+  if (luminosity_function_cache.valid[MERAXES_LF_SMF] && galaxy->StellarMass > 0.0f)
+    add_to_cached_luminosity_function(
+      MERAXES_LF_SMF, log10(galaxy->StellarMass * 1e10 / run_globals.params.Hubble_h), 1.0);
+
+#ifdef CALC_MAGS
+  if (luminosity_function_cache.valid[MERAXES_LF_UV])
+    add_to_cached_luminosity_function(MERAXES_LF_UV, galaxy->Mags[0], 1.0);
+
+  if (luminosity_function_cache.valid[MERAXES_LF_DUSTY])
+    add_to_cached_luminosity_function(MERAXES_LF_DUSTY, galaxy->DustyMags[0], 1.0);
+
+  if (luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY] && galaxy->LOIII_dusty > 0.0f)
+    add_to_cached_luminosity_function(MERAXES_LF_OIII_DUSTY, log10(galaxy->LOIII_dusty) + 40.0, 1.0);
+#endif
+
+  if (luminosity_function_cache.valid[MERAXES_LF_OIII] && galaxy->LOIII > 0.0f)
+    add_to_cached_luminosity_function(MERAXES_LF_OIII, log10(galaxy->LOIII) + 40.0, 1.0);
+
+  if (luminosity_function_cache.valid[MERAXES_LF_QUASAR]) {
+    const double weight = galaxy->DutyCycleAGN * run_globals.params.physics.quasar_fobs;
+    if (galaxy->QuasarMag < 900.0f && weight > 0.0)
+      add_to_cached_luminosity_function(MERAXES_LF_QUASAR, galaxy->QuasarMag, weight);
+  }
+}
+
+static void reduce_luminosity_function_cache(void)
+{
+  for (int kind = 0; kind < MERAXES_N_LFS; kind++)
+    if (luminosity_function_cache.valid[kind])
+      df_mpi_reduce(&luminosity_function_cache.functions[kind], run_globals.mpi_rank, run_globals.mpi_size);
+}
+
+int meraxes_luminosity_function_n_bins(int snapshot, meraxes_lf_kind_t kind)
+{
+  if (run_globals.mpi_rank != 0 || kind < 0 || kind >= MERAXES_N_LFS ||
+      luminosity_function_cache.snapshot != snapshot || !luminosity_function_cache.valid[kind])
+    return 0;
+  return luminosity_function_cache.functions[kind].n_bins;
+}
+
+int meraxes_copy_luminosity_function(int snapshot,
+                                     meraxes_lf_kind_t kind,
+                                     int n_bins,
+                                     double* centers,
+                                     double* number_density,
+                                     double* uncertainty)
+{
+  const int cached_n_bins = meraxes_luminosity_function_n_bins(snapshot, kind);
+  if (cached_n_bins <= 0 || n_bins != cached_n_bins || centers == NULL || number_density == NULL || uncertainty == NULL)
+    return -1;
+
+  const distribution_function_t* function = &luminosity_function_cache.functions[kind];
+  for (int i_bin = 0; i_bin < cached_n_bins; i_bin++) {
+    centers[i_bin] = function->bins[i_bin].center;
+    number_density[i_bin] = function->bins[i_bin].number_density;
+    uncertainty[i_bin] = function->bins[i_bin].uncertainty;
+  }
+  return 0;
+}
+
+static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
+                                                       int snapshot,
+                                                       galaxy_output_t* output)
+{
+  memset(output, 0, sizeof(*output));
+  output->GhostFlag = (int)galaxy->ghost_flag;
+  output->Mvir = (float)galaxy->Mvir;
+  output->StellarMass = (float)galaxy->StellarMass;
+  output->LOIII = (float)(galaxy->LOIII / 1e40);
+  output->QuasarMag = galaxy->QuasarLuv > 0.0 ? (float)(-19.826 - 2.5 * log10(galaxy->QuasarLuv)) : 999.9f;
+  output->DutyCycleAGN = (float)galaxy->DutyCycleAGN;
+
+#ifdef CALC_MAGS
+  if (luminosity_function_cache.valid[MERAXES_LF_UV] || luminosity_function_cache.valid[MERAXES_LF_DUSTY] ||
+      luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY]) {
+    output->LOIII_dusty = output->LOIII;
+    get_output_magnitudes(output->Mags, output->DustyMags, galaxy, snapshot);
+
+    if (luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY]) {
+      const int loiii_band_idx = run_globals.loiii_rest_band_mag_index;
+      const float mag = output->Mags[loiii_band_idx];
+      const float dusty_mag = output->DustyMags[loiii_band_idx];
+
+      if (isfinite(mag) && isfinite(dusty_mag) && mag < 900.0f && dusty_mag < 900.0f) {
+        const double attenuation_mag = (double)mag - (double)dusty_mag;
+        const double attenuation_factor = pow(10.0, 0.4 * attenuation_mag);
+        const double loiii_dusty = (double)output->LOIII * attenuation_factor;
+
+        if (isfinite(loiii_dusty) && loiii_dusty >= 0.0)
+          output->LOIII_dusty = (float)loiii_dusty;
+        else
+          output->LOIII_dusty = 0.0f;
+      }
+    }
+  }
+#endif
+}
+
+void prepare_luminosity_function_cache(int snapshot)
+{
+  if (!is_requested_output_snapshot(snapshot)) {
+    clear_luminosity_function_cache();
+    return;
+  }
+
+  initialize_luminosity_function_cache(snapshot);
+
+  galaxy_t* galaxy = run_globals.FirstGal;
+  while (galaxy != NULL) {
+    if (galaxy->Type < 3 && !galaxy->ghost_flag) {
+      galaxy_output_t output;
+      prepare_cached_luminosity_function_output(galaxy, snapshot, &output);
+      accumulate_cached_luminosity_functions(&output);
+    }
+    galaxy = galaxy->Next;
+  }
+
+  reduce_luminosity_function_cache();
+}
+
 static float current_mwmsa(galaxy_t* gal, int i_snap)
 {
   double* LTTime = run_globals.LTTime;
@@ -1235,18 +1502,8 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
   int prev_snapshot = -1;
   int write_count = 0;
 
-  // Distribution function structures
-  distribution_function_t hmf, smf;
-  distribution_function_t quasarlf;
-  distribution_function_t oiiilf;
-#ifdef CALC_MAGS
-  distribution_function_t uvlf, dustylf, oiiidustylf;
-#endif
-
-  // Volume will be set during initialization
-  double df_volume = (run_globals.params.BoxSize / run_globals.params.Hubble_h);
-  df_volume = df_volume * df_volume * df_volume;
-  df_volume *= run_globals.params.VolumeFactor;
+  const int output_snapshot = run_globals.ListOutputSnaps[i_out];
+  initialize_luminosity_function_cache(output_snapshot);
 
   mlog("Writing output file (n_write = %d)...", MLOG_OPEN | MLOG_TIMERSTART, n_write);
 
@@ -1293,119 +1550,6 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
                    NULL);
   }
 
-  // Initialize distribution functions
-  if (run_globals.params.Flag_OutputHMF) {
-    if (run_globals.params.HMF_MaxMass <= run_globals.params.HMF_MinMass) {
-      mlog_error("HMF_MaxMass must be greater than HMF_MinMass.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.HMF_BinsPerDex <= 0) {
-      mlog_error("HMF_BinsPerDex must be > 0.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&hmf, run_globals.params.HMF_MinMass, run_globals.params.HMF_MaxMass, 
-            run_globals.params.HMF_BinsPerDex, "Halo Mass Function");
-    hmf.volume = df_volume;
-  }
-  
-  if (run_globals.params.Flag_OutputSMF) {
-    if (run_globals.params.SMF_MaxMass <= run_globals.params.SMF_MinMass) {
-      mlog_error("SMF_MaxMass must be greater than SMF_MinMass.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.SMF_BinsPerDex <= 0) {
-      mlog_error("SMF_BinsPerDex must be > 0.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&smf, run_globals.params.SMF_MinMass, run_globals.params.SMF_MaxMass, 
-            run_globals.params.SMF_BinsPerDex, "Stellar Mass Function");
-    smf.volume = df_volume;
-  }
-
-#ifdef CALC_MAGS
-  // Check if this snapshot is a target snapshot for magnitude calculations
-  int is_target_snap = 0;
-  for (int iS = 0; iS < MAGS_N_SNAPS; ++iS) {
-    if (run_globals.ListOutputSnaps[i_out] == run_globals.mag_params.targetSnap[iS]) {
-      is_target_snap = 1;
-      break;
-    }
-  }
-
-  const int do_oiii_dusty_lf =
-    is_target_snap && run_globals.params.Flag_OutputOIIILF && (run_globals.loiii_rest_band_mag_index >= 0);
-  
-  if (is_target_snap && run_globals.params.Flag_OutputUVLF) {
-    if (run_globals.params.UVLF_MaxMag <= run_globals.params.UVLF_MinMag) {
-      mlog_error("UVLF_MaxMag must be greater than UVLF_MinMag.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.UVLF_BinsPerMag <= 0) {
-      mlog_error("UVLF_BinsPerMag must be > 0.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&uvlf, run_globals.params.UVLF_MinMag, run_globals.params.UVLF_MaxMag, 
-            run_globals.params.UVLF_BinsPerMag, "UV Luminosity Function");
-    uvlf.volume = df_volume;
-  }
-  
-  if (is_target_snap && run_globals.params.Flag_OutputDustyLF) {
-    if (run_globals.params.UVLF_MaxMag <= run_globals.params.UVLF_MinMag) {
-      mlog_error("UVLF_MaxMag must be greater than UVLF_MinMag for DustyLF.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.UVLF_BinsPerMag <= 0) {
-      mlog_error("UVLF_BinsPerMag must be > 0 for DustyLF.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&dustylf, run_globals.params.UVLF_MinMag, run_globals.params.UVLF_MaxMag, 
-            run_globals.params.UVLF_BinsPerMag, "Dusty UV Luminosity Function");
-    dustylf.volume = df_volume;
-  }
-#endif
-
-  // QuasarLF uses same mag bins as UVLF but weighted by duty cycle
-  if (run_globals.params.Flag_OutputQuasarLF) {
-    if (run_globals.params.UVLF_MaxMag <= run_globals.params.UVLF_MinMag) {
-      mlog_error("UVLF_MaxMag must be greater than UVLF_MinMag for QuasarLF.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.UVLF_BinsPerMag <= 0) {
-      mlog_error("UVLF_BinsPerMag must be > 0 for QuasarLF.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&quasarlf, run_globals.params.UVLF_MinMag, run_globals.params.UVLF_MaxMag, 
-            run_globals.params.UVLF_BinsPerMag, "Quasar UV Luminosity Function");
-    quasarlf.volume = df_volume;
-  }
-
-  if (run_globals.params.Flag_OutputOIIILF) {
-    if (run_globals.params.OIIILF_MaxLogL <= run_globals.params.OIIILF_MinLogL) {
-      mlog_error("OIIILF_MaxLogL must be greater than OIIILF_MinLogL.");
-      ABORT(EXIT_FAILURE);
-    }
-    if (run_globals.params.OIIILF_BinsPerDex <= 0) {
-      mlog_error("OIIILF_BinsPerDex must be > 0.");
-      ABORT(EXIT_FAILURE);
-    }
-    df_init(&oiiilf,
-            run_globals.params.OIIILF_MinLogL,
-            run_globals.params.OIIILF_MaxLogL,
-            run_globals.params.OIIILF_BinsPerDex,
-            "OIII Luminosity Function");
-    oiiilf.volume = df_volume;
-
-    #ifdef CALC_MAGS
-        if (do_oiii_dusty_lf) {
-          df_init(&oiiidustylf,
-            run_globals.params.OIIILF_MinLogL,
-            run_globals.params.OIIILF_MaxLogL,
-            run_globals.params.OIIILF_BinsPerDex,
-            "Dusty OIII Luminosity Function");
-          oiiidustylf.volume = df_volume;
-        }
-    #endif
-  }
 
   // If the immediately preceding snapshot was also written, then save the
   // descendent indices (skip for FlagInteractive==2)
@@ -1516,100 +1660,16 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
   gal_count = 0;
   gal = run_globals.FirstGal;
   output_buffer = calloc((int)chunk_size, sizeof(galaxy_output_t));
-  // Accumulate into distribution functions from output buffer
-  double val, weight;
-  int bin_idx;
 
   int buffer_count = 0;
   while (gal != NULL) {
     // Don't output galaxies which merged at this timestep
     if (pass_write_check(gal, false)) {
       prepare_galaxy_for_output(*gal, &(output_buffer[buffer_count]), i_out);
-            
-      if (run_globals.params.Flag_OutputHMF && !output_buffer[buffer_count].GhostFlag) {
-        // Extract HMF value (log10 halo mass in solar masses/h)
-        val = log10(output_buffer[buffer_count].Mvir * 1e10 / run_globals.params.Hubble_h);
-        if (val >= hmf.x_min && val < hmf.x_max) {
-          bin_idx = (int)((val - hmf.x_min) / hmf.bin_width);
-          hmf.bin_counts[bin_idx] += 1.0;
-        }
-      }
-      
-      if (run_globals.params.Flag_OutputSMF && !output_buffer[buffer_count].GhostFlag) {
-        // Extract SMF value (log10 stellar mass in solar masses)
-        val = output_buffer[buffer_count].StellarMass * 1e10 / run_globals.params.Hubble_h;
-        if (val > 0.0) {
-          val = log10(val);
-          if (val >= smf.x_min && val < smf.x_max) {
-            bin_idx = (int)((val - smf.x_min) / smf.bin_width);
-            smf.bin_counts[bin_idx] += 1.0;
-          }
-        }
-      }
-      
-#ifdef CALC_MAGS
-      if (is_target_snap && run_globals.params.Flag_OutputUVLF && !output_buffer[buffer_count].GhostFlag) {
-        // Extract UVLF value (UV magnitude)
-        if (isfinite(output_buffer[buffer_count].Mags[0])) {
-          val = output_buffer[buffer_count].Mags[0];
-          if (val >= uvlf.x_min && val < uvlf.x_max) {
-            bin_idx = (int)((val - uvlf.x_min) / uvlf.bin_width);
-            uvlf.bin_counts[bin_idx] += 1.0;
-          }
-        }
-      }
-      
-      if (is_target_snap && run_globals.params.Flag_OutputDustyLF && !output_buffer[buffer_count].GhostFlag) {
-        // Extract DustyLF value (dusty UV magnitude)
-        if (isfinite(output_buffer[buffer_count].DustyMags[0])) {
-          val = output_buffer[buffer_count].DustyMags[0];
-          if (val >= dustylf.x_min && val < dustylf.x_max) {
-            bin_idx = (int)((val - dustylf.x_min) / dustylf.bin_width);
-            dustylf.bin_counts[bin_idx] += 1.0;
-          }
-        }
-      }
-#endif
-      
-      // QuasarLF: bin QuasarMag weighted by DutyCycleAGN * quasar_fobs (opening angle)
-      if (run_globals.params.Flag_OutputQuasarLF && !output_buffer[buffer_count].GhostFlag) {
-        val = output_buffer[buffer_count].QuasarMag;
-        weight = output_buffer[buffer_count].DutyCycleAGN * run_globals.params.physics.quasar_fobs;
-        // Only include quasars that are "on" (QuasarMag < 999) and have positive duty cycle
-        if (val < 900.0 && weight > 0.0 && isfinite(val)) {
-          if (val >= quasarlf.x_min && val < quasarlf.x_max) {
-            bin_idx = (int)((val - quasarlf.x_min) / quasarlf.bin_width);
-            quasarlf.bin_counts[bin_idx] += weight;  // Weight by duty cycle
-            quasarlf.bin_variance[bin_idx] += weight * (1.0 - weight);  // Bernoulli variance
-          }
-        }
-      }
 
-      if (run_globals.params.Flag_OutputOIIILF && !output_buffer[buffer_count].GhostFlag) {
-        val = output_buffer[buffer_count].LOIII;
-        if (val > 0.0 && isfinite(val)) {
-          val = log10(val) + 40;
-          if (val >= oiiilf.x_min && val < oiiilf.x_max) {
-            bin_idx = (int)((val - oiiilf.x_min) / oiiilf.bin_width);
-            oiiilf.bin_counts[bin_idx] += 1.0;
-          }
-        }
-      }
+      accumulate_cached_luminosity_functions(&output_buffer[buffer_count]);
 
-#ifdef CALC_MAGS
-      if (do_oiii_dusty_lf && !output_buffer[buffer_count].GhostFlag) {
-        val = output_buffer[buffer_count].LOIII_dusty;
-        if (val > 0.0 && isfinite(val)) {
-          val = log10(val) + 40;
-          if (val >= oiiidustylf.x_min && val < oiiidustylf.x_max) {
-            bin_idx = (int)((val - oiiidustylf.x_min) / oiiidustylf.bin_width);
-            oiiidustylf.bin_counts[bin_idx] += 1.0;
-          }
-        }
-      }
-#endif
-      
-      buffer_count++;;
+      buffer_count++;
     }
     if (buffer_count == (int)chunk_size) {
       // Write galaxies to HDF5 (skip for FlagInteractive==2)
@@ -1661,66 +1721,38 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
       save_reion_output_grids(run_globals.ListOutputSnaps[i_out]);
 
   // MPI reduction and output for all distribution functions
-  if (run_globals.params.Flag_OutputHMF) {
-    df_mpi_reduce(&hmf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &hmf, "HMF", "per Mpc^3 per dex");
-    }
-    df_free(&hmf);
+  reduce_luminosity_function_cache();
+  if (run_globals.mpi_rank == 0) {
+    if (luminosity_function_cache.valid[MERAXES_LF_HMF])
+      df_write_hdf5(
+        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_HMF], "HMF", "per Mpc^3 per dex");
+    if (luminosity_function_cache.valid[MERAXES_LF_SMF])
+      df_write_hdf5(
+        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_SMF], "SMF", "per Mpc^3 per dex");
+    if (luminosity_function_cache.valid[MERAXES_LF_UV])
+      df_write_hdf5(
+        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_UV], "UVLF", "per Mpc^3 per mag");
+    if (luminosity_function_cache.valid[MERAXES_LF_DUSTY])
+      df_write_hdf5(
+        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_DUSTY], "DustyLF", "per Mpc^3 per mag");
+    if (luminosity_function_cache.valid[MERAXES_LF_OIII])
+      df_write_hdf5(
+        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_OIII], "OIIILF", "per Mpc^3 per dex");
+    if (luminosity_function_cache.valid[MERAXES_LF_QUASAR])
+      df_write_hdf5(file_id,
+                    target_group,
+                    &luminosity_function_cache.functions[MERAXES_LF_QUASAR],
+                    "QuasarLF",
+                    "per Mpc^3 per mag");
+    if (luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY])
+      df_write_hdf5(file_id,
+                    target_group,
+                    &luminosity_function_cache.functions[MERAXES_LF_OIII_DUSTY],
+                    "OIIIDustyLF",
+                    "per Mpc^3 per dex");
   }
 
-  if (run_globals.params.Flag_OutputSMF) {
-    df_mpi_reduce(&smf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &smf, "SMF", "per Mpc^3 per dex");
-    }
-    df_free(&smf);
-  }
-
-#ifdef CALC_MAGS
-  if (is_target_snap && run_globals.params.Flag_OutputUVLF) {
-    df_mpi_reduce(&uvlf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &uvlf, "UVLF", "per Mpc^3 per mag");
-    }
-    df_free(&uvlf);
-  }
-
-  if (is_target_snap && run_globals.params.Flag_OutputDustyLF) {
-    df_mpi_reduce(&dustylf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &dustylf, "DustyLF", "per Mpc^3 per mag");
-    }
-    df_free(&dustylf);
-  }
-#endif
-
-  // QuasarLF - uses weighted MPI reduce and write
-  if (run_globals.params.Flag_OutputQuasarLF) {
-    df_mpi_reduce(&quasarlf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &quasarlf, "QuasarLF", "per Mpc^3 per mag");
-    }
-    df_free(&quasarlf);
-  }
-
-  if (run_globals.params.Flag_OutputOIIILF) {
-    df_mpi_reduce(&oiiilf, run_globals.mpi_rank, run_globals.mpi_size);
-    if (run_globals.mpi_rank == 0) {
-      df_write_hdf5(file_id, target_group, &oiiilf, "OIIILF", "per Mpc^3 per dex");
-    }
-    df_free(&oiiilf);
-
-#ifdef CALC_MAGS
-    if (do_oiii_dusty_lf) {
-      df_mpi_reduce(&oiiidustylf, run_globals.mpi_rank, run_globals.mpi_size);
-      if (run_globals.mpi_rank == 0) {
-        df_write_hdf5(file_id, target_group, &oiiidustylf, "OIIIDustyLF", "per Mpc^3 per dex");
-      }
-      df_free(&oiiidustylf);
-    }
-#endif
-  }
+  clear_luminosity_function_cache();
 
   // Close the group.
   H5Gclose(group_id);
