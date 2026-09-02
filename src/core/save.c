@@ -258,6 +258,11 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
     }
   }
 #endif
+
+  // Reuse the same dust calculation for any galaxy-level Mhysa constraints.
+  // galaxy_output_t stores line luminosities in units of 1e40 erg/s, whereas
+  // galaxy_t keeps physical luminosities in erg/s.
+  galaxy->LOIII_dusty = (double)output->LOIII_dusty * 1e40;
 }
 
 void prepare_luminosity_function_cache(int snapshot)
@@ -271,6 +276,7 @@ void prepare_luminosity_function_cache(int snapshot)
 
   galaxy_t* galaxy = run_globals.FirstGal;
   while (galaxy != NULL) {
+    galaxy->LOIII_dusty = 0.0;
     if (galaxy->Type < 3 && !galaxy->ghost_flag) {
       galaxy_output_t output;
       prepare_cached_luminosity_function_output(galaxy, snapshot, &output);

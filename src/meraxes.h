@@ -667,6 +667,7 @@ typedef struct galaxy_t
   double DiskScaleLength;
   double Sfr;
   double LOIII;
+  double LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
   double ionization_param;
   double EjectedGas;
   double MetalsEjectedGas;
