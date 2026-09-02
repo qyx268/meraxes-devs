@@ -251,9 +251,8 @@ typedef struct run_params_t
   double BirthCloudLifetime;
   double DustMetallicityScale;
   double DustTauUVISM;
-  double DustNISM;
+  double DustN;
   double DustTauUVBC;
-  double DustNBC;
   double DustAZ;
   double DeltaT; // New Parameter added to consider different time of observation! Very important for Pop. III
   char CoolingFuncsDir[STRLEN];

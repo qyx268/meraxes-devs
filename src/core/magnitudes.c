@@ -772,9 +772,9 @@ void get_output_magnitudes(float* mags, float* dusty_mags, galaxy_t* gal, int sn
             gal->ColdGas *
                     pow(gal->DiskScaleLength * 1e3, -2.0) * exp(run_globals.params.DustAZ * redshift);
     dust_params_t dust_params = { .tauUV_ISM = run_globals.params.DustTauUVISM * factor,
-                    .nISM = run_globals.params.DustNISM,
+                    .nISM = run_globals.params.DustN,
                     .tauUV_BC = run_globals.params.DustTauUVBC * factor,
-                    .nBC = run_globals.params.DustNBC,
+                    .nBC = run_globals.params.DustN,
                                   .tBC = run_globals.mag_params.tBC };
 
     double local_InBCFlux[MAGS_N_BANDS], local_OutBCFlux[MAGS_N_BANDS];
