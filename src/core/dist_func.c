@@ -130,37 +130,12 @@ void df_write_hdf5(hid_t file_id,
   double* data = (double*)malloc(df->n_bins * 3 * sizeof(double));
   assert(data != NULL);
 
-  // Check if Bernoulli variance has been accumulated (sum > 0)
-  double total_variance = 0.0;
   for (int i = 0; i < df->n_bins; i++) {
-    total_variance += df->bin_variance[i];
-  }
-  int use_bernoulli = (total_variance > 0.0);
-
-  for (int i = 0; i < df->n_bins; i++) {
-    // Compute number density and uncertainty from bin counts
-    double count = df->bin_counts[i];
-    double bin_width = df->bin_width;
-
     // Column 0: bin center
     data[i * 3 + 0] = df->bins[i].center;
-    
-    // Column 1: number density N / (volume * bin_width)
-    data[i * 3 + 1] = count / (df->volume * bin_width);
-
-    // Column 2: uncertainty
-    if (use_bernoulli) {
-      // Bernoulli uncertainty: sqrt(sum(p*(1-p))) / (volume * bin_width)
-      double var = df->bin_variance[i];
-      data[i * 3 + 2] = sqrt(var) / (df->volume * bin_width);
-    } else {
-      // Poisson uncertainty: sqrt(N) / (volume * bin_width)
-      if (count > 0) {
-        data[i * 3 + 2] = sqrt(count) / (df->volume * bin_width);
-      } else {
-        data[i * 3 + 2] = 0.0;
-      }
-    }
+    // Columns 1 and 2 were finalized by df_mpi_reduce/df_finalize.
+    data[i * 3 + 1] = df->bins[i].number_density;
+    data[i * 3 + 2] = df->bins[i].uncertainty;
   }
 
   // Write single 2D dataset
