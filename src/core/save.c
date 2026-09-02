@@ -78,10 +78,10 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->BlackHoleMass = (float)(gal.BlackHoleMass);
   galout->FescBH = (float)(gal.FescBH);
   galout->BHemissivity = (float)(gal.BHemissivity);
-  galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.826 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
+  galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.07395 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
   galout->QuasarLX     = (float)gal.QuasarLX;
   galout->NHbin = gal.NHbin;
-  galout->BHXrayEmissivity = (float)gal.BHXrayEmissivity;
+  galout->BHXrayEmissivity = (float)gal.BHXrayEmissivity_hard;
   galout->DutyCycleAGN = (float)(gal.DutyCycleAGN);
   galout->EffectiveBHM = (float)(gal.EffectiveBHM);
   galout->BlackHoleAccretedHotMass = (float)(gal.BlackHoleAccretedHotMass);
@@ -1037,7 +1037,7 @@ void create_master_file()
     for (int ilx = 0; ilx < n_lx_bins_nhfrac; ilx++) {
       lx_log_center = run_globals.params.XrayLF_MinLogL + (ilx + 0.5) * lx_bin_width_nhfrac;
       lx_lin_1e10Lsun = pow(10.0, lx_log_center - 10.0 - LOG_10_SOLAR_LUM);
-      get_nh_fracs(lx_lin_1e10Lsun, 2.0, f_det);
+      get_nh_fracs(lx_lin_1e10Lsun, 2.0, f_det); // this model assume the z-dependency plateaus at z>=2.0
       for (int ib = 0; ib < 5; ib++)
         nhfrac_table[ilx * 5 + ib] = f_det[ib];
     }
@@ -1045,22 +1045,10 @@ void create_master_file()
     H5LTmake_dataset_double(file_id, "NHfrac", 2, nhfrac_dims, nhfrac_table);
     free(nhfrac_table);
 
-
-    double* xray_hard_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    double* xray_soft_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    double* xray_hmxb_all = malloc((size_t)run_globals.NOutputSnaps * sizeof(double));
-    for (int i_out = 0; i_out < run_globals.NOutputSnaps; i_out++) {
-      xray_hard_all[i_out] = stored_XrayEmissivity_hard[run_globals.ListOutputSnaps[i_out]];
-      xray_soft_all[i_out] = stored_XrayEmissivity_soft[run_globals.ListOutputSnaps[i_out]];
-      xray_hmxb_all[i_out] = stored_XrayEmissivity_HMXB[run_globals.ListOutputSnaps[i_out]];
-    }
-    hsize_t n_xray_snaps = (hsize_t)run_globals.NOutputSnaps;
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_hard", 1, &n_xray_snaps, xray_hard_all);
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_soft", 1, &n_xray_snaps, xray_soft_all);
-    H5LTmake_dataset_double(file_id, "XrayEmissivity_HMXB", 1, &n_xray_snaps, xray_hmxb_all);
-    free(xray_hard_all);
-    free(xray_soft_all);
-    free(xray_hmxb_all);
+    hsize_t n_xray_snaps = (hsize_t)run_globals.params.SnaplistLength;
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_hard", 1, &n_xray_snaps, stored_XrayEmissivity_hard);
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_soft", 1, &n_xray_snaps, stored_XrayEmissivity_soft);
+    H5LTmake_dataset_double(file_id, "XrayEmissivity_HMXB", 1, &n_xray_snaps, stored_XrayEmissivity_HMXB);
   }
 
   char target_group[50];

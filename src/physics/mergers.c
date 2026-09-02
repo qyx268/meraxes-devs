@@ -225,7 +225,7 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   }
   parent->QuasarLuv += gal->QuasarLuv;
   parent->QuasarLX  += gal->QuasarLX;
-  parent->BHXrayEmissivity      += gal->BHXrayEmissivity;
+  parent->BHXrayEmissivity_hard += gal->BHXrayEmissivity_hard;
   parent->BHXrayEmissivity_soft += gal->BHXrayEmissivity_soft;
 
   // take the CGM tau from the one with more CGM

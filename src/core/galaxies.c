@@ -65,7 +65,7 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->QuasarLuv = 0.0;
   gal->QuasarLX = 0.0;
   gal->NHbin = -1;
-  gal->BHXrayEmissivity = 0.0;
+  gal->BHXrayEmissivity_hard = 0.0;
   gal->BHXrayEmissivity_soft = 0.0;
   gal->EffectiveBHM = 0.0;
   gal->EffectiveBHAR = 0.0;
@@ -208,7 +208,7 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   gal->QuasarLuv = 0.0;
   gal->QuasarLX = 0.0;
   gal->NHbin = -1;
-  gal->BHXrayEmissivity = 0.0;
+  gal->BHXrayEmissivity_hard = 0.0;
   gal->BHXrayEmissivity_soft = 0.0;
   gal->BaryonFracModifier = 1.0;
   gal->FOFMvirModifier = 1.0;

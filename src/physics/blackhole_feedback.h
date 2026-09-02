@@ -18,23 +18,14 @@
 // = (1 solar mass *(speed of light)^2/450e6year) /3.828e26watt
 // where 450e6year is eddington time scale
 
-#define LB2EMISSIVITY 5.585746e-6
-// firstly B band luminosity is:   LB = Lbol/kb 1e10Lsun
-// then B band magnitude is:       MB = 4.74 - 2.5log10(1e10LB)
-// then convert from Vega to AB:   MAB,B = MB-0.09
-// then UV mag:                    M1450 = MAB,B+0.524
-// then UV lum:                    LUV = 10**((M1450_1-51.594843)/-2.5) #erg/s/Hz
-// then 912 lum:                   L912 = LUV*(912./1450)**SpecIndexUVAGNSoft  #erg/s/Hz
-//                                  (912A IS the break, so only the Soft leg is needed to reach it)
-// then BHemissivity:              L912/Planck constant/SpecIndexUVAGNHard #photons/s
-//                                  (photon-counting integral over the Hard leg, lambda<=912A:
-//                                  int[NU_LL,inf] L912*(nu/NU_LL)**-SpecIndexUVAGNHard/(h*nu) dnu)
-// then total BHemissivity in this step: BHemissivity*accretion_time(seconds)
-// BHemissivity = fobs*Lbol/kb*LB2EMISSIVITY*(912./1450)**SpecIndexUVAGNSoft/SpecIndexUVAGNHard*accretion_time(seconds); // photon numbers/1e60
-// break is at 912A/NU_LL, not 1200A (Lusso et al. 2015, MNRAS 449,4204/arXiv:1503.02075)
-// LB2EMISSIVITY is slope-independent: the (912/1450)**SpecIndexUVAGNSoft/SpecIndexUVAGNHard
-// factors are applied at runtime instead of baked in, so it never needs recomputing
-// = 2.127633e-6 / [(1200/1450)**0.44*(912/1200)**1.57/1.57], old 0.44/1.57/1200A shape divided out
+#define LUV2EMISSIVITY 2.79387171897e-6
+// firstly UV 1450 band luminosity is:   LUV = Lbol/kuv 1e10Lsun
+// then Lnu(1450) = LUV * 1e10Lsun / nu_1450 = 1.851239e28 erg/s/Hz LUV
+// then Lnu(912) = Lnu(1450) * (912/1450)**SpecIndexUVAGNSoft
+// then dot Nion =  Lnu(912) / planck constant (6.62607015e-27 erg/Hz) / SpecIndexUVAGNHard
+// so LUV2EMISSIVITY = 1.851239e28 / 6.62607015e-27 / SpecIndexUVAGNHard * (912/1450)**SpecIndexUVAGNSoft
+//  = 2.79387171897e54 / SpecIndexUVAGNHard * (912/1450)**SpecIndexUVAGNSoft 
+// finally divided by 1e60 to convert to 1e60 photons
 
 /* Morrison & McCammon (1983) Table 2: photoelectric cross-section coefficients.
  * σ(E) = (C0 + C1·E + C2·E²) × E^{-3} × 10^{-24} cm²,  E in keV.

@@ -54,9 +54,6 @@ int init_heat()
     sum_lyn_LW = calloc(TsNumFilterSteps, sizeof(double));
     sum_lyn_LW_III = calloc(TsNumFilterSteps, sizeof(double));
     sum_lyn_LW_AGN = calloc(TsNumFilterSteps, sizeof(double));
-
-    /* const_zp_prefactor_AGN_LW = c / (4*pi) / (h * NU_LW) */
-    const_zp_prefactor_AGN_LW = SPEED_OF_LIGHT / (4.0 * M_PI) / (PLANCK * NU_LW);
   }
 #endif
 
@@ -623,9 +620,9 @@ double spectral_emissivity(double nu_norm, int flag, int flag_Pop)
       for (i = 1; i < (NSPEC_MAX - 1); i++) {
         if ((nu_norm >= nu_n[i]) && (nu_norm < nu_n[i + 1])) {
           if (flag_Pop == 2) {
-            ans = N0_2[i] / (alpha_S_2[i] + 1) * (pow(nu_n[i + 1], alpha_S_2[i] + 1) - pow(nu_norm, alpha_S_2[i] + 1));
+            ans = N0_2[i] / (alpha_S_2[i] + 2) * (pow(nu_n[i + 1], alpha_S_2[i] + 2) - pow(nu_norm, alpha_S_2[i] + 2));
           } else if (flag_Pop == 3) {
-            ans = N0_3[i] / (alpha_S_3[i] + 1) * (pow(nu_n[i + 1], alpha_S_3[i] + 1) - pow(nu_norm, alpha_S_3[i] + 1));
+            ans = N0_3[i] / (alpha_S_3[i] + 2) * (pow(nu_n[i + 1], alpha_S_3[i] + 2) - pow(nu_norm, alpha_S_3[i] + 2));
           } else {
             mlog("Invalid value for Stellar Population", MLOG_MESG);
           }
@@ -681,15 +678,15 @@ double spectral_emissivity(double nu_norm, int flag, int flag_Pop)
           else
             ans = N0_3[i] * pow(nu_norm, alpha_S_3[i]);
 
-          return ans / Ly_alpha_HZ;
+          return ans / NU_LA;
         }
       }
 
       i = NSPEC_MAX - 1;
       if (flag_Pop == 2)
-        return N0_2[i] * pow(nu_norm, alpha_S_2[i]) / Ly_alpha_HZ;
+        return N0_2[i] * pow(nu_norm, alpha_S_2[i]) / NU_LA;
       else
-        return N0_3[i] * pow(nu_norm, alpha_S_3[i]) / Ly_alpha_HZ;
+        return N0_3[i] * pow(nu_norm, alpha_S_3[i]) / NU_LA;
   }
 }
 
@@ -824,7 +821,7 @@ double integrate_over_nu(double zp,
 
   // if it is the Lya integral, add prefactor
   if (FLAG == 2)
-    return result * SPEED_OF_LIGHT / (4 * M_PI) / Ly_alpha_HZ / hubble((float)zp);
+    return result * SPEED_OF_LIGHT / (4 * M_PI) / NU_LA / hubble((float)zp);
 
   return result;
 }
@@ -1308,6 +1305,8 @@ void evolveInt(float zp,
   double zpp, dzpp;
   double Conversion_factor =
     (SPEED_OF_LIGHT / (4. * M_PI)) / (PROTONMASS / SOLAR_MASS); // I am using this many times so it's worth save this
+  double Conversion_factor_AGN_LW = SPEED_OF_LIGHT / (4.0 * M_PI);
+
   int zpp_ct;
   double T, TII, x_e, zpp_integrand_GAL;
   double dxe_dzp, n_b, dspec_dzp, dxheat_dzp, dxlya_dt_GAL, dstarlya_dt_GAL, dstarlyLW_dt_GAL;
@@ -1317,10 +1316,10 @@ void evolveInt(float zp,
   double dspec_dzp_II, dxheat_dzp_II;
 #endif
 
-  double dxheat_dt_AGN      = 0.0;
-  double dxion_source_dt_AGN = 0.0;
-  double dxlya_dt_AGN       = 0.0;
-  double zpp_integrand_AGN;
+  double dxheat_dt_AGN_soft      = 0.0;
+  double dxion_source_dt_AGN_soft = 0.0;
+  double dxlya_dt_AGN_soft       = 0.0;
+  double zpp_integrand_AGN_soft;
   double dxheat_dt_AGN_hard      = 0.0;
   double dxion_source_dt_AGN_hard = 0.0;
   double dxlya_dt_AGN_hard       = 0.0;
@@ -1348,8 +1347,8 @@ void evolveInt(float zp,
   dstarlya_dt_III = 0;
   dstarlyLW_dt_III = 0;
 #endif
-  deriv[11] = 0.0;
-  deriv[12] = 0.0;
+  deriv[5] = 0.0;
+  deriv[6] = 0.0;
 
   if (!COMPUTE_Ts) {
     for (zpp_ct = 0; zpp_ct < run_globals.params.TsNumFilterSteps; zpp_ct++) {
@@ -1402,13 +1401,13 @@ void evolveInt(float zp,
 
       /* dX_AGN_soft/dt += (dt/dz'')dz'' × XAGN_soft[zpp_ct] × (1+z'')^-alpha_soft × freq_int_X_AGN_soft[zpp_ct]
        * dX_AGN_hard/dt += (dt/dz'')dz'' × XAGN_hard[zpp_ct] × (1+z'')^-alpha_hard × freq_int_X_AGN_hard[zpp_ct] */
-      zpp_integrand_AGN = XAGN_soft[zpp_ct]
+      zpp_integrand_AGN_soft = XAGN_soft[zpp_ct]
                           * pow(1 + zpp,
                                 -run_globals.params.physics.SpecIndexXrayAGNSoft);
 
-      dxheat_dt_AGN      += dt_dzpp * dzpp * zpp_integrand_AGN * freq_int_heat_AGN_soft[zpp_ct];
-      dxion_source_dt_AGN += dt_dzpp * dzpp * zpp_integrand_AGN * freq_int_ion_AGN_soft[zpp_ct];
-      dxlya_dt_AGN       += dt_dzpp * dzpp * zpp_integrand_AGN * freq_int_lya_AGN_soft[zpp_ct];
+      dxheat_dt_AGN_soft      += dt_dzpp * dzpp * zpp_integrand_AGN_soft * freq_int_heat_AGN_soft[zpp_ct];
+      dxion_source_dt_AGN_soft += dt_dzpp * dzpp * zpp_integrand_AGN_soft * freq_int_ion_AGN_soft[zpp_ct];
+      dxlya_dt_AGN_soft       += dt_dzpp * dzpp * zpp_integrand_AGN_soft * freq_int_lya_AGN_soft[zpp_ct];
 
       zpp_integrand_AGN_hard = XAGN_hard[zpp_ct]
                               * pow(1 + zpp,
@@ -1443,25 +1442,17 @@ void evolveInt(float zp,
     if (run_globals.params.Flag_IncludeLymanWerner) {
       dstarlyLW_dt_GAL *= Conversion_factor;
       dstarlyLW_dt_III *= Conversion_factor;
-      dstarlyLW_dt_AGN *= const_zp_prefactor_AGN_LW;
+      dstarlyLW_dt_AGN *= Conversion_factor_AGN_LW;
     }
 #endif
 
-    dxheat_dt_AGN       *= const_zp_prefactor_AGN_soft;
-    dxion_source_dt_AGN *= const_zp_prefactor_AGN_soft;
-    dxlya_dt_AGN        *= const_zp_prefactor_AGN_soft * n_b;
+    dxheat_dt_AGN_soft       *= const_zp_prefactor_AGN_soft;
+    dxion_source_dt_AGN_soft *= const_zp_prefactor_AGN_soft;
+    dxlya_dt_AGN_soft        *= const_zp_prefactor_AGN_soft * n_b;
 
     dxheat_dt_AGN_hard       *= const_zp_prefactor_AGN_hard;
     dxion_source_dt_AGN_hard *= const_zp_prefactor_AGN_hard;
     dxlya_dt_AGN_hard        *= const_zp_prefactor_AGN_hard * n_b;
-
-    deriv[11] = dxheat_dt_AGN      * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
-    deriv[12] = dxheat_dt_AGN_hard * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
-
-    /* dx_heat/dt|_AGN = dx_heat/dt|_soft + dx_heat/dt|_hard */
-    dxheat_dt_AGN       += dxheat_dt_AGN_hard;
-    dxion_source_dt_AGN += dxion_source_dt_AGN_hard;
-    dxlya_dt_AGN        += dxlya_dt_AGN_hard;
 
   } // end COMPUTE_Ts if statement YOU CAN SAVE SOME MORE OUTPUTS BUT FOR THE MOMENT THIS SHOULD BE FINE!
 
@@ -1473,9 +1464,9 @@ void evolveInt(float zp,
   /* dx_e/dz = dt/dz × [Γ_ion,GAL (+Γ_ion,III) + Γ_ion,AGN − α_A·C·x_e²·f_H·n_b] */
 #if USE_MINI_HALOS
   dxe_dzp = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III
-                      + dxion_source_dt_AGN - dxion_sink_dt);
+                      + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard - dxion_sink_dt);
 #else
-  dxe_dzp = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN
+  dxe_dzp = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard
                       - dxion_sink_dt);
 #endif
 
@@ -1512,45 +1503,50 @@ void evolveInt(float zp,
 
   /* dT_K/dz = dT_K/dz|_adiabatic + |_Compton + |_species + |_Xray,GAL + |_Xray,AGN, where
    *   dT_K/dz|_Xray,AGN = dxheat_dt_AGN × (dt/dz) × (2/3)/k_B/(1+x_e) */
+  deriv[5] = dxheat_dt_AGN_soft * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
+  deriv[6] = dxheat_dt_AGN_hard * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
 #if USE_MINI_HALOS
-  dxheat_dzp = (dxheat_dt_GAL + dxheat_dt_III + dxheat_dt_AGN)
+  dxheat_dzp = (dxheat_dt_GAL + dxheat_dt_III)
                * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
-  dxheat_dzp_II = (dxheat_dt_GAL + dxheat_dt_AGN)
+  dxheat_dzp_II = (dxheat_dt_GAL)
                   * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
+  dxheat_dzp_II += deriv[5] + deriv[6];
 #else
-  dxheat_dzp = (dxheat_dt_GAL + dxheat_dt_AGN)
+  dxheat_dzp = (dxheat_dt_GAL)
                * dt_dzp * 2.0 / 3.0 / BOLTZMANN / (1.0 + x_e);
 #endif
+  dxheat_dzp += deriv[5] + deriv[6];
 
   // summing them up...
   deriv[1] = dxheat_dzp + dcomp_dzp + dspec_dzp + dadia_dzp;
 
   // *** Finally, if we are at the last redshift step, Lya *** //
 #if USE_MINI_HALOS
-  deriv[6] = dxheat_dzp_II + dcomp_dzp_II + dspec_dzp_II + dadia_dzp_II;
+  deriv[9] = dxheat_dzp_II + dcomp_dzp_II + dspec_dzp_II + dadia_dzp_II;
 
-  deriv[2] = (dxlya_dt_GAL + dxlya_dt_III + dxlya_dt_AGN)
+  deriv[2] = (dxlya_dt_GAL + dxlya_dt_III + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard)
              + (dstarlya_dt_GAL + dstarlya_dt_III);
-  deriv[7] = (dxlya_dt_GAL + dxlya_dt_AGN) + dstarlya_dt_GAL;
+  deriv[10] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
 #else
-  deriv[2] = (dxlya_dt_GAL + dxlya_dt_AGN) + dstarlya_dt_GAL;
+  deriv[2] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
 #endif
 
   // stuff for marcos
   deriv[3] = dxheat_dzp;
 #if USE_MINI_HALOS
-  deriv[8] = dxheat_dzp_II;
+  deriv[11] = dxheat_dzp_II;
 
   if (run_globals.params.Flag_IncludeLymanWerner) {
-    deriv[5] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III + dstarlyLW_dt_AGN) * (PLANCK * 1e21);
-    deriv[10] = (dstarlyLW_dt_GAL + dstarlyLW_dt_AGN) * (PLANCK * 1e21);
+    deriv[8] = (dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[13] = dstarlyLW_dt_GAL * NU_LA / ( NUIONIZATION - NU_LW) * PLANCK * 1e21 + dstarlyLW_dt_AGN;
+    deriv[7] = dstarlyLW_dt_AGN;
   }
 
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III
-                       + dxion_source_dt_AGN);
-  deriv[9] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN);
+                       + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
+  deriv[12] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
 #else
-  deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN);
+  deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_AGN_soft + dxion_source_dt_AGN_hard);
 #endif
 }
 

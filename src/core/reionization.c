@@ -503,9 +503,9 @@ void init_reion_grids()
   ptrdiff_t* slab_nix = run_globals.reion_grids.slab_nix;
   ptrdiff_t slab_n_real = slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim;
   ptrdiff_t slab_n_complex = run_globals.reion_grids.slab_n_complex[run_globals.mpi_rank];
-  ptrdiff_t slab_n_real_smoothedSFR;
+  ptrdiff_t slab_n_real_smoothedHeating;
   if (run_globals.params.Flag_IncludeSpinTemp) {
-    slab_n_real_smoothedSFR =
+    slab_n_real_smoothedHeating =
       slab_nix[run_globals.mpi_rank] * run_globals.params.TsNumFilterSteps * ReionGridDim * ReionGridDim;
   }
   ptrdiff_t slab_n_real_LC;
@@ -530,6 +530,8 @@ void init_reion_grids()
   grids->volume_ave_xalpha = 0.0;
   grids->volume_ave_Xheat = 0.0;
   grids->volume_ave_Xion = 0.0;
+  grids->volume_ave_Xheat_AGN_soft = 0.0;
+  grids->volume_ave_Xheat_AGN_hard = 0.0;
   grids->volume_ave_TS = 0.0;
   grids->volume_ave_TK = 0.0;
   grids->volume_ave_xe = 0.0;
@@ -537,8 +539,10 @@ void init_reion_grids()
 #if USE_MINI_HALOS
   grids->volume_ave_J_alphaII = 0.0;
   grids->volume_ave_XheatII = 0.0;
+  grids->volume_ave_XionII = 0.0;
   grids->volume_ave_J_LW = 0.0;
   grids->volume_ave_J_LWII = 0.0;
+  grids->volume_ave_J_LW_AGN = 0.0;
   grids->volume_ave_TKII = 0.0;
   grids->volume_ave_TSII = 0.0;
   grids->volume_ave_TbII = 0.0;
@@ -586,7 +590,7 @@ void init_reion_grids()
 
   if (run_globals.params.Flag_IncludeSpinTemp) {
 
-    for (int ii = 0; ii < slab_n_real_smoothedSFR; ii++) {
+    for (int ii = 0; ii < slab_n_real_smoothedHeating; ii++) {
       grids->SMOOTHED_SFR_GAL[ii] = 0.0;
 #if USE_STOCHASTICITY
       grids->SMOOTHED_XRAY_LUMINOSITY_GAL[ii] = 0.0;
@@ -818,17 +822,17 @@ void malloc_reionization_grids()
   grids->SMOOTHED_XRAY_LUMINOSITY_GAL = NULL;
 #endif
 
-  grids->BHXrayEmissivity       = NULL;
-  grids->bh_xray_histories      = NULL;
-  grids->SMOOTHED_AGN_hard           = NULL;
+  grids->BHXrayEmissivity_hard  = NULL;
+  grids->bh_xray_histories_hard = NULL;
+  grids->SMOOTHED_AGN_hard      = NULL;
   grids->BHXrayEmissivity_soft  = NULL;
   grids->bh_xray_histories_soft = NULL;
   grids->SMOOTHED_AGN_soft      = NULL;
 
 #if USE_MINI_HALOS
-  grids->BHLWEmissivity  = NULL;
-  grids->bh_lw_histories = NULL;
-  grids->SMOOTHED_AGN_LW = NULL;
+  grids->BHUVEmissivity  = NULL;
+  grids->bh_uv_histories = NULL;
+  grids->SMOOTHED_AGN_UV = NULL;
 
   grids->Tk_boxII = NULL;
   grids->TS_boxII = NULL;
@@ -879,9 +883,9 @@ void malloc_reionization_grids()
     ptrdiff_t slab_n_real = slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim;
     ptrdiff_t slab_n_complex = run_globals.reion_grids.slab_n_complex[run_globals.mpi_rank];
 
-    ptrdiff_t slab_n_real_smoothedSFR;
+    ptrdiff_t slab_n_real_smoothedHeating;
     if (run_globals.params.Flag_IncludeSpinTemp) {
-      slab_n_real_smoothedSFR =
+      slab_n_real_smoothedHeating =
         slab_nix[run_globals.mpi_rank] * run_globals.params.TsNumFilterSteps * ReionGridDim * ReionGridDim;
     }
 
@@ -1098,23 +1102,23 @@ void malloc_reionization_grids()
         bool agn_soft_needed = (flag_agn == 1 || flag_agn == 3);
 
         if (agn_hard_needed) {
-          grids->BHXrayEmissivity  = fftwf_alloc_real((size_t)slab_n_complex * 2);
-          grids->bh_xray_histories = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
+          grids->BHXrayEmissivity_hard = fftwf_alloc_real((size_t)slab_n_complex * 2);
+          grids->bh_xray_histories_hard = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
 
-          grids->BHXrayEmissivity_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
-          grids->BHXrayEmissivity_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
-          grids->BHXrayEmissivity_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
+          grids->BHXrayEmissivity_hard_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
+          grids->BHXrayEmissivity_hard_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
+          grids->BHXrayEmissivity_hard_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
                                                                            ReionGridDim,
                                                                            ReionGridDim,
-                                                                           grids->BHXrayEmissivity,
-                                                                           grids->BHXrayEmissivity_unfiltered,
+                                                                           grids->BHXrayEmissivity_hard,
+                                                                           grids->BHXrayEmissivity_hard_unfiltered,
                                                                            run_globals.mpi_comm,
                                                                            plan_flags);
-          grids->BHXrayEmissivity_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
+          grids->BHXrayEmissivity_hard_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
                                                                                     ReionGridDim,
                                                                                     ReionGridDim,
-                                                                                    grids->BHXrayEmissivity_filtered,
-                                                                                    (float*)grids->BHXrayEmissivity_filtered,
+                                                                                    grids->BHXrayEmissivity_hard_filtered,
+                                                                                    (float*)grids->BHXrayEmissivity_hard_filtered,
                                                                                     run_globals.mpi_comm,
                                                                                     plan_flags);
 
@@ -1125,18 +1129,18 @@ void malloc_reionization_grids()
            * these are the only ones that are conditionally allocated, so
            * a NULL here is the one case worth telling apart from "feature off".
            */
-          if (grids->BHXrayEmissivity == NULL || grids->bh_xray_histories == NULL ||
-              grids->BHXrayEmissivity_unfiltered == NULL || grids->BHXrayEmissivity_filtered == NULL) {
+          if (grids->BHXrayEmissivity_hard == NULL || grids->bh_xray_histories_hard == NULL ||
+              grids->BHXrayEmissivity_hard_unfiltered == NULL || grids->BHXrayEmissivity_hard_filtered == NULL) {
             mlog_error("Failed to allocate AGN X-ray (hard band) emissivity grids.");
             ABORT(EXIT_FAILURE);
           }
           for (size_t ii = 0; ii < (size_t)slab_n_complex * 2; ii++)
-            grids->BHXrayEmissivity[ii] = 0.0f;
+            grids->BHXrayEmissivity_hard[ii] = 0.0f;
           for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
-            grids->bh_xray_histories[ii] = 0.0f;
+            grids->bh_xray_histories_hard[ii] = 0.0f;
 
           // Same size as SMOOTHED_SFR_GAL; calloc ensures zeroed on allocation.
-          grids->SMOOTHED_AGN_hard = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+          grids->SMOOTHED_AGN_hard = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
         }
 
         if (agn_soft_needed) {
@@ -1171,43 +1175,43 @@ void malloc_reionization_grids()
           for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
             grids->bh_xray_histories_soft[ii] = 0.0f;
 
-          grids->SMOOTHED_AGN_soft = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+          grids->SMOOTHED_AGN_soft = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
         }
       }
 
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner) {
-        grids->BHLWEmissivity  = fftwf_alloc_real((size_t)slab_n_complex * 2);
-        grids->bh_lw_histories = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
+        grids->BHUVEmissivity  = fftwf_alloc_real((size_t)slab_n_complex * 2);
+        grids->bh_uv_histories = fftwf_alloc_real((size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating);
 
-        grids->BHLWEmissivity_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
-        grids->BHLWEmissivity_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
-        grids->BHLWEmissivity_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
+        grids->BHUVEmissivity_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
+        grids->BHUVEmissivity_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
+        grids->BHUVEmissivity_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
                                                                         ReionGridDim,
                                                                         ReionGridDim,
-                                                                        grids->BHLWEmissivity,
-                                                                        grids->BHLWEmissivity_unfiltered,
+                                                                        grids->BHUVEmissivity,
+                                                                        grids->BHUVEmissivity_unfiltered,
                                                                         run_globals.mpi_comm,
                                                                         plan_flags);
-        grids->BHLWEmissivity_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
+        grids->BHUVEmissivity_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
                                                                                  ReionGridDim,
                                                                                  ReionGridDim,
-                                                                                 grids->BHLWEmissivity_filtered,
-                                                                                 (float*)grids->BHLWEmissivity_filtered,
+                                                                                 grids->BHUVEmissivity_filtered,
+                                                                                 (float*)grids->BHUVEmissivity_filtered,
                                                                                  run_globals.mpi_comm,
                                                                                  plan_flags);
 
-        if (grids->BHLWEmissivity == NULL || grids->bh_lw_histories == NULL ||
-            grids->BHLWEmissivity_unfiltered == NULL || grids->BHLWEmissivity_filtered == NULL) {
+        if (grids->BHUVEmissivity == NULL || grids->bh_uv_histories == NULL ||
+            grids->BHUVEmissivity_unfiltered == NULL || grids->BHUVEmissivity_filtered == NULL) {
           mlog_error("Failed to allocate AGN Lyman-Werner emissivity grids.");
           ABORT(EXIT_FAILURE);
         }
         for (size_t ii = 0; ii < (size_t)slab_n_complex * 2; ii++)
-          grids->BHLWEmissivity[ii] = 0.0f;
+          grids->BHUVEmissivity[ii] = 0.0f;
         for (size_t ii = 0; ii < (size_t)slab_n_complex * 2 * run_globals.NstoreSnapshots_Heating; ii++)
-          grids->bh_lw_histories[ii] = 0.0f;
+          grids->bh_uv_histories[ii] = 0.0f;
 
-        grids->SMOOTHED_AGN_LW = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+        grids->SMOOTHED_AGN_UV = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
       }
 #endif
 
@@ -1256,15 +1260,15 @@ void malloc_reionization_grids()
       grids->Tk_box = fftwf_alloc_real((size_t)slab_n_real);
       grids->TS_box = fftwf_alloc_real((size_t)slab_n_real);
 
-      grids->SMOOTHED_SFR_GAL = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+      grids->SMOOTHED_SFR_GAL = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
 #if USE_STOCHASTICITY
-      grids->SMOOTHED_XRAY_LUMINOSITY_GAL = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+      grids->SMOOTHED_XRAY_LUMINOSITY_GAL = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
 #endif
 #if USE_MINI_HALOS
       grids->Tk_boxII = fftwf_alloc_real((size_t)slab_n_real);
       grids->TS_boxII = fftwf_alloc_real((size_t)slab_n_real);
 
-      grids->SMOOTHED_SFR_III = calloc((size_t)slab_n_real_smoothedSFR, sizeof(double));
+      grids->SMOOTHED_SFR_III = calloc((size_t)slab_n_real_smoothedHeating, sizeof(double));
 #endif
     }
 
@@ -1448,12 +1452,12 @@ void free_reionization_grids()
     {
       int flag_agn = run_globals.params.physics.Flag_IncludeAGNXray;
       if (flag_agn == 1 || flag_agn == 2) {
-        fftwf_destroy_plan(grids->BHXrayEmissivity_filtered_reverse_plan);
-        fftwf_destroy_plan(grids->BHXrayEmissivity_forward_plan);
-        fftwf_free(grids->BHXrayEmissivity_filtered);
-        fftwf_free(grids->BHXrayEmissivity_unfiltered);
-        fftwf_free(grids->BHXrayEmissivity);
-        fftwf_free(grids->bh_xray_histories);
+        fftwf_destroy_plan(grids->BHXrayEmissivity_hard_filtered_reverse_plan);
+        fftwf_destroy_plan(grids->BHXrayEmissivity_hard_forward_plan);
+        fftwf_free(grids->BHXrayEmissivity_hard_filtered);
+        fftwf_free(grids->BHXrayEmissivity_hard_unfiltered);
+        fftwf_free(grids->BHXrayEmissivity_hard);
+        fftwf_free(grids->bh_xray_histories_hard);
       }
       if (flag_agn == 1 || flag_agn == 3) {
         fftwf_destroy_plan(grids->BHXrayEmissivity_soft_filtered_reverse_plan);
@@ -1469,13 +1473,13 @@ void free_reionization_grids()
     free(grids->SMOOTHED_SFR_III);
 
     if (run_globals.params.Flag_IncludeLymanWerner) {
-      free(grids->SMOOTHED_AGN_LW);
-      fftwf_destroy_plan(grids->BHLWEmissivity_filtered_reverse_plan);
-      fftwf_destroy_plan(grids->BHLWEmissivity_forward_plan);
-      fftwf_free(grids->BHLWEmissivity_filtered);
-      fftwf_free(grids->BHLWEmissivity_unfiltered);
-      fftwf_free(grids->BHLWEmissivity);
-      fftwf_free(grids->bh_lw_histories);
+      free(grids->SMOOTHED_AGN_UV);
+      fftwf_destroy_plan(grids->BHUVEmissivity_filtered_reverse_plan);
+      fftwf_destroy_plan(grids->BHUVEmissivity_forward_plan);
+      fftwf_free(grids->BHUVEmissivity_filtered);
+      fftwf_free(grids->BHUVEmissivity_unfiltered);
+      fftwf_free(grids->BHUVEmissivity);
+      fftwf_free(grids->bh_uv_histories);
     }
 #endif
 
@@ -2013,13 +2017,13 @@ void construct_baryon_grids(int snapshot, int local_ngals)
   float* weighted_sfrIII_grid = run_globals.reion_grids.weighted_sfrIII;
 #endif
 
-  float* bh_xray_grid      = run_globals.reion_grids.BHXrayEmissivity;
-  float* bh_xray_hist_grid = run_globals.reion_grids.bh_xray_histories;
-  float* bh_xray_grid_soft      = run_globals.reion_grids.BHXrayEmissivity_soft;
+  float* bh_xray_grid_hard = run_globals.reion_grids.BHXrayEmissivity_hard;
+  float* bh_xray_hist_grid_hard = run_globals.reion_grids.bh_xray_histories_hard;
+  float* bh_xray_grid_soft = run_globals.reion_grids.BHXrayEmissivity_soft;
   float* bh_xray_hist_grid_soft = run_globals.reion_grids.bh_xray_histories_soft;
 #if USE_MINI_HALOS
-  float* bh_lw_grid      = run_globals.reion_grids.BHLWEmissivity;
-  float* bh_lw_hist_grid = run_globals.reion_grids.bh_lw_histories;
+  float* bh_uv_grid      = run_globals.reion_grids.BHUVEmissivity;
+  float* bh_uv_hist_grid = run_globals.reion_grids.bh_uv_histories;
 #endif
 
   gal_to_slab_t* galaxy_to_slab_map = run_globals.reion_grids.galaxy_to_slab_map;
@@ -2082,10 +2086,10 @@ void construct_baryon_grids(int snapshot, int local_ngals)
           sfrIII_histories_grid[(snap+1)*local_n_complex * 2+ii] = sfrIII_histories_grid[snap*local_n_complex * 2+ii];
 #endif
       if (agn_hard_needed) {
-        bh_xray_grid[ii] = 0.0f;
+        bh_xray_grid_hard[ii] = 0.0f;
         for (int snap = run_globals.NstoreSnapshots_Heating - 2; snap >= 0; snap--)
-          bh_xray_hist_grid[(snap+1)*local_n_complex * 2 + ii] =
-              bh_xray_hist_grid[snap*local_n_complex * 2 + ii];
+          bh_xray_hist_grid_hard[(snap+1)*local_n_complex * 2 + ii] =
+              bh_xray_hist_grid_hard[snap*local_n_complex * 2 + ii];
       }
       if (agn_soft_needed) {
         bh_xray_grid_soft[ii] = 0.0f;
@@ -2095,10 +2099,10 @@ void construct_baryon_grids(int snapshot, int local_ngals)
       }
 #if USE_MINI_HALOS
       if (run_globals.params.Flag_IncludeLymanWerner) {
-        bh_lw_grid[ii] = 0.0f;
+        bh_uv_grid[ii] = 0.0f;
         for (int snap = run_globals.NstoreSnapshots_Heating - 2; snap >= 0; snap--)
-          bh_lw_hist_grid[(snap+1)*local_n_complex * 2 + ii] =
-              bh_lw_hist_grid[snap*local_n_complex * 2 + ii];
+          bh_uv_hist_grid[(snap+1)*local_n_complex * 2 + ii] =
+              bh_uv_hist_grid[snap*local_n_complex * 2 + ii];
       }
 #endif
     }
@@ -2127,14 +2131,14 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     prop_xray_luminosity,
 #endif
     prop_sfr,
-    prop_bh_xray_emissivity,
+    prop_bh_xray_emissivity_hard,
     prop_bh_xray_emissivity_soft,
 #if USE_MINI_HALOS
-    prop_bh_lw_emissivity
+    prop_bh_uv_emissivity
 #endif
   };
 #if USE_MINI_HALOS
-  for (int prop = prop_stellar; prop <= prop_bh_lw_emissivity; prop++) {
+  for (int prop = prop_stellar; prop <= prop_bh_uv_emissivity; prop++) {
 #else
   for (int prop = prop_stellar; prop <= prop_bh_xray_emissivity_soft; prop++) {
 #endif
@@ -2152,14 +2156,15 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     if ((!run_globals.params.Flag_IncludeSpinTemp) && (prop == prop_xray_luminosity))
     continue;
 #endif
-    if (prop == prop_bh_xray_emissivity && (!run_globals.params.Flag_IncludeSpinTemp || !agn_hard_needed))
+
+    if (prop == prop_bh_xray_emissivity_hard && (!run_globals.params.Flag_IncludeSpinTemp || !agn_hard_needed))
       continue;
     if (prop == prop_bh_xray_emissivity_soft && (!run_globals.params.Flag_IncludeSpinTemp || !agn_soft_needed))
       continue;
 
 #if USE_MINI_HALOS
-    // AGN LW: independent of Flag_IncludeAGNXray, gated on Flag_IncludeLymanWerner instead.
-    if (prop == prop_bh_lw_emissivity &&
+    // AGN UV: independent of Flag_IncludeAGNXray, gated on Flag_IncludeLymanWerner instead.
+    if (prop == prop_bh_uv_emissivity &&
         (!run_globals.params.Flag_IncludeSpinTemp || !run_globals.params.Flag_IncludeLymanWerner))
       continue;
 #endif
@@ -2364,9 +2369,9 @@ void construct_baryon_grids(int snapshot, int local_ngals)
              *   contributions from all galaxies on all ranks.
              *   The BlackHoleMassLimitReion guard is applied consistency with prop_effective_bhar.
              */
-            case prop_bh_xray_emissivity:
+            case prop_bh_xray_emissivity_hard:
               if (gal->BlackHoleMass >= run_globals.params.physics.BlackHoleMassLimitReion)
-                buffer[ind] += gal->BHXrayEmissivity;
+                buffer[ind] += gal->BHXrayEmissivity_hard;
               break;
 
             case prop_bh_xray_emissivity_soft:
@@ -2375,9 +2380,9 @@ void construct_baryon_grids(int snapshot, int local_ngals)
               break;
 
 #if USE_MINI_HALOS
-            case prop_bh_lw_emissivity:
+            case prop_bh_uv_emissivity:
               if (gal->BlackHoleMass >= run_globals.params.physics.BlackHoleMassLimitReion)
-                buffer[ind] += gal->QuasarLuv * run_globals.QuasarLWScale;
+                buffer[ind] += gal->QuasarLuv;
               break;
 #endif
 
@@ -2468,19 +2473,17 @@ void construct_baryon_grids(int snapshot, int local_ngals)
             break;
 #endif
 
-          case prop_bh_xray_emissivity:
+          case prop_bh_xray_emissivity_hard:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
                   float val = buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
                   CLAMP_NEGATIVE(val);
-                  bh_xray_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
-                  bh_xray_hist_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
+                  bh_xray_grid_hard[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)]      = val;
+                  bh_xray_hist_grid_hard[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
                 }
             break;
 
-          /* Same as prop_bh_xray_emissivity above, but for the independently
-           * obscured soft-band emissivity — see the block comment there. */
           case prop_bh_xray_emissivity_soft:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)
@@ -2493,14 +2496,14 @@ void construct_baryon_grids(int snapshot, int local_ngals)
             break;
 
 #if USE_MINI_HALOS
-          case prop_bh_lw_emissivity:
+          case prop_bh_uv_emissivity:
             for (int ix = 0; ix < slab_nix[i_r]; ix++)
               for (int iy = 0; iy < ReionGridDim; iy++)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
                   float val = buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
                   CLAMP_NEGATIVE(val);
-                  bh_lw_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
-                  bh_lw_hist_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
+                  bh_uv_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)]      = val;
+                  bh_uv_hist_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = val;
                 }
             break;
 #endif
@@ -2741,9 +2744,13 @@ void load_reion_sfr_grids(int snapshot_counter_backwards, float weight, const in
     for (int ii = 0; ii < local_nix; ii++)
       for (int jj = 0; jj < ReionGridDim; jj++)
         for (int kk = 0; kk < ReionGridDim; kk++){
-            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
+            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = 
+                grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                  grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
 #if USE_STOCHASTICITY
-            (grids->xray_luminosity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = grids->xray_luminosity_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+            (grids->xray_luminosity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = 
+                grids->xray_luminosity_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                  grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
 #endif
 #if USE_MINI_HALOS
             (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
@@ -2754,12 +2761,18 @@ void load_reion_sfr_grids(int snapshot_counter_backwards, float weight, const in
     for (int ii = 0; ii < local_nix; ii++)
       for (int jj = 0; jj < ReionGridDim; jj++)
         for (int kk = 0; kk < ReionGridDim; kk++){
-            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
+            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += 
+                grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2 + 
+                  grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
 #if USE_STOCHASTICITY
-            (grids->xray_luminosity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += grids->xray_luminosity_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+            (grids->xray_luminosity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += 
+                grids->xray_luminosity_histories[snapshot_counter_backwards * local_n_complex * 2 + 
+                  grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
 #endif
 #if USE_MINI_HALOS
-            (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
+            (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += 
+                grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                  grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)]  * weight;
 #endif
         }
   }
@@ -2781,47 +2794,62 @@ void load_reion_bh_grids(int snapshot_counter_backwards, float weight, const int
                           run_globals.params.physics.Flag_IncludeAGNXray == 3);
 
   if (new_load){
-    for (int ii = 0; ii < local_nix; ii++)
-      for (int jj = 0; jj < ReionGridDim; jj++)
-        for (int kk = 0; kk < ReionGridDim; kk++){
-            if (agn_hard_needed)
-              (grids->BHXrayEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
-                  grids->bh_xray_histories[snapshot_counter_backwards * local_n_complex * 2 +
-                                           grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
-            /* Same as above, independently, for the soft-band grid/history. */
-            if (agn_soft_needed)
+    if (agn_hard_needed)
+      for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){      
+              (grids->BHXrayEmissivity_hard)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
+                  grids->bh_xray_histories_hard[snapshot_counter_backwards * local_n_complex * 2 +
+                                           grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
+    if (agn_soft_needed)
+      for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){     
               (grids->BHXrayEmissivity_soft)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
                   grids->bh_xray_histories_soft[snapshot_counter_backwards * local_n_complex * 2 +
-                                                grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
+                                                grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
 #if USE_MINI_HALOS
             /* AGN Lyman-Werner, independent of Flag_IncludeAGNXray. */
-            if (run_globals.params.Flag_IncludeLymanWerner)
-              (grids->BHLWEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
-                  grids->bh_lw_histories[snapshot_counter_backwards * local_n_complex * 2 +
-                                         grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
+    if (run_globals.params.Flag_IncludeLymanWerner)
+     for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){     
+              (grids->BHUVEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
+                  grids->bh_uv_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                         grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
 #endif
-        }
   }
   else{
-    for (int ii = 0; ii < local_nix; ii++)
-      for (int jj = 0; jj < ReionGridDim; jj++)
-        for (int kk = 0; kk < ReionGridDim; kk++){
-            if (agn_hard_needed)
-              (grids->BHXrayEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
-                  grids->bh_xray_histories[snapshot_counter_backwards * local_n_complex * 2 +
-                                           grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
-            /* Same as above, independently, for the soft-band grid/history. */
-            if (agn_soft_needed)
+    if (agn_hard_needed)
+      for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){      
+              (grids->BHXrayEmissivity_hard)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
+                  grids->bh_xray_histories_hard[snapshot_counter_backwards * local_n_complex * 2 +
+                                                grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
+    if (agn_soft_needed)
+      for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){     
               (grids->BHXrayEmissivity_soft)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
                   grids->bh_xray_histories_soft[snapshot_counter_backwards * local_n_complex * 2 +
-                                                grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
+                                                grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
 #if USE_MINI_HALOS
-            if (run_globals.params.Flag_IncludeLymanWerner)
-              (grids->BHLWEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
-                  grids->bh_lw_histories[snapshot_counter_backwards * local_n_complex * 2 +
-                                         grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] * weight;
+            /* AGN Lyman-Werner, independent of Flag_IncludeAGNXray. */
+    if (run_globals.params.Flag_IncludeLymanWerner)
+     for (int ii = 0; ii < local_nix; ii++)
+        for (int jj = 0; jj < ReionGridDim; jj++)
+          for (int kk = 0; kk < ReionGridDim; kk++){     
+              (grids->BHUVEmissivity)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
+                  grids->bh_uv_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                         grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * weight;
+                  }
 #endif
-        }
   }
 }
 
@@ -3166,6 +3194,8 @@ void save_reion_output_attributes(int snapshot)
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_xalpha", &(grids->volume_ave_xalpha), 1);
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat", &(grids->volume_ave_Xheat), 1);
     H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xion", &(grids->volume_ave_Xion), 1);
+    H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat_AGN_soft", &(grids->volume_ave_Xheat_AGN_soft), 1);
+    H5LTset_attribute_double(file_id, "TS_box", "volume_ave_Xheat_AGN_hard", &(grids->volume_ave_Xheat_AGN_hard), 1);
 
 #if USE_MINI_HALOS
     ENSURE_DATASET("TS_boxII");
@@ -3174,6 +3204,7 @@ void save_reion_output_attributes(int snapshot)
     H5LTset_attribute_double(file_id, "Tk_boxII", "volume_ave_TKII", &(grids->volume_ave_TKII), 1);
     H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_J_alphaII", &(grids->volume_ave_J_alphaII), 1);
     H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_XheatII", &(grids->volume_ave_XheatII), 1);
+    H5LTset_attribute_double(file_id, "TS_boxII", "volume_ave_XionII", &(grids->volume_ave_XionII), 1);
 #endif
   }
 
@@ -3183,6 +3214,7 @@ void save_reion_output_attributes(int snapshot)
     ENSURE_DATASET("JLW_boxII");
     H5LTset_attribute_double(file_id, "JLW_box", "volume_ave_JLW", &(grids->volume_ave_J_LW), 1);
     H5LTset_attribute_double(file_id, "JLW_boxII", "volume_ave_JLW_II", &(grids->volume_ave_J_LWII), 1);
+    H5LTset_attribute_double(file_id, "JLW_box", "volume_ave_JLW_AGN", &(grids->volume_ave_J_LW_AGN), 1);
   }
 #endif
 
