@@ -99,9 +99,6 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   if (run_globals.params.Flag_IncludeMetalEvo ==
       false) // If you don't have the external metal enrichment all galaxies will start as pristine (Pop.III forming)
     gal->Galaxy_Population = 3;
-#else // If you are not computing PopIII , all the galaxies are PopII. Again you need to initialize the variable
-      // otherwise star_formation.c will fail!
-  gal->Galaxy_Population = 2;
 #endif
 
   for (int ii = 0; ii < 3; ii++) {

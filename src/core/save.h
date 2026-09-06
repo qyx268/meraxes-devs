@@ -63,9 +63,8 @@ typedef struct galaxy_output_t
   float BlackHoleAccretedColdMass;
   float DutyCycleAGN;
 
-  int Galaxy_Population; // You need it also if you are not disentangling PopIII/PopII (when Mini_halos is off, this is
-                         // = 2)
 #if USE_MINI_HALOS
+  int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
   float GrossStellarMassIII;
   float FescIII;
   float FescIIIWeightedGSM;

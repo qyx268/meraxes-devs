@@ -680,9 +680,8 @@ typedef struct galaxy_t
   float BlackHoleAccretingColdMass;
   float BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
   float t_resp;                //!< Local relaxation timescale (in Myr)
-  int Galaxy_Population; // You need it also if you are not disentangling PopIII/PopII (when Mini_halos is off, this is
-                         // = 2)
 #if USE_MINI_HALOS
+  int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
   // Differentiation Pop III / Pop II
   float SfrIII;
   float StellarMass_II;
