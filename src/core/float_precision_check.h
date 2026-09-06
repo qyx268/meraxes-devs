@@ -89,7 +89,14 @@ extern "C"
   X(MvirCrit_MC)                                                                                                      \
   X(tau_cgm)                                                                                                          \
   X(cumulative_ionization)                                                                                            \
-  X(MergerBurstMass)
+  X(MergerBurstMass)                                                                                                  \
+  X(HaloMvir)                                                                                                         \
+  X(HaloRvir)                                                                                                         \
+  X(HaloVvir)                                                                                                         \
+  X(FOFGroupMvir)                                                                                                     \
+  X(FOFGroupRvir)                                                                                                     \
+  X(FOFGroupVvir)                                                                                                     \
+  X(FOFGroupMvirModifier)
 
 #define X_ENUM(name) FloatField_##name,
 typedef enum

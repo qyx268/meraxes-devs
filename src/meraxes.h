@@ -757,9 +757,9 @@ typedef struct halo_t
   float Vel[3];    //!< Centre of mass velocity [Mpc/h]
   float AngMom; //!< Specific angular momentum length [Mpc/h *km/s]
 
-  double Mvir; //!< virial mass [M_sol/h]
-  double Rvir; //!< Virial radius [Mpc/h]
-  double Vvir; //!< Virial velocity [km/s]
+  float Mvir; //!< virial mass [M_sol/h]
+  float Rvir; //!< Virial radius [Mpc/h]
+  float Vvir; //!< Virial velocity [km/s]
 
   float Vmax;       //!< Maximum circular velocity [km/s]
   unsigned long ID; //!< Halo ID
@@ -775,10 +775,10 @@ typedef struct fof_group_t
 {
   halo_t* FirstHalo;
   halo_t* FirstOccupiedHalo;
-  double Mvir;
-  double Rvir;
-  double Vvir;
-  double FOFMvirModifier;
+  float Mvir;
+  float Rvir;
+  float Vvir;
+  float FOFMvirModifier;
   int TotalSubhaloLen;
 } fof_group_t;
 

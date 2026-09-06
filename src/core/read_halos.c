@@ -2,6 +2,7 @@
 #include <gsl/gsl_sort_int.h>
 #include <hdf5_hl.h>
 
+#include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
 #include "modifiers.h"
@@ -34,7 +35,7 @@ static fof_group_t* init_fof_groups()
   for (int ii = 0; ii < run_globals.NFOFGroupsMax; ii++) {
     fof_groups[ii].FirstHalo = NULL;
     fof_groups[ii].FirstOccupiedHalo = NULL;
-    fof_groups[ii].Mvir = 0.0;
+    fof_groups[ii].Mvir = check_float_cast(0.0, FloatField_FOFGroupMvir);
   }
 
   return fof_groups;

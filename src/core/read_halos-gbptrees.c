@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
 #include "modifiers.h"
@@ -222,29 +223,38 @@ static void read_catalog_halos(FILE** fin,
   }
 }
 
-static void inline convert_input_virial_props(double* Mvir,
-                                              double* Rvir,
-                                              double* Vvir,
-                                              double* FOFMvirModifier,
+static void inline convert_input_virial_props(float* Mvir,
+                                              float* Rvir,
+                                              float* Vvir,
+                                              float* FOFMvirModifier,
                                               int len,
-                                              int snapshot)
+                                              int snapshot,
+                                              const bool fof_flag)
 {
+  double mvir = (double)(*Mvir);
+  double rvir = (double)(*Rvir);
+
   if (len >= 0) {
     // Update the virial properties for subhalos
-    *Mvir = calculate_Mvir(*Mvir, len);
-    *Rvir = calculate_Rvir(*Mvir, snapshot);
+    mvir = calculate_Mvir(mvir, len);
+    rvir = calculate_Rvir(mvir, snapshot);
   } else {
     // Convert the mass unit for FoFs
-    *Mvir /= 1.0e10;
+    mvir /= 1.0e10;
     if (run_globals.RequestedMassRatioModifier == 1) {
       // Modifier the FoF mass and update the virial radius
-      *FOFMvirModifier =
-        interpolate_modifier(run_globals.mass_ratio_modifier, log10(*Mvir / run_globals.params.Hubble_h) + 10.0);
-      *Mvir *= *FOFMvirModifier;
-      *Rvir = calculate_Rvir(*Mvir, snapshot);
+      double fof_mvir_modifier =
+        interpolate_modifier(run_globals.mass_ratio_modifier, log10(mvir / run_globals.params.Hubble_h) + 10.0);
+      *FOFMvirModifier = check_float_cast(fof_mvir_modifier, FloatField_FOFGroupMvirModifier);
+      mvir *= fof_mvir_modifier;
+      rvir = calculate_Rvir(mvir, snapshot);
     }
   }
-  *Vvir = calculate_Vvir(*Mvir, *Rvir);
+  double vvir = calculate_Vvir(mvir, rvir);
+
+  *Mvir = check_float_cast(mvir, fof_flag ? FloatField_FOFGroupMvir : FloatField_HaloMvir);
+  *Rvir = check_float_cast(rvir, fof_flag ? FloatField_FOFGroupRvir : FloatField_HaloRvir);
+  *Vvir = check_float_cast(vvir, fof_flag ? FloatField_FOFGroupVvir : FloatField_HaloVvir);
 }
 
 //! Buffered read of hdf5 trees into halo structures
@@ -460,12 +470,12 @@ void read_trees__gbptrees(int snapshot,
           catalog_halo_t* cur_cat_group = &(group_buffer[tree_buffer[jj].group_index - first_group_index]);
           fof_group_t* cur_group = &(fof_group[*n_fof_groups_kept]);
 
-          cur_group->Mvir = cur_cat_group->M_vir;
-          cur_group->Rvir = cur_cat_group->R_vir;
-          cur_group->FOFMvirModifier = 1.0;
+          cur_group->Mvir = check_float_cast((double)cur_cat_group->M_vir, FloatField_FOFGroupMvir);
+          cur_group->Rvir = check_float_cast((double)cur_cat_group->R_vir, FloatField_FOFGroupRvir);
+          cur_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
           convert_input_virial_props(
-            &(cur_group->Mvir), &(cur_group->Rvir), &(cur_group->Vvir), &(cur_group->FOFMvirModifier), -1, snapshot);
+            &(cur_group->Mvir), &(cur_group->Rvir), &(cur_group->Vvir), &(cur_group->FOFMvirModifier), -1, snapshot, true);
 
           fof_group[(*n_fof_groups_kept)++].FirstHalo = &(halo[*n_halos_kept]);
         } else {
@@ -483,11 +493,11 @@ void read_trees__gbptrees(int snapshot,
         cur_halo->Vel[0] = cur_cat_halo->velocity_COM[0];
         cur_halo->Vel[1] = cur_cat_halo->velocity_COM[1];
         cur_halo->Vel[2] = cur_cat_halo->velocity_COM[2];
-        cur_halo->Rvir = cur_cat_halo->R_vir;
+        cur_halo->Rvir = check_float_cast((double)cur_cat_halo->R_vir, FloatField_HaloRvir);
         cur_halo->Vmax = cur_cat_halo->V_max;
         cur_halo->AngMom = sqrt(cur_cat_halo->ang_mom[0] * cur_cat_halo->ang_mom[0] + cur_cat_halo->ang_mom[1] * cur_cat_halo->ang_mom[1] + cur_cat_halo->ang_mom[2]* cur_cat_halo->ang_mom[2]);
         cur_halo->Galaxy = NULL;
-        cur_halo->Mvir = cur_cat_halo->M_vir;
+        cur_halo->Mvir = check_float_cast((double)cur_cat_halo->M_vir, FloatField_HaloMvir);
 
         // double check that PBC conditions are met!
         cur_halo->Pos[0] = apply_pbc_pos(cur_halo->Pos[0]);
@@ -500,7 +510,7 @@ void read_trees__gbptrees(int snapshot,
         else
           Len = cur_halo->Len;
 
-        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), &(cur_halo->Vvir), NULL, Len, snapshot);
+        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), &(cur_halo->Vvir), NULL, Len, snapshot, false);
 
         // // Replace the virial properties of the FOF group by those of the first
         // // subgroup

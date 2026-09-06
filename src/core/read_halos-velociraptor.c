@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "debug.h"
+#include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
 #include "modifiers.h"
@@ -66,33 +67,42 @@ static int id_to_snap(long id)
   return (int)(id / 1e12l);
 }
 
-inline static void convert_input_virial_props(double* Mvir,
-                                              double* Rvir,
-                                              double* Vvir,
-                                              double* FOFMvirModifier,
+inline static void convert_input_virial_props(float* Mvir,
+                                              float* Rvir,
+                                              float* Vvir,
+                                              float* FOFMvirModifier,
                                               const int len,
                                               const int snapshot,
                                               const bool fof_flag)
 {
+  double mvir = (double)(*Mvir);
+  double rvir = (double)(*Rvir);
+  double vvir = (double)(*Vvir);
+
   // Update the virial properties for subhalos
-  if (*Mvir == -1) {
+  if (mvir == -1) {
     assert(len > 0);
-    *Mvir = calculate_Mvir(*Mvir, len);
+    mvir = calculate_Mvir(mvir, len);
   } else {
     if (fof_flag && (run_globals.RequestedMassRatioModifier == 1)) {
       // Modifier the FoF mass and update the virial radius
       assert(FOFMvirModifier != NULL);
-      *FOFMvirModifier =
-        interpolate_modifier(run_globals.mass_ratio_modifier, log10(*Mvir / run_globals.params.Hubble_h) + 10.0);
-      *Mvir *= *FOFMvirModifier;
+      double fof_mvir_modifier =
+        interpolate_modifier(run_globals.mass_ratio_modifier, log10(mvir / run_globals.params.Hubble_h) + 10.0);
+      *FOFMvirModifier = check_float_cast(fof_mvir_modifier, FloatField_FOFGroupMvirModifier);
+      mvir *= fof_mvir_modifier;
     }
   }
 
-  if (*Rvir == -1)
-    *Rvir = calculate_Rvir(*Mvir, snapshot);
+  if (rvir == -1)
+    rvir = calculate_Rvir(mvir, snapshot);
 
-  if (*Vvir == -1)
-    *Vvir = calculate_Vvir(*Mvir, *Rvir);
+  if (vvir == -1)
+    vvir = calculate_Vvir(mvir, rvir);
+
+  *Mvir = check_float_cast(mvir, fof_flag ? FloatField_FOFGroupMvir : FloatField_HaloMvir);
+  *Rvir = check_float_cast(rvir, fof_flag ? FloatField_FOFGroupRvir : FloatField_HaloRvir);
+  *Vvir = check_float_cast(vvir, fof_flag ? FloatField_FOFGroupVvir : FloatField_HaloVvir);
 }
 
 void read_trees__velociraptor(int snapshot,
@@ -283,17 +293,17 @@ void read_trees__velociraptor(int snapshot,
             // BELOW_VIRIAL_THRESHOLD merger halo swammping
           if (Mass_200crit[ii] <= 0) {
             halo->TreeFlags |= TREE_CASE_BELOW_VIRIAL_THRESHOLD;
-            fof_group->Mvir = Mass_tot[ii] * hubble_h * mass_unit_to_internal;  
-            fof_group->Rvir = -1;
+            fof_group->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_FOFGroupMvir);
+            fof_group->Rvir = check_float_cast(-1, FloatField_FOFGroupRvir);
           }
-          
+
           else {
-            fof_group->Mvir = (double)Mass_200crit[ii] * hubble_h * mass_unit_to_internal;
-            fof_group->Rvir = (double)R_200crit[ii] * hubble_h;
+            fof_group->Mvir = check_float_cast((double)Mass_200crit[ii] * hubble_h * mass_unit_to_internal, FloatField_FOFGroupMvir);
+            fof_group->Rvir = check_float_cast((double)R_200crit[ii] * hubble_h, FloatField_FOFGroupRvir);
           }
-          
-          fof_group->Vvir = -1;
-          fof_group->FOFMvirModifier = 1.0;
+
+          fof_group->Vvir = check_float_cast(-1, FloatField_FOFGroupVvir);
+          fof_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
           convert_input_virial_props(
             &fof_group->Mvir, &fof_group->Rvir, &fof_group->Vvir, &fof_group->FOFMvirModifier, -1, snapshot, true);
@@ -331,9 +341,9 @@ void read_trees__velociraptor(int snapshot,
         halo->Vmax = Vmax[ii]; 
 
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
-        halo->Mvir = (double)Mass_tot[ii] * hubble_h * mass_unit_to_internal;
-        halo->Rvir = -1;
-        halo->Vvir = -1;
+        halo->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_HaloMvir);
+        halo->Rvir = check_float_cast(-1, FloatField_HaloRvir);
+        halo->Vvir = check_float_cast(-1, FloatField_HaloVvir);
         convert_input_virial_props(&halo->Mvir, &halo->Rvir, &halo->Vvir, NULL, -1, snapshot, false);
 
         halo->AngMom = AngMom[ii] * hubble_h;
