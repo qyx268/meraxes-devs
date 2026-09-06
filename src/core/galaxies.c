@@ -69,7 +69,6 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
   gal->FOFMvirModifier = check_float_cast((double)(1.0), FloatField_FOFMvirModifier);
   gal->MvirCrit = check_float_cast((double)(0.0), FloatField_MvirCrit);
-  gal->MvirCrit_MC = check_float_cast((double)(0.0), FloatField_MvirCrit_MC);
   gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
   gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
   gal->MergerBurstMass = check_float_cast((double)(0.0), FloatField_MergerBurstMass);
@@ -84,6 +83,7 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->FescIIIWeightedGSM = check_float_cast((double)(0.0), FloatField_FescIIIWeightedGSM);
   gal->FescIIIWeightedSfr = check_float_cast((double)(0.0), FloatField_FescIIIWeightedSfr);
   gal->Remnant_Mass = check_float_cast((double)(0.), FloatField_Remnant_Mass);
+  gal->MvirCrit_MC = check_float_cast((double)(0.0), FloatField_MvirCrit_MC);
   gal->Metal_Probability = check_float_cast((double)(0.0), FloatField_Metal_Probability);
   gal->Metals_IGM = check_float_cast((double)(0.0), FloatField_Metals_IGM);
   gal->Gas_IGM = check_float_cast((double)(0.0), FloatField_Gas_IGM);
@@ -180,7 +180,6 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   gal->Mcool = check_float_cast((double)(0.0), FloatField_Mcool);
   gal->Rcool = check_float_cast((double)(0.0), FloatField_Rcool);
   gal->MvirCrit = check_float_cast((double)(0.0), FloatField_MvirCrit);
-  gal->MvirCrit_MC = check_float_cast((double)(0.0), FloatField_MvirCrit_MC);
   gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
   gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
   gal->BHemissivity = check_float_cast((double)(0.0), FloatField_BHemissivity);
@@ -195,6 +194,7 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
 #if USE_MINI_HALOS
   gal->SfrIII = check_float_cast((double)(0.0), FloatField_SfrIII);
   gal->FescIIIWeightedSfr = check_float_cast((double)(0.0), FloatField_FescIIIWeightedSfr);
+  gal->MvirCrit_MC = check_float_cast((double)(0.0), FloatField_MvirCrit_MC);
 #endif
 
   // Update the stellar mass weighted mean age values.  This only needs to be
