@@ -735,7 +735,7 @@ typedef struct galaxy_t
   double MetalsStellarMass;
   double DiskScaleLength;
   double Sfr;
-  double LOIII;
+  double LOIII; //!< [O III] luminosity [1e40 erg/s]
   double ionization_param;
   double EjectedGas;
   double MetalsEjectedGas;
