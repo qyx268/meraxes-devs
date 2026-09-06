@@ -64,6 +64,7 @@ option(BUILD_TESTS "Build criterion tests" OFF)
 option(GDB "Drop into GDB with mpi_debug_here() calls" OFF)
 option(ENABLE_PROFILING "Enable profiling of executable with gperftools." OFF)
 option(USE_CUDA "Build with CUDA support for reionization calculations" OFF)
+option(CHECK_FLOAT_PRECISION "Track min/max and overflow/near-overflow counts for float-converted galaxy_t fields (diagnostic only, adds runtime overhead)" OFF)
 
 
 # Build type
@@ -234,6 +235,10 @@ endif()
 
 if(USE_JWST)
     add_definitions(-DUSE_JWST)
+endif()
+
+if(CHECK_FLOAT_PRECISION)
+    add_definitions(-DCHECK_FLOAT_PRECISION)
 endif()
 
 if(USE_HST)

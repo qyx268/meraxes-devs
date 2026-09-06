@@ -99,7 +99,7 @@ double calculate_merging_time(galaxy_t* orphan, int snapshot)
   sat_rad /= (1 + run_globals.ZZ[snapshot - 1]);
 
   // TODO: Should this be parent or mother???
-  orphan->MergerStartRadius = sat_rad / mother->Rvir;
+  orphan->MergerStartRadius = check_float_cast((double)(sat_rad / mother->Rvir), FloatField_MergerStartRadius);
 
   if (sat_rad > mother->Rvir)
     sat_rad = mother->Rvir;
@@ -132,7 +132,7 @@ static void merger_driven_starburst(galaxy_t* parent, double merger_ratio, int s
         parent, &burst_mass, snapshot, &m_reheat, &m_eject, &m_recycled, &m_remnant, &new_metals);
       // update the baryonic reservoirs (note that the order we do this in will change the result!)
       update_reservoirs_from_sf(parent, burst_mass, snapshot, MERGER);
-      parent->MergerBurstMass += burst_mass;
+      parent->MergerBurstMass = check_float_cast((double)(parent->MergerBurstMass) + (burst_mass), FloatField_MergerBurstMass);
 #if USE_MINI_HALOS
       if (parent->Galaxy_Population == 2)
 #endif
@@ -177,55 +177,55 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   min_stellar_mass = (gal->StellarMass <= parent->StellarMass) ? gal->StellarMass : parent->StellarMass;
 
   // Add galaxies together
-  parent->StellarMass += gal->StellarMass;
+  parent->StellarMass = check_float_cast((double)(parent->StellarMass) + (gal->StellarMass), FloatField_StellarMass);
 #if USE_MINI_HALOS
-  parent->SfrIII += gal->SfrIII;
-  parent->StellarMass_II += gal->StellarMass_II;
-  parent->StellarMass_III += gal->StellarMass_III;
-  parent->Remnant_Mass += gal->Remnant_Mass;
-  parent->GrossStellarMassIII += gal->GrossStellarMassIII;
-  parent->FescIIIWeightedGSM += gal->FescIIIWeightedGSM;
-  parent->FescIIIWeightedSfr += gal->FescIIIWeightedSfr;
+  parent->SfrIII = check_float_cast((double)(parent->SfrIII) + (gal->SfrIII), FloatField_SfrIII);
+  parent->StellarMass_II = check_float_cast((double)(parent->StellarMass_II) + (gal->StellarMass_II), FloatField_StellarMass_II);
+  parent->StellarMass_III = check_float_cast((double)(parent->StellarMass_III) + (gal->StellarMass_III), FloatField_StellarMass_III);
+  parent->Remnant_Mass = check_float_cast((double)(parent->Remnant_Mass) + (gal->Remnant_Mass), FloatField_Remnant_Mass);
+  parent->GrossStellarMassIII = check_float_cast((double)(parent->GrossStellarMassIII) + (gal->GrossStellarMassIII), FloatField_GrossStellarMassIII);
+  parent->FescIIIWeightedGSM = check_float_cast((double)(parent->FescIIIWeightedGSM) + (gal->FescIIIWeightedGSM), FloatField_FescIIIWeightedGSM);
+  parent->FescIIIWeightedSfr = check_float_cast((double)(parent->FescIIIWeightedSfr) + (gal->FescIIIWeightedSfr), FloatField_FescIIIWeightedSfr);
 #endif
-  parent->GrossStellarMass += gal->GrossStellarMass;
-  parent->FescWeightedGSM += gal->FescWeightedGSM;
-  parent->MetalsStellarMass += gal->MetalsStellarMass;
-  parent->Sfr += gal->Sfr;
-  parent->FescWeightedSfr += gal->Sfr * gal->Fesc;
-  parent->HotGas += gal->HotGas;
-  parent->MetalsHotGas += gal->MetalsHotGas;
-  parent->ColdGas += gal->ColdGas;
-  parent->MetalsColdGas += gal->MetalsColdGas;
-  parent->EjectedGas += gal->EjectedGas;
-  parent->MetalsEjectedGas += gal->MetalsEjectedGas;
-  parent->LOIII += gal->LOIII;
-  parent->ionization_param += gal->ionization_param;
+  parent->GrossStellarMass = check_float_cast((double)(parent->GrossStellarMass) + (gal->GrossStellarMass), FloatField_GrossStellarMass);
+  parent->FescWeightedGSM = check_float_cast((double)(parent->FescWeightedGSM) + (gal->FescWeightedGSM), FloatField_FescWeightedGSM);
+  parent->MetalsStellarMass = check_float_cast((double)(parent->MetalsStellarMass) + (gal->MetalsStellarMass), FloatField_MetalsStellarMass);
+  parent->Sfr = check_float_cast((double)(parent->Sfr) + (gal->Sfr), FloatField_Sfr);
+  parent->FescWeightedSfr = check_float_cast((double)(parent->FescWeightedSfr) + (gal->Sfr * gal->Fesc), FloatField_FescWeightedSfr);
+  parent->HotGas = check_float_cast((double)(parent->HotGas) + (gal->HotGas), FloatField_HotGas);
+  parent->MetalsHotGas = check_float_cast((double)(parent->MetalsHotGas) + (gal->MetalsHotGas), FloatField_MetalsHotGas);
+  parent->ColdGas = check_float_cast((double)(parent->ColdGas) + (gal->ColdGas), FloatField_ColdGas);
+  parent->MetalsColdGas = check_float_cast((double)(parent->MetalsColdGas) + (gal->MetalsColdGas), FloatField_MetalsColdGas);
+  parent->EjectedGas = check_float_cast((double)(parent->EjectedGas) + (gal->EjectedGas), FloatField_EjectedGas);
+  parent->MetalsEjectedGas = check_float_cast((double)(parent->MetalsEjectedGas) + (gal->MetalsEjectedGas), FloatField_MetalsEjectedGas);
+  parent->LOIII = check_float_cast((double)(parent->LOIII) + (gal->LOIII), FloatField_LOIII);
+  parent->ionization_param = check_float_cast((double)(parent->ionization_param) + (gal->ionization_param), FloatField_ionization_param);
   
   // parent has not prior accretion but sallite does
   if (parent->BHAccretionOnTime < 0 && gal->BHAccretionOnTime > 0)
-    parent->BHAccretionOnTime = gal->BHAccretionOnTime;
+    parent->BHAccretionOnTime = check_float_cast((double)(gal->BHAccretionOnTime), FloatField_BHAccretionOnTime);
   // take the duty cycle and t_resp of the bigger BH
   if (parent->BlackHoleMass < gal->BlackHoleMass) {
-    parent->DutyCycleAGN = gal->DutyCycleAGN;
-    parent->t_resp = gal->t_resp;
+    parent->DutyCycleAGN = check_float_cast((double)(gal->DutyCycleAGN), FloatField_DutyCycleAGN);
+    parent->t_resp = check_float_cast((double)(gal->t_resp), FloatField_t_resp);
   }
-  parent->QuasarLuv += gal->QuasarLuv;
+  parent->QuasarLuv = check_float_cast((double)(parent->QuasarLuv) + (gal->QuasarLuv), FloatField_QuasarLuv);
 
   // take the CGM tau from the one with more CGM
   if (parent->HotGas < gal->HotGas)
-    parent->tau_cgm = gal->tau_cgm;
+    parent->tau_cgm = check_float_cast((double)(gal->tau_cgm), FloatField_tau_cgm);
 
-  parent->BlackHoleAccretedHotMass += gal->BlackHoleAccretedHotMass;
-  parent->BlackHoleAccretedColdMass += gal->BlackHoleAccretedColdMass;
-  parent->BlackHoleAccretingColdMass += gal->BlackHoleAccretingColdMass;
-  parent->BHemissivity += gal->BHemissivity;
-  parent->BlackHoleMass += gal->BlackHoleMass;
-  parent->EffectiveBHM += gal->EffectiveBHM;
-  parent->EffectiveBHAR += gal->EffectiveBHAR;
+  parent->BlackHoleAccretedHotMass = check_float_cast((double)(parent->BlackHoleAccretedHotMass) + (gal->BlackHoleAccretedHotMass), FloatField_BlackHoleAccretedHotMass);
+  parent->BlackHoleAccretedColdMass = check_float_cast((double)(parent->BlackHoleAccretedColdMass) + (gal->BlackHoleAccretedColdMass), FloatField_BlackHoleAccretedColdMass);
+  parent->BlackHoleAccretingColdMass = check_float_cast((double)(parent->BlackHoleAccretingColdMass) + (gal->BlackHoleAccretingColdMass), FloatField_BlackHoleAccretingColdMass);
+  parent->BHemissivity = check_float_cast((double)(parent->BHemissivity) + (gal->BHemissivity), FloatField_BHemissivity);
+  parent->BlackHoleMass = check_float_cast((double)(parent->BlackHoleMass) + (gal->BlackHoleMass), FloatField_BlackHoleMass);
+  parent->EffectiveBHM = check_float_cast((double)(parent->EffectiveBHM) + (gal->EffectiveBHM), FloatField_EffectiveBHM);
+  parent->EffectiveBHAR = check_float_cast((double)(parent->EffectiveBHAR) + (gal->EffectiveBHAR), FloatField_EffectiveBHAR);
   
-  parent->mwmsa_num += gal->mwmsa_num;
-  parent->mwmsa_denom += gal->mwmsa_denom;
-  parent->MergerBurstMass += gal->MergerBurstMass;
+  parent->mwmsa_num = check_float_cast((double)(parent->mwmsa_num) + (gal->mwmsa_num), FloatField_mwmsa_num);
+  parent->mwmsa_denom = check_float_cast((double)(parent->mwmsa_denom) + (gal->mwmsa_denom), FloatField_mwmsa_denom);
+  parent->MergerBurstMass = check_float_cast((double)(parent->MergerBurstMass) + (gal->MergerBurstMass), FloatField_MergerBurstMass);
 
 
 #if USE_MINI_HALOS
@@ -234,22 +234,22 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
 
   if (gal->RmetalBubble > parent->RmetalBubble) {
 
-    parent->RmetalBubble = gal->RmetalBubble; // This is to account the evolution of metal bubbles after a merger event
-    parent->PrefactorBubble = gal->PrefactorBubble;
-    parent->TimeBubble = gal->TimeBubble;
+    parent->RmetalBubble = check_float_cast((double)(gal->RmetalBubble), FloatField_RmetalBubble); // This is to account the evolution of metal bubbles after a merger event
+    parent->PrefactorBubble = check_float_cast((double)(gal->PrefactorBubble), FloatField_PrefactorBubble);
+    parent->TimeBubble = check_float_cast((double)(gal->TimeBubble), FloatField_TimeBubble);
   }
 #endif
 
   for (int ii = 0; ii < N_HISTORY_SNAPS; ii++) {
-    parent->NewStars[ii] += gal->NewStars[ii];
+    parent->NewStars[ii] = check_float_cast((double)(parent->NewStars[ii]) + (gal->NewStars[ii]), FloatField_NewStars);
 #if USE_MINI_HALOS
-    parent->NewStars_II[ii] += gal->NewStars_II[ii];
-    parent->NewStars_III[ii] += gal->NewStars_III[ii];
+    parent->NewStars_II[ii] = check_float_cast((double)(parent->NewStars_II[ii]) + (gal->NewStars_II[ii]), FloatField_NewStars_II);
+    parent->NewStars_III[ii] = check_float_cast((double)(parent->NewStars_III[ii]) + (gal->NewStars_III[ii]), FloatField_NewStars_III);
 #endif
   }
 
   for (int ii = 0; ii < N_HISTORY_SNAPS; ii++)
-    parent->NewMetals[ii] += gal->NewMetals[ii];
+    parent->NewMetals[ii] = check_float_cast((double)(parent->NewMetals[ii]) + (gal->NewMetals[ii]), FloatField_NewMetals);
 
 #ifdef CALC_MAGS
   merge_luminosities(parent, gal);

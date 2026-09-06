@@ -220,23 +220,23 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
 
 #if USE_MINI_HALOS
   if (gal->Galaxy_Population == 2) {
-    gal->Fesc = fesc;
-    gal->FescWeightedGSM += new_stars * fesc;
-    gal->FescWeightedSfr += gal->Sfr * fesc;
+    gal->Fesc = check_float_cast((double)(fesc), FloatField_Fesc);
+    gal->FescWeightedGSM = check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
+    gal->FescWeightedSfr = check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * fesc), FloatField_FescWeightedSfr);
   }
 
   if (gal->Galaxy_Population == 3) {
-    gal->FescIII = fescIII;
-    gal->FescIIIWeightedGSM += new_stars * fescIII;
-    gal->FescIIIWeightedSfr += gal->SfrIII * fescIII;
+    gal->FescIII = check_float_cast((double)(fescIII), FloatField_FescIII);
+    gal->FescIIIWeightedGSM = check_float_cast((double)(gal->FescIIIWeightedGSM) + (new_stars * fescIII), FloatField_FescIIIWeightedGSM);
+    gal->FescIIIWeightedSfr = check_float_cast((double)(gal->FescIIIWeightedSfr) + (gal->SfrIII * fescIII), FloatField_FescIIIWeightedSfr);
   }
 #else
-  gal->Fesc = fesc;
-  gal->FescWeightedGSM += new_stars * fesc;
-  gal->FescWeightedSfr += gal->Sfr * gal->Fesc;
+  gal->Fesc = check_float_cast((double)(fesc), FloatField_Fesc);
+  gal->FescWeightedGSM = check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
+  gal->FescWeightedSfr = check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * gal->Fesc), FloatField_FescWeightedSfr);
 #endif
 
-  gal->FescBH = fesc_bh;
+  gal->FescBH = check_float_cast((double)(fesc_bh), FloatField_FescBH);
 }
 
 void set_quasar_fobs()
@@ -1631,15 +1631,15 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
 
         // Record the Mvir_crit (filtering mass) value
         if (flag_feed == 1)
-          gal->MvirCrit = (double)buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
+          gal->MvirCrit = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit);
 
 #if USE_MINI_HALOS
         if (flag_feed == 2)
-          gal->MvirCrit_MC = (double)buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
+          gal->MvirCrit_MC = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit_MC);
 #endif
 
         if (flag_feed == 3)
-          gal->t_resp = (double)buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
+          gal->t_resp = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_t_resp);
 
         // Compute tau_cgm based on CGM suppression mode
         // Mode 1: instantaneous Gamma12, Mode 2: cumulative Gamma12, Mode 3: clumping factor
@@ -1664,7 +1664,7 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
                 gamma12_local = grid_value * run_globals.params.Hubble_h * run_globals.params.Hubble_h;
                 CLAMP_NEGATIVE(gamma12_local);
                 double dt_myr = gal->dt * run_globals.units.UnitTime_in_s / SEC_PER_MEGAYEAR;
-                gal->cumulative_ionization += gamma12_local * dt_myr;
+                gal->cumulative_ionization = check_float_cast((double)(gal->cumulative_ionization) + (gamma12_local * dt_myr), FloatField_cumulative_ionization);
                 // Normalize at cumulative value of 1.0 (e.g., Gamma12=0.1 for 10 Myr)
                 suppression_factor = gal->cumulative_ionization;
                 break;
@@ -1682,10 +1682,10 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
             
             // Calculate optical depth from hot gas column density (HotGas/Rvir^2)
             // Normalized at 1e8 Msun / (10 kpc)^2 for gas, and suppression_factor = 1
-            gal->tau_cgm = params->FescCGMSuppressionNorm * 
+            gal->tau_cgm = check_float_cast((double)(params->FescCGMSuppressionNorm * 
                            pow(gal->HotGas * 1.0e2 / run_globals.params.Hubble_h, params->FescCGMSuppressionScaling) * 
                            pow(0.01 * run_globals.params.Hubble_h / gal->Rvir, 2.0 * params->FescCGMSuppressionScaling) *
-                           pow(suppression_factor, params->FescCGMGamma12Scaling);
+                           pow(suppression_factor, params->FescCGMGamma12Scaling)), FloatField_tau_cgm);
           } 
         }
 

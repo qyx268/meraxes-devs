@@ -6,10 +6,10 @@ static void update_reservoirs_from_reincorporation(galaxy_t* gal, double reincor
 {
   double metals = reincorporated * calc_metallicity(gal->EjectedGas, gal->MetalsEjectedGas);
 
-  gal->EjectedGas -= reincorporated;
-  gal->MetalsEjectedGas -= metals;
-  gal->HotGas += reincorporated;
-  gal->MetalsHotGas += metals;
+  gal->EjectedGas = check_float_cast((double)(gal->EjectedGas) - (reincorporated), FloatField_EjectedGas);
+  gal->MetalsEjectedGas = check_float_cast((double)(gal->MetalsEjectedGas) - (metals), FloatField_MetalsEjectedGas);
+  gal->HotGas = check_float_cast((double)(gal->HotGas) + (reincorporated), FloatField_HotGas);
+  gal->MetalsHotGas = check_float_cast((double)(gal->MetalsHotGas) + (metals), FloatField_MetalsHotGas);
 }
 
 void reincorporate_ejected_gas(galaxy_t* gal)

@@ -77,7 +77,7 @@ void compute_LOIII(galaxy_t* gal, int snapshot)
   ionization_param = 1.5874 * ionizing_photon_rate /
                       (4.0 * M_PI * stromgren_radius_sq * density);
 
-  gal->ionization_param += clamp_non_finite(ionization_param);
+  gal->ionization_param = check_float_cast((double)(gal->ionization_param) + (clamp_non_finite(ionization_param)), FloatField_ionization_param);
 
   double metallicity = gal->MetalsColdGas / gal->ColdGas;
   double oiii_volume_fraction = 0.8;
@@ -85,5 +85,5 @@ void compute_LOIII(galaxy_t* gal, int snapshot)
                        run_globals.loiii_params.excitation_rate * run_globals.loiii_params.branching_ratio *
                        (ionizing_photon_rate * bubble_count / ALPHA_HII) * PLANCK * nu32 * oiii_volume_fraction;
 
-  gal->LOIII += clamp_non_finite(loiii);
+  gal->LOIII = check_float_cast((double)(gal->LOIII) + (clamp_non_finite(loiii)), FloatField_LOIII);
 }

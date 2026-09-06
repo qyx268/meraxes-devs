@@ -85,6 +85,9 @@ BUILD_SHARED_LIBS
 BUILD_TESTS
 : Build the test suite. Default is OFF.
 
+CHECK_FLOAT_PRECISION
+: Diagnostic only, adds runtime overhead. Tracks the min/max value and counts of overflow / near-overflow (within 2 orders of magnitude of `FLT_MAX`) events for every `galaxy_t` field that was converted from `double` to `float`, and prints a summary report (via `mlog`) at the end of the run. Use this to check whether any of those fields need their internal units rescaled to fit safely in `float`. Default is OFF.
+
 CALC_MAGS
 : Calculate magnitudes. Default is OFF.
 

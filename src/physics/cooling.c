@@ -88,7 +88,7 @@ double gas_cooling(galaxy_t* gal)
       assert(rho_r_cool > 0);
       isothermal_norm = gal->HotGas / (4. * M_PI * fof_group->Rvir);
       r_cool = sqrt(isothermal_norm / rho_r_cool);
-      gal->Rcool = r_cool;
+      gal->Rcool = check_float_cast((double)(r_cool), FloatField_Rcool);
 
       max_cooling_mass = max_cooling_mass_factor * gal->HotGas / t_cool * gal->dt;
 
@@ -123,11 +123,11 @@ void cool_gas_onto_galaxy(galaxy_t* gal, double cooling_mass)
   cooling_metals = cooling_mass * calc_metallicity(gal->HotGas, gal->MetalsHotGas);
 
   // save the cooling mass
-  gal->Mcool = cooling_mass;
+  gal->Mcool = check_float_cast((double)(cooling_mass), FloatField_Mcool);
 
   // update the galaxy reservoirs
-  gal->HotGas -= cooling_mass;
-  gal->MetalsHotGas -= cooling_metals;
-  gal->ColdGas += cooling_mass;
-  gal->MetalsColdGas += cooling_metals;
+  gal->HotGas = check_float_cast((double)(gal->HotGas) - (cooling_mass), FloatField_HotGas);
+  gal->MetalsHotGas = check_float_cast((double)(gal->MetalsHotGas) - (cooling_metals), FloatField_MetalsHotGas);
+  gal->ColdGas = check_float_cast((double)(gal->ColdGas) + (cooling_mass), FloatField_ColdGas);
+  gal->MetalsColdGas = check_float_cast((double)(gal->MetalsColdGas) + (cooling_metals), FloatField_MetalsColdGas);
 }

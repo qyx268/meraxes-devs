@@ -151,7 +151,7 @@ static double precomputed_Mcrit_modifier(galaxy_t* gal, double Mvir, int snapsho
   double Mvir_crit = run_globals.params.MvirCrit[snapshot];
 
   if (gal != NULL)
-    gal->MvirCrit = Mvir_crit;
+    gal->MvirCrit = check_float_cast((double)(Mvir_crit), FloatField_MvirCrit);
   return pow(2.0, -Mvir_crit / Mvir);
 }
 

@@ -262,7 +262,7 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
   // Reuse the same dust calculation for any galaxy-level Mhysa constraints.
   // galaxy_output_t stores line luminosities in units of 1e40 erg/s, whereas
   // galaxy_t keeps physical luminosities in erg/s.
-  galaxy->LOIII_dusty = (double)output->LOIII_dusty * 1e40;
+  galaxy->LOIII_dusty = check_float_cast((double)(output->LOIII_dusty * 1e40), FloatField_LOIII_dusty);
 }
 
 void prepare_luminosity_function_cache(int snapshot)
@@ -276,7 +276,7 @@ void prepare_luminosity_function_cache(int snapshot)
 
   galaxy_t* galaxy = run_globals.FirstGal;
   while (galaxy != NULL) {
-    galaxy->LOIII_dusty = 0.0;
+    galaxy->LOIII_dusty = check_float_cast((double)(0.0), FloatField_LOIII_dusty);
     if (galaxy->Type < 3 && !galaxy->ghost_flag) {
       galaxy_output_t output;
       prepare_cached_luminosity_function_output(galaxy, snapshot, &output);
@@ -329,74 +329,74 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
 
   galout->Len = gal.Len;
   galout->MaxLen = gal.MaxLen;
-  galout->Mvir = (float)(gal.Mvir);
-  galout->Rvir = (float)(gal.Rvir);
-  galout->Vvir = (float)(gal.Vvir);
-  galout->Vmax = (float)(gal.Vmax);
-  galout->Spin = (float)(gal.Spin);
-  galout->HotGas = (float)(gal.HotGas);
-  galout->MetalsHotGas = (float)(gal.MetalsHotGas);
-  galout->ColdGas = (float)(gal.ColdGas);
-  galout->MetalsColdGas = (float)(gal.MetalsColdGas);
-  galout->H2Frac = (float)(gal.H2Frac);
-  galout->H2Mass = (float)(gal.H2Mass);
-  galout->HIMass = (float)(gal.HIMass);
-  galout->Mcool = (float)(gal.Mcool);
-  galout->StellarMass = (float)(gal.StellarMass);
-  galout->GrossStellarMass = (float)(gal.GrossStellarMass);
-  galout->Fesc = (float)(gal.Fesc);
-  galout->FescWeightedGSM = (float)(gal.FescWeightedGSM);
-  galout->BlackHoleMass = (float)(gal.BlackHoleMass);
-  galout->FescBH = (float)(gal.FescBH);
-  galout->BHemissivity = (float)(gal.BHemissivity);
+  galout->Mvir = gal.Mvir;
+  galout->Rvir = gal.Rvir;
+  galout->Vvir = gal.Vvir;
+  galout->Vmax = gal.Vmax;
+  galout->Spin = gal.Spin;
+  galout->HotGas = gal.HotGas;
+  galout->MetalsHotGas = gal.MetalsHotGas;
+  galout->ColdGas = gal.ColdGas;
+  galout->MetalsColdGas = gal.MetalsColdGas;
+  galout->H2Frac = gal.H2Frac;
+  galout->H2Mass = gal.H2Mass;
+  galout->HIMass = gal.HIMass;
+  galout->Mcool = gal.Mcool;
+  galout->StellarMass = gal.StellarMass;
+  galout->GrossStellarMass = gal.GrossStellarMass;
+  galout->Fesc = gal.Fesc;
+  galout->FescWeightedGSM = gal.FescWeightedGSM;
+  galout->BlackHoleMass = gal.BlackHoleMass;
+  galout->FescBH = gal.FescBH;
+  galout->BHemissivity = gal.BHemissivity;
   galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.826 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
-  galout->DutyCycleAGN = (float)(gal.DutyCycleAGN);
-  galout->EffectiveBHM = (float)(gal.EffectiveBHM);
-  galout->BlackHoleAccretedHotMass = (float)(gal.BlackHoleAccretedHotMass);
-  galout->BlackHoleAccretedColdMass = (float)(gal.BlackHoleAccretedColdMass);
-  galout->DiskScaleLength = (float)(gal.DiskScaleLength);
-  galout->MetalsStellarMass = (float)(gal.MetalsStellarMass);
+  galout->DutyCycleAGN = gal.DutyCycleAGN;
+  galout->EffectiveBHM = gal.EffectiveBHM;
+  galout->BlackHoleAccretedHotMass = gal.BlackHoleAccretedHotMass;
+  galout->BlackHoleAccretedColdMass = gal.BlackHoleAccretedColdMass;
+  galout->DiskScaleLength = gal.DiskScaleLength;
+  galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->LOIII = (float)(gal.LOIII / 1e40); // Output in units of 1e40 erg/s
-  galout->ionization_param = (float)(gal.ionization_param);
+  galout->ionization_param = gal.ionization_param;
   galout->FescWeightedSfr = (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  galout->EjectedGas = (float)(gal.EjectedGas);
-  galout->MetalsEjectedGas = (float)(gal.MetalsEjectedGas);
-  galout->Rcool = (float)(gal.Rcool);
-  galout->Cos_Inc = (float)(gal.Cos_Inc);
-  galout->BaryonFracModifier = (float)(gal.BaryonFracModifier);
-  galout->FOFMvirModifier = (float)(gal.FOFMvirModifier);
-  galout->MvirCrit = (float)(gal.MvirCrit);
-  galout->tau_cgm = (float)(gal.tau_cgm);
+  galout->EjectedGas = gal.EjectedGas;
+  galout->MetalsEjectedGas = gal.MetalsEjectedGas;
+  galout->Rcool = gal.Rcool;
+  galout->Cos_Inc = gal.Cos_Inc;
+  galout->BaryonFracModifier = gal.BaryonFracModifier;
+  galout->FOFMvirModifier = gal.FOFMvirModifier;
+  galout->MvirCrit = gal.MvirCrit;
+  galout->tau_cgm = gal.tau_cgm;
   galout->dt = (float)(gal.dt * units->UnitTime_in_Megayears);
-  galout->MergerBurstMass = (float)(gal.MergerBurstMass);
+  galout->MergerBurstMass = gal.MergerBurstMass;
   galout->MergTime = (float)(gal.MergTime * units->UnitTime_in_Megayears);
-  galout->MergerStartRadius = (float)(gal.MergerStartRadius);
+  galout->MergerStartRadius = gal.MergerStartRadius;
   galout->MWMSA = current_mwmsa(&gal, i_snap);
 
 #if USE_MINI_HALOS
-  galout->GrossStellarMassIII = (float)(gal.GrossStellarMassIII);
-  galout->FescIII = (float)(gal.FescIII);
-  galout->FescIIIWeightedGSM = (float)(gal.FescIIIWeightedGSM);
+  galout->GrossStellarMassIII = gal.GrossStellarMassIII;
+  galout->FescIII = gal.FescIII;
+  galout->FescIIIWeightedGSM = gal.FescIIIWeightedGSM;
   galout->FescIIIWeightedSfr = (float)(gal.FescIIIWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
 
-  galout->MvirCrit_MC = (float)(gal.MvirCrit_MC);
+  galout->MvirCrit_MC = gal.MvirCrit_MC;
 
-  galout->RmetalBubble = (float)(gal.RmetalBubble); // new for MetalEvo
+  galout->RmetalBubble = gal.RmetalBubble; // new for MetalEvo
   galout->Galaxy_Population = (int)(gal.Galaxy_Population);
   galout->Flag_ExtMetEnr = (int)(gal.Flag_ExtMetEnr);
-  galout->Metal_Probability = (float)(gal.Metal_Probability);
-  galout->GalMetal_Probability = (float)(gal.GalMetal_Probability);
-  galout->StellarMass_II = (float)(gal.StellarMass_II);
-  galout->StellarMass_III = (float)(gal.StellarMass_III);
-  galout->Remnant_Mass = (float)(gal.Remnant_Mass);
+  galout->Metal_Probability = gal.Metal_Probability;
+  galout->GalMetal_Probability = gal.GalMetal_Probability;
+  galout->StellarMass_II = gal.StellarMass_II;
+  galout->StellarMass_III = gal.StellarMass_III;
+  galout->Remnant_Mass = gal.Remnant_Mass;
 #endif
 
   for (int ii = 0; ii < N_HISTORY_SNAPS; ii++) {
-    galout->NewStars[ii] = (float)(gal.NewStars[ii]);
+    galout->NewStars[ii] = gal.NewStars[ii];
 #if USE_MINI_HALOS
-    galout->NewStars_III[ii] = (float)(gal.NewStars_III[ii]);
-    galout->NewStars_II[ii] = (float)(gal.NewStars_II[ii]);
+    galout->NewStars_III[ii] = gal.NewStars_III[ii];
+    galout->NewStars_II[ii] = gal.NewStars_II[ii];
 #endif
   }
 

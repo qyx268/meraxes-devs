@@ -21,13 +21,13 @@ static void backfill_ghost_star_formation(galaxy_t* gal, double m_stars, double 
         add_luminosities(&run_globals.mag_params, gal, snap, metallicity, sfr, m_stars);
 #endif
       if (ii < N_HISTORY_SNAPS) {
-        gal->NewStars[ii] += m_stars;
-        gal->NewMetals[0] += m_stars * metallicity;
+        gal->NewStars[ii] = check_float_cast((double)(gal->NewStars[ii]) + (m_stars), FloatField_NewStars);
+        gal->NewMetals[0] = check_float_cast((double)(gal->NewMetals[0]) + (m_stars * metallicity), FloatField_NewMetals);
 #if USE_MINI_HALOS
         if (gal->Galaxy_Population == 2)
-          gal->NewStars_II[ii] += m_stars;
+          gal->NewStars_II[ii] = check_float_cast((double)(gal->NewStars_II[ii]) + (m_stars), FloatField_NewStars_II);
         else if (gal->Galaxy_Population == 3)
-          gal->NewStars_III[ii] += m_stars;
+          gal->NewStars_III[ii] = check_float_cast((double)(gal->NewStars_III[ii]) + (m_stars), FloatField_NewStars_III);
 #endif
       }
       update_galaxy_fesc_vals(gal, m_stars, snap);
@@ -50,29 +50,28 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
 
 #if USE_MINI_HALOS
     if (gal->Galaxy_Population == 2) {
-      gal->StellarMass_II += new_stars;
-      gal->Sfr += sfr;
+      gal->StellarMass_II = check_float_cast((double)(gal->StellarMass_II) + (new_stars), FloatField_StellarMass_II);
+      gal->Sfr = check_float_cast((double)(gal->Sfr) + (sfr), FloatField_Sfr);
       assert(gal->Sfr >= 0);
-      gal->GrossStellarMass += new_stars;
+      gal->GrossStellarMass = check_float_cast((double)(gal->GrossStellarMass) + (new_stars), FloatField_GrossStellarMass);
     } else if (gal->Galaxy_Population == 3) {
-      gal->StellarMass_III += new_stars;
-      gal->SfrIII += sfr;
+      gal->StellarMass_III = check_float_cast((double)(gal->StellarMass_III) + (new_stars), FloatField_StellarMass_III);
+      gal->SfrIII = check_float_cast((double)(gal->SfrIII) + (sfr), FloatField_SfrIII);
       assert(gal->SfrIII >= 0);
-      gal->GrossStellarMassIII += new_stars;
+      gal->GrossStellarMassIII = check_float_cast((double)(gal->GrossStellarMassIII) + (new_stars), FloatField_GrossStellarMassIII);
     }
 #else
-    gal->Sfr += sfr;
+    gal->Sfr = check_float_cast((double)(gal->Sfr) + (sfr), FloatField_Sfr);
     assert(gal->Sfr >= 0);
-    gal->GrossStellarMass +=
-      new_stars; // If you are not distinguishing III/II you just have one variable which is the total one
+    gal->GrossStellarMass = check_float_cast((double)(gal->GrossStellarMass) + (new_stars), FloatField_GrossStellarMass); // If you are not distinguishing III/II you just have one variable which is the total one
 #endif
 
 	compute_LOIII(gal, snapshot);
 
-    gal->ColdGas -= new_stars;
-    gal->MetalsColdGas -= new_stars * metallicity;
-    gal->StellarMass += new_stars;
-    gal->MetalsStellarMass += new_stars * metallicity;
+    gal->ColdGas = check_float_cast((double)(gal->ColdGas) - (new_stars), FloatField_ColdGas);
+    gal->MetalsColdGas = check_float_cast((double)(gal->MetalsColdGas) - (new_stars * metallicity), FloatField_MetalsColdGas);
+    gal->StellarMass = check_float_cast((double)(gal->StellarMass) + (new_stars), FloatField_StellarMass);
+    gal->MetalsStellarMass = check_float_cast((double)(gal->MetalsStellarMass) + (new_stars * metallicity), FloatField_MetalsStellarMass);
 
     if ((type == INSITU) && !Flag_IRA && (gal->LastIdentSnap < (snapshot - 1))) {
       // If this is a reidentified ghost, then back fill NewStars and
@@ -85,14 +84,14 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
       if (sfr > 0.)
         add_luminosities(&run_globals.mag_params, gal, snapshot, metallicity, sfr, new_stars);
 #endif
-      gal->NewStars[0] += new_stars;
+      gal->NewStars[0] = check_float_cast((double)(gal->NewStars[0]) + (new_stars), FloatField_NewStars);
 #if USE_MINI_HALOS
       if (gal->Galaxy_Population == 2)
-        gal->NewStars_II[0] += new_stars;
+        gal->NewStars_II[0] = check_float_cast((double)(gal->NewStars_II[0]) + (new_stars), FloatField_NewStars_II);
       else if (gal->Galaxy_Population == 3)
-        gal->NewStars_III[0] += new_stars;
+        gal->NewStars_III[0] = check_float_cast((double)(gal->NewStars_III[0]) + (new_stars), FloatField_NewStars_III);
 #endif
-      gal->NewMetals[0] += new_stars * metallicity;
+      gal->NewMetals[0] = check_float_cast((double)(gal->NewMetals[0]) + (new_stars * metallicity), FloatField_NewMetals);
 
       update_galaxy_fesc_vals(gal, new_stars, snapshot);
     }
@@ -320,7 +319,7 @@ double pressure_dependent_star_formation(galaxy_t* gal, int snapshot)
     if (sigma_gas0 > 0.0) {
       double p_ext = M_PI / 2.0 * G_SI * sigma_gas0 * (sigma_gas0 + v_ratio * sqrt(sigma_stars0));
       double MSFR = 1.0 / (1.0 + pow(p_ext / 4.79e-13, -0.92));
-      gal->H2Frac = MSFR; // Molecular hydrogen fraction, f_(H2Mass)
+      gal->H2Frac = check_float_cast((double)(MSFR), FloatField_H2Frac); // Molecular hydrogen fraction, f_(H2Mass)
 
       if ((MSFR < 0.0) || (MSFR > 1.0)) {
         mlog_error("BR06 - H2Frac = %e\n", MSFR);
@@ -330,23 +329,23 @@ double pressure_dependent_star_formation(galaxy_t* gal, int snapshot)
       // Bigiel+11 SF law
       // TODO: PUT THIS BACK!
       MSFRR = p_dependent_SFR(0, 5 * reff, sigma_gas0, sigma_stars0, v_ratio, reff);
-      gal->H2Mass = 2. * M_PI * MSFRR * 1.0e3 / units->UnitMass_in_g; // Molecular hydrogen mass
+      gal->H2Mass = check_float_cast((double)(2. * M_PI * MSFRR * 1.0e3 / units->UnitMass_in_g), FloatField_H2Mass); // Molecular hydrogen mass
       if (gal->H2Mass > (1. - Y_He) * gal->ColdGas)
-        gal->H2Mass = (1. - Y_He) * gal->ColdGas;
-      gal->HIMass = (1. - Y_He) * gal->ColdGas - gal->H2Mass; // hydrogen mass
+        gal->H2Mass = check_float_cast((double)((1. - Y_He) * gal->ColdGas), FloatField_H2Mass);
+      gal->HIMass = check_float_cast((double)((1. - Y_He) * gal->ColdGas - gal->H2Mass), FloatField_HIMass); // hydrogen mass
       MSFRR = MSFRR * 2.0 * M_PI * sf_eff / SEC_PER_YEAR;
       MSFRR = MSFRR * 1.0e3; // in g/s
     } else {
       MSFRR = 0.0;
-      gal->H2Frac = 0.0;
-      gal->H2Mass = 0.0;
-      gal->HIMass = 0.0;
+      gal->H2Frac = check_float_cast((double)(0.0), FloatField_H2Frac);
+      gal->H2Mass = check_float_cast((double)(0.0), FloatField_H2Mass);
+      gal->HIMass = check_float_cast((double)(0.0), FloatField_HIMass);
     }
   } else {
     MSFRR = 0.0;
-    gal->H2Frac = 0.0;
-    gal->H2Mass = 0.0;
-    gal->HIMass = 0.0;
+    gal->H2Frac = check_float_cast((double)(0.0), FloatField_H2Frac);
+    gal->H2Mass = check_float_cast((double)(0.0), FloatField_H2Mass);
+    gal->HIMass = check_float_cast((double)(0.0), FloatField_HIMass);
   }
 
   MSFRR = MSFRR / units->UnitMass_in_g * units->UnitTime_in_s; // SFR in DRAGONS units

@@ -16,6 +16,10 @@ void cleanup()
 {
   mlog("Running cleanup...", MLOG_OPEN);
 
+#ifdef CHECK_FLOAT_PRECISION
+  float_precision_report();
+#endif
+
   clear_luminosity_function_cache();
 
   free_grids_cache();

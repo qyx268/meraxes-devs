@@ -14,11 +14,11 @@
 void init_luminosities(galaxy_t* gal)
 {
   // Initialise all elements of flux arrays to TOL.
-  double* inBCFlux = gal->inBCFlux;
-  double* outBCFlux = gal->outBCFlux;
+  float* inBCFlux = gal->inBCFlux;
+  float* outBCFlux = gal->outBCFlux;
 #if USE_MINI_HALOS
-  double* inBCFluxIII = gal->inBCFluxIII;
-  double* outBCFluxIII = gal->outBCFluxIII;
+  float* inBCFluxIII = gal->inBCFluxIII;
+  float* outBCFluxIII = gal->outBCFluxIII;
 #endif
 
   for (int iSF = 0; iSF < MAGS_N; ++iSF) {
@@ -57,15 +57,15 @@ void add_luminosities(mag_params_t* miniSpectra,
   double* pWorking = miniSpectra->working;
   double* pInBC = miniSpectra->inBC;
   double* pOutBC = miniSpectra->outBC;
-  double* pInBCFlux = gal->inBCFlux;
-  double* pOutBCFlux = gal->outBCFlux;
+  float* pInBCFlux = gal->inBCFlux;
+  float* pOutBCFlux = gal->outBCFlux;
 
 #if USE_MINI_HALOS
   double time_unit = run_globals.units.UnitTime_in_Megayears / run_globals.params.Hubble_h * 1e6;
   int nZFIII = MAGS_N_BANDS;
   double* pWorkingIII = miniSpectra->workingIII;
-  double* pInBCFluxIII = gal->inBCFluxIII;
-  double* pOutBCFluxIII = gal->outBCFluxIII;
+  float* pInBCFluxIII = gal->inBCFluxIII;
+  float* pOutBCFluxIII = gal->outBCFluxIII;
   if ((gal->Galaxy_Population == 3) && (bool)run_globals.params.physics.InstantSfIII)
     sfr = new_stars * time_unit; // a bit hacky... (we want new_stars / sfr is in units of year)
 #endif
@@ -120,16 +120,16 @@ void merge_luminosities(galaxy_t* target, galaxy_t* gal)
 {
   // Sum fluexs together when a merge happens.
 
-  double* inBCFluxTgt = target->inBCFlux;
-  double* outBCFluxTgt = target->outBCFlux;
-  double* inBCFlux = gal->inBCFlux;
-  double* outBCFlux = gal->outBCFlux;
+  float* inBCFluxTgt = target->inBCFlux;
+  float* outBCFluxTgt = target->outBCFlux;
+  float* inBCFlux = gal->inBCFlux;
+  float* outBCFlux = gal->outBCFlux;
 
 #if USE_MINI_HALOS
-  double* inBCFluxTgtIII = target->inBCFluxIII;
-  double* outBCFluxTgtIII = target->outBCFluxIII;
-  double* inBCFluxIII = gal->inBCFluxIII;
-  double* outBCFluxIII = gal->outBCFluxIII;
+  float* inBCFluxTgtIII = target->inBCFluxIII;
+  float* outBCFluxTgtIII = target->outBCFluxIII;
+  float* inBCFluxIII = gal->inBCFluxIII;
+  float* outBCFluxIII = gal->outBCFluxIII;
 #endif
 
   for (int iSF = 0; iSF < MAGS_N; ++iSF) {
@@ -711,8 +711,8 @@ void get_output_magnitudesIII(float* mags, galaxy_t* gal, int snapshot)
   // Check if ``snapshot`` is a target snapshot
   int iS;
   int* targetSnap = run_globals.mag_params.targetSnap;
-  double* pInBCFlux = gal->inBCFluxIII;
-  double* pOutBCFlux = gal->outBCFluxIII;
+  float* pInBCFlux = gal->inBCFluxIII;
+  float* pOutBCFlux = gal->outBCFluxIII;
 
   for (iS = 0; iS < MAGS_N_SNAPS; ++iS) {
     if (snapshot == targetSnap[iS])
@@ -746,8 +746,8 @@ void get_output_magnitudes(float* mags, float* dusty_mags, galaxy_t* gal, int sn
   // Check if ``snapshot`` is a target snapshot
   int iS;
   int* targetSnap = run_globals.mag_params.targetSnap;
-  double* pInBCFlux = gal->inBCFlux;
-  double* pOutBCFlux = gal->outBCFlux;
+  float* pInBCFlux = gal->inBCFlux;
+  float* pOutBCFlux = gal->outBCFlux;
 
   for (iS = 0; iS < MAGS_N_SNAPS; ++iS) {
     if (snapshot == targetSnap[iS])
@@ -777,9 +777,13 @@ void get_output_magnitudes(float* mags, float* dusty_mags, galaxy_t* gal, int sn
                     .nBC = run_globals.params.DustN,
                                   .tBC = run_globals.mag_params.tBC };
 
+    // dust_absorption_approx() (external sector library) takes double[] buffers,
+    // while gal->{in,out}BCFlux are float; convert element-wise rather than memcpy.
     double local_InBCFlux[MAGS_N_BANDS], local_OutBCFlux[MAGS_N_BANDS];
-    memcpy(local_InBCFlux, pInBCFlux, sizeof(local_InBCFlux));
-    memcpy(local_OutBCFlux, pOutBCFlux, sizeof(local_OutBCFlux));
+    for (int i_band = 0; i_band < MAGS_N_BANDS; ++i_band) {
+      local_InBCFlux[i_band] = (double)pInBCFlux[i_band];
+      local_OutBCFlux[i_band] = (double)pOutBCFlux[i_band];
+    }
 
     dust_absorption_approx(
       local_InBCFlux, local_OutBCFlux, run_globals.mag_params.allcentreWaves[iS], MAGS_N_BANDS, &dust_params);

@@ -158,7 +158,7 @@ void dracarys()
         // If this galaxy hasn't been marked for death
         if (i_newhalo > -1) {
           gal->OldType = gal->Type;
-          gal->dt = LTTime[gal->LastIdentSnap] - LTTime[snapshot];
+          gal->dt = check_float_cast((double)(LTTime[gal->LastIdentSnap] - LTTime[snapshot]), FloatField_dt);
 
           // If this is a central or a satellite
           if (gal->Type < 2)
@@ -263,8 +263,8 @@ void dracarys()
         // after calculating it. This is because we will decrement the clock
         // (by the same amount) when checking for mergers in evolve.c
         gal->MergerTarget = gal->FirstGalInHalo;
-        gal->MergTime = calculate_merging_time(gal, snapshot);
-        gal->MergTime += gal->dt;
+        gal->MergTime = check_float_cast((double)(calculate_merging_time(gal, snapshot)), FloatField_MergTime);
+        gal->MergTime = check_float_cast((double)(gal->MergTime) + (gal->dt), FloatField_MergTime);
       }
       gal = gal->Next;
     }
@@ -296,7 +296,7 @@ void dracarys()
       }
 
       if (!gal->ghost_flag)
-        gal->dt /= (double)NSteps;
+        gal->dt = check_float_cast((double)(gal->dt) / ((double)NSteps), FloatField_dt);
       else
         passively_evolve_ghost(gal, snapshot);
 

@@ -125,7 +125,7 @@ int evolve_galaxies(fof_group_t* fof_group, int snapshot, int NGal, int NFof)
 #endif
             // If this is a type 2 then decrement the merger clock
             if (gal->Type == 2)
-              gal->MergTime -= gal->dt;
+              gal->MergTime = check_float_cast((double)(gal->MergTime) - (gal->dt), FloatField_MergTime);
           }
 
           if (i_step == NSteps - 1)

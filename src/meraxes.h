@@ -13,6 +13,7 @@
  */
 
 #include "meraxes_conf.h"
+#include "core/float_precision_check.h"
 
 /*
  * Units (cgs)
@@ -613,19 +614,19 @@ typedef struct reion_grids_t
 
 typedef struct galaxy_t
 {
-  double NewStars[N_HISTORY_SNAPS];
+  float NewStars[N_HISTORY_SNAPS];
 #if USE_MINI_HALOS
-  double NewStars_II[N_HISTORY_SNAPS]; // New
-  double NewStars_III[N_HISTORY_SNAPS];
+  float NewStars_II[N_HISTORY_SNAPS]; // New
+  float NewStars_III[N_HISTORY_SNAPS];
 #endif
-  double NewMetals[N_HISTORY_SNAPS];
+  float NewMetals[N_HISTORY_SNAPS];
 
 #ifdef CALC_MAGS
-  double inBCFlux[MAGS_N];
-  double outBCFlux[MAGS_N];
+  float inBCFlux[MAGS_N];
+  float outBCFlux[MAGS_N];
 #if USE_MINI_HALOS
-  double inBCFluxIII[MAGS_N];
-  double outBCFluxIII[MAGS_N];
+  float inBCFluxIII[MAGS_N];
+  float outBCFluxIII[MAGS_N];
 #endif
 #endif
 
@@ -635,13 +636,13 @@ typedef struct galaxy_t
   // properties of subhalo at the last time this galaxy was a central galaxy
   float Pos[3];
   float Vel[3];
-  double Mvir;
-  double Rvir;
-  double Vvir;
-  double Vmax;
-  double Spin;
+  float Mvir;
+  float Rvir;
+  float Vvir;
+  float Vmax;
+  float Spin;
 
-  double dt; //!< Time between current snapshot and last identification
+  float dt; //!< Time between current snapshot and last identification
 
   struct halo_t* Halo;
   struct galaxy_t* FirstGalInHalo;
@@ -650,88 +651,88 @@ typedef struct galaxy_t
   struct galaxy_t* MergerTarget;
 
   // baryonic reservoirs
-  double HotGas;
-  double MetalsHotGas;
-  double ColdGas;
-  double MetalsColdGas;
-  double H2Frac;
-  double H2Mass;
-  double HIMass;
-  double Mcool;
-  double StellarMass;
-  double GrossStellarMass;
-  double Fesc;
-  double FescWeightedGSM;
-  double FescWeightedSfr;
-  double MetalsStellarMass;
-  double DiskScaleLength;
-  double Sfr;
-  double LOIII;
-  double LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
-  double ionization_param;
-  double EjectedGas;
-  double MetalsEjectedGas;
-  double BlackHoleMass;
-  double FescBH;
-  double BHemissivity;
-  double QuasarLuv;  //!< UV luminosity LUV of quasar (1e10 Lsun, summable for mergers)
-  double EffectiveBHM;
-  double EffectiveBHAR;
-  double DutyCycleAGN;
-  double BlackHoleAccretedHotMass;
-  double BlackHoleAccretedColdMass;
-  double BlackHoleAccretingColdMass;
-  double BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
-  double t_resp;                //!< Local relaxation timescale (in Myr)
+  float HotGas;
+  float MetalsHotGas;
+  float ColdGas;
+  float MetalsColdGas;
+  float H2Frac;
+  float H2Mass;
+  float HIMass;
+  float Mcool;
+  float StellarMass;
+  float GrossStellarMass;
+  float Fesc;
+  float FescWeightedGSM;
+  float FescWeightedSfr;
+  float MetalsStellarMass;
+  float DiskScaleLength;
+  float Sfr;
+  float LOIII;
+  float LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
+  float ionization_param;
+  float EjectedGas;
+  float MetalsEjectedGas;
+  float BlackHoleMass;
+  float FescBH;
+  float BHemissivity;
+  float QuasarLuv;  //!< UV luminosity LUV of quasar (1e10 Lsun, summable for mergers)
+  float EffectiveBHM;
+  float EffectiveBHAR;
+  float DutyCycleAGN;
+  float BlackHoleAccretedHotMass;
+  float BlackHoleAccretedColdMass;
+  float BlackHoleAccretingColdMass;
+  float BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
+  float t_resp;                //!< Local relaxation timescale (in Myr)
   int Galaxy_Population; // You need it also if you are not disentangling PopIII/PopII (when Mini_halos is off, this is
                          // = 2)
 #if USE_MINI_HALOS
   // Differentiation Pop III / Pop II
-  double SfrIII;
-  double StellarMass_II;
-  double StellarMass_III;
-  double GrossStellarMassIII;
-  double FescIII;
-  double FescIIIWeightedGSM;
-  double FescIIIWeightedSfr;
+  float SfrIII;
+  float StellarMass_II;
+  float StellarMass_III;
+  float GrossStellarMassIII;
+  float FescIII;
+  float FescIIIWeightedGSM;
+  float FescIIIWeightedSfr;
 
-  double Remnant_Mass; // Coming from Pop III with M between 40 and 140 and larger than 260 Msol and remnant of CCSN
+  float Remnant_Mass; // Coming from Pop III with M between 40 and 140 and larger than 260 Msol and remnant of CCSN
                        // [8,40]Msun. Atm those are silent.
 
   // Metallicity stuff
-  double RmetalBubble; // New for MetalEvo
-  double PrefactorBubble;
-  double TimeBubble;
-  double Metal_Probability;    // Probability to be polluted by other metal bubbles
-  double GalMetal_Probability; // Random number between 0 and 1 associated to the galaxy.
-  double Metals_IGM;
-  double Gas_IGM;
-  double Metallicity_IGM; //
-  double MaxBubble;       // Need this for Boost probability
-  double AveBubble;   // Same (you will likely use only one of the two). You could actually save only the boost factor
+  float RmetalBubble; // New for MetalEvo
+  float PrefactorBubble;
+  float TimeBubble;
+  float Metal_Probability;    // Probability to be polluted by other metal bubbles
+  float GalMetal_Probability; // Random number between 0 and 1 associated to the galaxy.
+  float Metals_IGM;
+  float Gas_IGM;
+  float Metallicity_IGM; //
+  float MaxBubble;       // Need this for Boost probability
+  float AveBubble;   // Same (you will likely use only one of the two). You could actually save only the boost factor
   int Flag_ExtMetEnr; // 0 if not enriched from a bubble, 1 yes.
 
-  double Prefactor[N_HISTORY_SNAPS]; // here you store the prefactors of the metal bubbles
-  double Times[N_HISTORY_SNAPS];     // Time at which the SN explode!
-  double Radii[N_HISTORY_SNAPS];
+  float Prefactor[N_HISTORY_SNAPS]; // here you store the prefactors of the metal bubbles
+  float Times[N_HISTORY_SNAPS];     // Time at which the SN explode!
+  float Radii[N_HISTORY_SNAPS];
 #endif
 
   // baryonic hostories
-  double mwmsa_num;
-  double mwmsa_denom;
+  float mwmsa_num;
+  float mwmsa_denom;
 
   // misc
-  double Rcool;
-  double Cos_Inc;
-  double MergTime;
-  double MergerStartRadius;
-  double BaryonFracModifier;
-  double FOFMvirModifier;
-  double MvirCrit;
-  double MvirCrit_MC;
-  double tau_cgm;
-  double cumulative_ionization;  //!< Integrated Gamma12 * dt for CGM suppression mode 2
-  double MergerBurstMass;
+  float Rcool;
+  float Cos_Inc;
+  float MergTime;
+  float MergerStartRadius;
+  float BaryonFracModifier;
+  float FOFMvirModifier;
+  float MvirCrit;
+  float MvirCrit_MC;
+  float tau_cgm;
+  float cumulative_ionization;  //!< Integrated Gamma12 * dt for CGM suppression mode 2
+  float MergerBurstMass;
 
   int Type;
   int OldType;
