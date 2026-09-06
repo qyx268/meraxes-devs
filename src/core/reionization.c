@@ -2570,12 +2570,12 @@ void construct_baryon_grids(int snapshot, int local_ngals)
   mlog("done", MLOG_CLOSE | MLOG_TIMERSTOP);
 }
 
-static void write_grid_float(const char* name,
-                             float* data,
-                             hid_t file_id,
-                             hid_t fspace_id,
-                             hid_t memspace_id,
-                             hid_t dcpl_id)
+void write_grid_float(const char* name,
+                      float* data,
+                      hid_t file_id,
+                      hid_t fspace_id,
+                      hid_t memspace_id,
+                      hid_t dcpl_id)
 {
   // create the dataset
   hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_FLOAT, fspace_id, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
