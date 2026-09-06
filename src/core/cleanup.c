@@ -1,5 +1,6 @@
 #include <fftw3-mpi.h>
 
+#include "float_precision_check.h"
 #include "magnitudes.h"
 #include "meraxes.h"
 #include "parse_paramfile.h"

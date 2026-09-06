@@ -2,6 +2,7 @@
 #include "ComputePowerSpectrum.h"
 #include "ConstructLightcone.h"
 #include "debug.h"
+#include "float_precision_check.h"
 #include "galaxies.h"
 #include "meraxes.h"
 #include "misc_tools.h"

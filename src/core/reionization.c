@@ -10,6 +10,7 @@
 
 #include "ComputeTs.h"
 #include "find_HII_bubbles.h"
+#include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
 #include "read_grids.h"

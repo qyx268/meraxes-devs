@@ -1,5 +1,6 @@
 #include <math.h>
 #include "blackhole_feedback.h"
+#include "core/float_precision_check.h"
 #include "core/misc_tools.h"
 #include "meraxes.h"
 #include <assert.h>

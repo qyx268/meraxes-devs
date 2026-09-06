@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <gsl/gsl_integration.h>
 
+#include "core/float_precision_check.h"
 #include "core/magnitudes.h"
 #include "core/misc_tools.h"
 #include "core/reionization.h"

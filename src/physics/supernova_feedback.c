@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "core/float_precision_check.h"
 #include "core/misc_tools.h"
 #include "core/stellar_feedback.h"
 #if USE_MINI_HALOS

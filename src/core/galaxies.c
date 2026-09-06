@@ -1,5 +1,6 @@
 #include <assert.h>
 
+#include "float_precision_check.h"
 #include "galaxies.h"
 #include "magnitudes.h"
 #include "meraxes.h"

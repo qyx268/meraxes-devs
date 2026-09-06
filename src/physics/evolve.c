@@ -1,6 +1,7 @@
 #include "evolve.h"
 #include "blackhole_feedback.h"
 #include "cooling.h"
+#include "core/float_precision_check.h"
 #include "core/stellar_feedback.h"
 #include "emission_lines.h"
 #if USE_MINI_HALOS

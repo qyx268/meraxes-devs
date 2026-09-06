@@ -1,4 +1,5 @@
 #include "reincorporation.h"
+#include "core/float_precision_check.h"
 #include "core/misc_tools.h"
 #include "meraxes.h"
 

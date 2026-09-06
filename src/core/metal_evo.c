@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 
 #if USE_MINI_HALOS
+#include "float_precision_check.h"
 #include "meraxes.h"
 #include "metal_evo.h"
 #include "misc_tools.h"

@@ -1,5 +1,6 @@
 #include <math.h>
 
+#include "core/float_precision_check.h"
 #include "core/misc_tools.h"
 #include "core/modifiers.h"
 #include "infall.h"

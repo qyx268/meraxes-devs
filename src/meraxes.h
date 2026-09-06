@@ -13,7 +13,6 @@
  */
 
 #include "meraxes_conf.h"
-#include "core/float_precision_check.h"
 
 /*
  * Units (cgs)

@@ -1,4 +1,5 @@
 #include "emission_lines.h"
+#include "core/float_precision_check.h"
 #include <math.h>
 
 static bool has_valid_loiii_inputs(const galaxy_t* gal)
