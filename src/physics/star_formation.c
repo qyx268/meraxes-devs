@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <gsl/gsl_integration.h>
 
 #include "core/float_precision_check.h"
 #include "core/magnitudes.h"
@@ -185,11 +184,6 @@ void insitu_star_formation(galaxy_t* gal, int snapshot)
           return;
         break;
 
-      case 2:
-        // f_h2 from Blitz & Rosolowski 2006 abd Bigiel+11 SF law
-        m_stars = pressure_dependent_star_formation(gal, snapshot) * gal->dt;
-        break;
-
       case 3:
         // GALFORM
         m_stars = gal->ColdGas / (r_disk / v_disk / 0.029 * pow(200. / v_disk, 1.5)) * gal->dt;
@@ -221,135 +215,3 @@ void insitu_star_formation(galaxy_t* gal, int snapshot)
   }
 }
 
-static double integrand_p_dependent_SFR(double q, void* gal)
-{
-  struct FR_parameters* params = (struct FR_parameters*)gal;
-
-  double sigma_gas0 = (params->a);
-  double sigma_stars0 = (params->b);
-  double v_ratio = (params->c);
-  double reff = (params->d);
-
-  double G_SI = GRAVITY * 1.e-3;
-  double sf_effH = 1.;
-
-  double p_ext = M_PI / 2.0 * G_SI * sigma_gas0 * exp(-q / reff) *
-                 (sigma_gas0 * exp(-q / reff) + v_ratio * sqrt(sigma_stars0 * exp(-q / reff)));
-  double fmol = 1.0 / (1.0 + pow(p_ext / 4.79e-13, -0.92));
-
-  // double Surface0 = 200. * 1.989e30 / 3.086e16 / 3.086e16;  // 200M_sun/pc^(-2)
-  // sf_effH=sf_effH*(1.+pow(sigma_gas0*exp(-q/reff)/Surface0,0.4));  //Lagos et al. 2011 paper
-
-  double my_integrandR = q * fmol * sigma_gas0 * exp(-q / reff) * sf_effH;
-
-  return my_integrandR;
-}
-
-static double p_dependent_SFR(double lower_limit,
-                              double upper_limit,
-                              double sigma_gas0,
-                              double sigma_stars0,
-                              double v_ratio,
-                              double reff)
-{
-  static gsl_function FR;
-  static gsl_integration_workspace* workspace;
-  double result, abserr;
-  size_t worksize = 512;
-
-  struct FR_parameters parameters = { sigma_gas0, sigma_stars0, v_ratio, reff };
-
-  workspace = gsl_integration_workspace_alloc(worksize);
-
-  FR.function = &integrand_p_dependent_SFR;
-  FR.params = &parameters;
-
-  gsl_integration_qag(
-    &FR, lower_limit, upper_limit, 1.0e-8, 1.0e-8, worksize, GSL_INTEG_GAUSS21, workspace, &result, &abserr);
-  gsl_integration_workspace_free(workspace);
-
-  return result;
-}
-
-double pressure_dependent_star_formation(galaxy_t* gal, int snapshot)
-{
-  /*
-   * Credit: Hansik Kim
-   * Based on the SF prescription of Blitz & Rosolowski (2006).
-   */
-
-  double SfEfficiency_II = run_globals.params.physics.SfEfficiency;
-#if USE_MINI_HALOS
-  double SfEfficiency_III = run_globals.params.physics.SfEfficiency_III;
-#endif
-  double Y_He = run_globals.params.physics.Y_He;
-  double zplus1_n = pow(1.0 + run_globals.ZZ[snapshot], run_globals.params.physics.SfEfficiencyScaling);
-#if USE_MINI_HALOS
-  double zplus1_n_III = pow(1.0 + run_globals.ZZ[snapshot], run_globals.params.physics.SfEfficiencyScaling_III);
-#endif
-  run_units_t* units = &(run_globals.units);
-  double G_SI = GRAVITY * 1.e-3;
-  double sf_eff;
-
-  // SF timescale:
-#if USE_MINI_HALOS
-  if (gal->Galaxy_Population == 2)
-#endif
-    sf_eff = 1.0 / 3.0e8 * SfEfficiency_II * zplus1_n;
-#if USE_MINI_HALOS
-  else if (gal->Galaxy_Population == 3)
-    sf_eff = 1.0 / 3.0e8 * SfEfficiency_III * zplus1_n_III;
-#endif
-  double MSFRR = 0.0;
-
-  if (gal->DiskScaleLength > 0.0) {
-    double reff = 1. * gal->DiskScaleLength;
-    double sigma_gas0 = 0.76 * gal->ColdGas / (2.0 * M_PI * reff * reff);
-    sigma_gas0 = sigma_gas0 * units->UnitMass_in_g / pow(units->UnitLength_in_cm, 2); // in g.cm^-2
-    sigma_gas0 = sigma_gas0 * 1.0e-3 * 1.0e4; // in kg.m^-2 //gas surface density
-
-    double sigma_stars0 = gal->StellarMass / (2.0 * M_PI * reff * reff);                  // DRAGONS units
-    sigma_stars0 = sigma_stars0 * units->UnitMass_in_g / pow(units->UnitLength_in_cm, 2); // in g.cm^-2
-    sigma_stars0 = sigma_stars0 * 1.0e-3 * 1.0e4; // in kg.m^-2 // stellar surface density
-
-    reff = reff * units->UnitLength_in_cm / 100.0; // in m
-
-    double vdisp_gas = 10.0e3;                                    // m.s^-1 , following BR06
-    double v_ratio = vdisp_gas / sqrt(M_PI * G_SI * 0.14 * reff); // relation between stellar and gas dispersion
-
-    if (sigma_gas0 > 0.0) {
-      double p_ext = M_PI / 2.0 * G_SI * sigma_gas0 * (sigma_gas0 + v_ratio * sqrt(sigma_stars0));
-      double MSFR = 1.0 / (1.0 + pow(p_ext / 4.79e-13, -0.92));
-      gal->H2Frac = check_float_cast((double)(MSFR), FloatField_H2Frac); // Molecular hydrogen fraction, f_(H2Mass)
-
-      if ((MSFR < 0.0) || (MSFR > 1.0)) {
-        mlog_error("BR06 - H2Frac = %e\n", MSFR);
-        ABORT(66);
-      }
-
-      // Bigiel+11 SF law
-      // TODO: PUT THIS BACK!
-      MSFRR = p_dependent_SFR(0, 5 * reff, sigma_gas0, sigma_stars0, v_ratio, reff);
-      gal->H2Mass = check_float_cast((double)(2. * M_PI * MSFRR * 1.0e3 / units->UnitMass_in_g), FloatField_H2Mass); // Molecular hydrogen mass
-      if (gal->H2Mass > (1. - Y_He) * gal->ColdGas)
-        gal->H2Mass = check_float_cast((double)((1. - Y_He) * gal->ColdGas), FloatField_H2Mass);
-      gal->HIMass = check_float_cast((double)((1. - Y_He) * gal->ColdGas - gal->H2Mass), FloatField_HIMass); // hydrogen mass
-      MSFRR = MSFRR * 2.0 * M_PI * sf_eff / SEC_PER_YEAR;
-      MSFRR = MSFRR * 1.0e3; // in g/s
-    } else {
-      MSFRR = 0.0;
-      gal->H2Frac = check_float_cast((double)(0.0), FloatField_H2Frac);
-      gal->H2Mass = check_float_cast((double)(0.0), FloatField_H2Mass);
-      gal->HIMass = check_float_cast((double)(0.0), FloatField_HIMass);
-    }
-  } else {
-    MSFRR = 0.0;
-    gal->H2Frac = check_float_cast((double)(0.0), FloatField_H2Frac);
-    gal->H2Mass = check_float_cast((double)(0.0), FloatField_H2Mass);
-    gal->HIMass = check_float_cast((double)(0.0), FloatField_HIMass);
-  }
-
-  MSFRR = MSFRR / units->UnitMass_in_g * units->UnitTime_in_s; // SFR in DRAGONS units
-
-  return MSFRR;
-}

@@ -38,9 +38,6 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->MetalsHotGas = check_float_cast((double)(0.0), FloatField_MetalsHotGas);
   gal->ColdGas = check_float_cast((double)(0.0), FloatField_ColdGas);
   gal->MetalsColdGas = check_float_cast((double)(0.0), FloatField_MetalsColdGas);
-  gal->H2Frac = check_float_cast((double)(0.0), FloatField_H2Frac);
-  gal->H2Mass = check_float_cast((double)(0.0), FloatField_H2Mass);
-  gal->HIMass = check_float_cast((double)(0.0), FloatField_HIMass);
   gal->EjectedGas = check_float_cast((double)(0.0), FloatField_EjectedGas);
   gal->MetalsEjectedGas = check_float_cast((double)(0.0), FloatField_MetalsEjectedGas);
   gal->Mcool = check_float_cast((double)(0.0), FloatField_Mcool);

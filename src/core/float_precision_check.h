@@ -30,9 +30,6 @@ extern "C"
   X(MetalsHotGas)                                                                                                     \
   X(ColdGas)                                                                                                          \
   X(MetalsColdGas)                                                                                                    \
-  X(H2Frac)                                                                                                           \
-  X(H2Mass)                                                                                                           \
-  X(HIMass)                                                                                                           \
   X(Mcool)                                                                                                            \
   X(StellarMass)                                                                                                      \
   X(GrossStellarMass)                                                                                                 \

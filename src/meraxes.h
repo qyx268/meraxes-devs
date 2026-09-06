@@ -654,9 +654,6 @@ typedef struct galaxy_t
   float MetalsHotGas;
   float ColdGas;
   float MetalsColdGas;
-  float H2Frac;
-  float H2Mass;
-  float HIMass;
   float Mcool;
   float StellarMass;
   float GrossStellarMass;
