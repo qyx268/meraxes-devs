@@ -231,7 +231,7 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
   output->GhostFlag = (int)galaxy->ghost_flag;
   output->Mvir = (float)galaxy->Mvir;
   output->StellarMass = (float)galaxy->StellarMass;
-  output->LOIII = (float)(galaxy->LOIII / 1e40);
+  output->LOIII = (float)galaxy->LOIII; // galaxy->LOIII is already stored in units of 1e40 erg/s
   output->QuasarMag = galaxy->QuasarLuv > 0.0 ? (float)(-19.826 - 2.5 * log10(galaxy->QuasarLuv)) : 999.9f;
   output->DutyCycleAGN = (float)galaxy->DutyCycleAGN;
 
@@ -355,7 +355,7 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->DiskScaleLength = gal.DiskScaleLength;
   galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  galout->LOIII = (float)(gal.LOIII / 1e40); // Output in units of 1e40 erg/s
+  galout->LOIII = (float)gal.LOIII; // gal.LOIII is already stored in units of 1e40 erg/s
   galout->ionization_param = gal.ionization_param;
   galout->FescWeightedSfr = (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->EjectedGas = gal.EjectedGas;

@@ -663,7 +663,7 @@ typedef struct galaxy_t
   float MetalsStellarMass;
   float DiskScaleLength;
   float Sfr;
-  float LOIII;
+  float LOIII; //!< [O III] luminosity [1e40 erg/s]
   float LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
   float ionization_param;
   float EjectedGas;
