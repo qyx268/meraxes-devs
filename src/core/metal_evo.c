@@ -11,7 +11,7 @@
 #include "meraxes.h"
 #include "metal_evo.h"
 #include "misc_tools.h"
-#include "reionization.c"
+#include "reionization.h"
 #include "virial_properties.h"
 
 void assign_slabs_metals()
