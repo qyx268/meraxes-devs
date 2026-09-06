@@ -1,10 +1,43 @@
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 
 #include "debug.h"
 #include "meraxes.h"
 #include "misc_tools.h"
 #include "reionization.h"
+
+// Reads this rank's current resident set size from /proc/self/status (Linux-only)
+// and MPI_Reduces it to rank 0, so a single per-checkpoint log line reports both
+// the worst-offending rank and the total RAM footprint across the whole job.
+void log_memory_usage(const char* label, int snapshot)
+{
+  double vmrss_kb = 0.0;
+  FILE* status_file = fopen("/proc/self/status", "r");
+  if (status_file != NULL) {
+    char line[256];
+    while (fgets(line, sizeof(line), status_file) != NULL) {
+      if (strncmp(line, "VmRSS:", 6) == 0) {
+        sscanf(line + 6, "%lf", &vmrss_kb);
+        break;
+      }
+    }
+    fclose(status_file);
+  }
+
+  double vmrss_gb = vmrss_kb / (1024.0 * 1024.0);
+  double max_rss_gb = 0.0;
+  double sum_rss_gb = 0.0;
+  MPI_Reduce(&vmrss_gb, &max_rss_gb, 1, MPI_DOUBLE, MPI_MAX, 0, run_globals.mpi_comm);
+  MPI_Reduce(&vmrss_gb, &sum_rss_gb, 1, MPI_DOUBLE, MPI_SUM, 0, run_globals.mpi_comm);
+
+  mlog("MEMORY [%s] snapshot %d :: max rank RSS = %.2f GB, total RSS (sum over ranks) = %.2f GB",
+       MLOG_MESG,
+       label,
+       snapshot,
+       max_rss_gb,
+       sum_rss_gb);
+}
 
 void myexit(int signum)
 {
