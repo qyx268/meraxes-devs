@@ -81,7 +81,6 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->BaryonFracModifier = 1.0;
   gal->FOFMvirModifier = 1.0;
   gal->MvirCrit = 0.0;
-  gal->MvirCrit_MC = 0.0;
   gal->tau_cgm = 0.0;
   gal->cumulative_ionization = 0.0;
   gal->MergerBurstMass = 0.0;
@@ -103,6 +102,7 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
   gal->StochasticityTreatedFescIIIWeightedSfr = 0.0;
 #endif
   gal->Remnant_Mass = 0.;
+  gal->MvirCrit_MC = 0.0;
   gal->Metal_Probability = 0.0;
   gal->Metals_IGM = 0.0;
   gal->Gas_IGM = 0.0;
@@ -225,7 +225,9 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
         run_globals.params.Flag_PatchyReion &&
         run_globals.params.physics.Flag_ReionizationModifier != 0)) {
     gal->MvirCrit = 0.0;
+#if USE_MINI_HALOS
     gal->MvirCrit_MC = 0.0;
+#endif
   }
 #if USE_MINI_HALOS
   gal->SfrIII = 0.0;

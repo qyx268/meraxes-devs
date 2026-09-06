@@ -788,6 +788,8 @@ typedef struct galaxy_t
   double Remnant_Mass; // Coming from Pop III with M between 40 and 140 and larger than 260 Msol and remnant of CCSN
                        // [8,40]Msun. Atm those are silent.
 
+  double MvirCrit_MC;
+
   // Metallicity stuff
   double RmetalBubble; // New for MetalEvo
   double PrefactorBubble;
@@ -818,7 +820,6 @@ typedef struct galaxy_t
   double BaryonFracModifier;
   double FOFMvirModifier;
   double MvirCrit;
-  double MvirCrit_MC;
   double tau_cgm;
   double cumulative_ionization;  //!< Integrated Gamma12 * dt for CGM suppression mode 2
   double MergerBurstMass;
