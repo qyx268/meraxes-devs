@@ -2,6 +2,7 @@
 #ifdef CALC_MAGS
 
 #include "debug.h"
+#include "float_precision_check.h"
 #include "magnitudes.h"
 #include "meraxes.h"
 #include "misc_tools.h"
@@ -22,11 +23,11 @@ void init_luminosities(galaxy_t* gal)
 #endif
 
   for (int iSF = 0; iSF < MAGS_N; ++iSF) {
-    inBCFlux[iSF] = TOL;
-    outBCFlux[iSF] = TOL;
+    inBCFlux[iSF] = check_float_cast((double)(TOL), FloatField_inBCFlux);
+    outBCFlux[iSF] = check_float_cast((double)(TOL), FloatField_outBCFlux);
 #if USE_MINI_HALOS
-    inBCFluxIII[iSF] = TOL;
-    outBCFluxIII[iSF] = TOL;
+    inBCFluxIII[iSF] = check_float_cast((double)(TOL), FloatField_inBCFluxIII);
+    outBCFluxIII[iSF] = check_float_cast((double)(TOL), FloatField_outBCFluxIII);
 #endif
   }
 }
@@ -78,8 +79,10 @@ void add_luminosities(mag_params_t* miniSpectra,
       if (gal->Galaxy_Population == 3) {
         offset = iA * MAGS_N_BANDS;
         for (iF = 0; iF < MAGS_N_BANDS; ++iF) {
-          pOutBCFlux[iF] += sfr * pWorkingIII[offset + iF];
-          pOutBCFluxIII[iF] += sfr * pWorkingIII[offset + iF];
+          pOutBCFlux[iF] =
+            check_float_cast((double)(pOutBCFlux[iF]) + sfr * pWorkingIII[offset + iF], FloatField_outBCFlux);
+          pOutBCFluxIII[iF] =
+            check_float_cast((double)(pOutBCFluxIII[iF]) + sfr * pWorkingIII[offset + iF], FloatField_outBCFluxIII);
         }
       } else
 #endif
@@ -88,17 +91,21 @@ void add_luminosities(mag_params_t* miniSpectra,
         if (iA > iAgeBC) {
           offset = (Z * nAgeStep + iA) * MAGS_N_BANDS;
           for (iF = 0; iF < MAGS_N_BANDS; ++iF)
-            pOutBCFlux[iF] += sfr * pWorking[offset + iF];
+            pOutBCFlux[iF] =
+              check_float_cast((double)(pOutBCFlux[iF]) + sfr * pWorking[offset + iF], FloatField_outBCFlux);
         } else if (iA == iAgeBC) {
           offset = Z * MAGS_N_BANDS;
           for (iF = 0; iF < MAGS_N_BANDS; ++iF) {
-            pInBCFlux[iF] += sfr * pInBC[offset + iF];
-            pOutBCFlux[iF] += sfr * pOutBC[offset + iF];
+            pInBCFlux[iF] =
+              check_float_cast((double)(pInBCFlux[iF]) + sfr * pInBC[offset + iF], FloatField_inBCFlux);
+            pOutBCFlux[iF] =
+              check_float_cast((double)(pOutBCFlux[iF]) + sfr * pOutBC[offset + iF], FloatField_outBCFlux);
           }
         } else {
           offset = (Z * nAgeStep + iA) * MAGS_N_BANDS;
           for (iF = 0; iF < MAGS_N_BANDS; ++iF)
-            pInBCFlux[iF] += sfr * pWorking[offset + iF];
+            pInBCFlux[iF] =
+              check_float_cast((double)(pInBCFlux[iF]) + sfr * pWorking[offset + iF], FloatField_inBCFlux);
         }
       }
     }
@@ -133,11 +140,15 @@ void merge_luminosities(galaxy_t* target, galaxy_t* gal)
 #endif
 
   for (int iSF = 0; iSF < MAGS_N; ++iSF) {
-    inBCFluxTgt[iSF] += inBCFlux[iSF];
-    outBCFluxTgt[iSF] += outBCFlux[iSF];
+    inBCFluxTgt[iSF] =
+      check_float_cast((double)(inBCFluxTgt[iSF]) + (double)(inBCFlux[iSF]), FloatField_inBCFlux);
+    outBCFluxTgt[iSF] =
+      check_float_cast((double)(outBCFluxTgt[iSF]) + (double)(outBCFlux[iSF]), FloatField_outBCFlux);
 #if USE_MINI_HALOS
-    inBCFluxTgtIII[iSF] += inBCFluxIII[iSF];
-    outBCFluxTgtIII[iSF] += outBCFluxIII[iSF];
+    inBCFluxTgtIII[iSF] =
+      check_float_cast((double)(inBCFluxTgtIII[iSF]) + (double)(inBCFluxIII[iSF]), FloatField_inBCFluxIII);
+    outBCFluxTgtIII[iSF] =
+      check_float_cast((double)(outBCFluxTgtIII[iSF]) + (double)(outBCFluxIII[iSF]), FloatField_outBCFluxIII);
 #endif
   }
 }
