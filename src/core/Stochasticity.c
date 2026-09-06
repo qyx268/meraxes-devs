@@ -11,7 +11,19 @@
 
 #if USE_STOCHASTICITY
 
-// fesc stochasticity related 
+// Galaxy_Population only exists on galaxy_t when USE_MINI_HALOS is on; without
+// mini-halos every galaxy is implicitly population 2.
+static inline bool galaxy_in_population(const galaxy_t* gal, int population)
+{
+#if USE_MINI_HALOS
+  return gal->Galaxy_Population == population;
+#else
+  (void)gal;
+  return population == 2;
+#endif
+}
+
+// fesc stochasticity related
 enum fesc_global_sum_index
 {
   FESC_POPII_GSM_RAW = 0,
@@ -608,7 +620,7 @@ void build_no_shmr_tables(int population)
   int bin;
   size_t cell;
   while (gal != NULL) {
-    if (stochasticity_source_eligible(gal) && gal->Galaxy_Population == population) {
+    if (stochasticity_source_eligible(gal) && galaxy_in_population(gal, population)) {
 	  log10_mvir = log10(gal->Mvir);
       bin = log10_mvir < SHMR_XMIN ? 0 : log10_mvir > SHMR_XMAX ? SHMR_NX - 1 : (int)floor((log10_mvir - SHMR_XMIN) / SHMR_DX);
 	  cell = (size_t) ( gal->Type * SHMR_NX + bin);
@@ -679,7 +691,7 @@ void build_no_shmr_tables(int population)
   gal = run_globals.FirstGal;
   
   while (gal != NULL) {
-    if (stochasticity_source_eligible(gal) && gal->Galaxy_Population == population) {
+    if (stochasticity_source_eligible(gal) && galaxy_in_population(gal, population)) {
       log10_mvir = log10(gal->Mvir);
       bin = log10_mvir < SHMR_XMIN ? 0 : log10_mvir > SHMR_XMAX ? SHMR_NX - 1 : (int)floor((log10_mvir - SHMR_XMIN) / SHMR_DX);
       cell = (size_t) ( gal->Type * SHMR_NX + bin);
@@ -919,7 +931,7 @@ no_shmr_sfr_stochasticity_calibrations =
 	raw_sfr = gal->StochasticityTreatedFescWeightedSfr;
 #endif    
     has_gsm = stochasticity_source_eligible(gal) && (raw_gsm > 0.0 || target_gsm > 0.0);
-	has_sfr = stochasticity_source_eligible(gal) && (raw_sfr > 0.0 || target_sfr > 0.0) && gal->Galaxy_Population == population;
+	has_sfr = stochasticity_source_eligible(gal) && (raw_sfr > 0.0 || target_sfr > 0.0) && galaxy_in_population(gal, population);
 
     if (has_gsm || has_sfr) {
 	    log10_mvir = log10(gal->Mvir);

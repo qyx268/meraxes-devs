@@ -756,8 +756,6 @@ typedef struct galaxy_t
   double BlackHoleAccretingColdMass;
   double BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
   double t_resp;                //!< Local relaxation timescale (in Myr)
-  int Galaxy_Population; // You need it also if you are not disentangling PopIII/PopII (when Mini_halos is off, this is
-                         // = 2)
 #if USE_STOCHASTICITY
   // Alternative stellar sources with the stellar--halo scatter removed.
   // The GSM quantities are cumulative; SfrNoScatter is snapshot-local.
@@ -787,6 +785,8 @@ typedef struct galaxy_t
 
   double Remnant_Mass; // Coming from Pop III with M between 40 and 140 and larger than 260 Msol and remnant of CCSN
                        // [8,40]Msun. Atm those are silent.
+
+  int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
 
   double MvirCrit_MC;
 
