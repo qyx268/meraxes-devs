@@ -34,7 +34,6 @@ typedef struct
   int cosmological_sim;
   double length_unit_to_kpc;
   double mass_unit_to_solarmass;
-  char version[STRLEN];
   double velocity_unit_to_kms;
 } tree_units_t;
 
@@ -66,8 +65,6 @@ static void read_source_units(tree_units_t* units)
     H5LTget_attribute_double(fd, "Header/Units", "Length_unit_to_kpc", &(units->length_unit_to_kpc));
     H5LTget_attribute_double(fd, "Header/Units", "Mass_unit_to_solarmass", &(units->mass_unit_to_solarmass));
     H5LTget_attribute_double(fd, "Header/Units", "Velocity_unit_to_kms", &(units->velocity_unit_to_kms));
-    memset(units->version, 0, STRLEN);
-    H5LTget_attribute_string(fd, "Header/Units", "VERSION", units->version);
     H5Fclose(fd);
     units->mass_unit_to_internal = units->mass_unit_to_solarmass / 1.0e10;
   }
@@ -254,8 +251,12 @@ int write_truncated_tree(void)
     MPI_Allreduce(&orig_n_halos, &global_orig_n_halos, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(&orig_n_fof, &global_orig_n_fof, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
 
+    // MLOG_FLUSH matters here: with stdout redirected to a batch-job log file
+    // (not a terminal), output is normally full-buffered, so without an explicit
+    // flush this progress can sit invisible for a long time even while the run
+    // is actively working through later snapshots.
     mlog("snapshot %d :: kept %d/%d halos, %d/%d FOF groups",
-         MLOG_MESG,
+         MLOG_MESG | MLOG_FLUSH,
          s,
          global_n_halos[s],
          global_orig_n_halos,
@@ -294,7 +295,6 @@ int write_truncated_tree(void)
     H5LTset_attribute_int(header_grp, "Units", "Cosmological_Sim", &units.cosmological_sim, 1);
     H5LTset_attribute_double(header_grp, "Units", "Length_unit_to_kpc", &units.length_unit_to_kpc, 1);
     H5LTset_attribute_double(header_grp, "Units", "Mass_unit_to_solarmass", &units.mass_unit_to_solarmass, 1);
-    H5LTset_attribute_string(header_grp, "Units", "VERSION", units.version);
     H5LTset_attribute_double(header_grp, "Units", "Velocity_unit_to_kms", &units.velocity_unit_to_kms, 1);
     H5Gclose(units_grp);
     H5Gclose(header_grp);
