@@ -185,15 +185,27 @@ int write_truncated_tree(void)
         if (h->DescIndex == -1)
           break; // life ends here -- no kept descendant
         int next_s = cur_s + h->SnapOffset;
-        int next_i = h->DescIndex;
         if (next_s >= n_snaps || next_s <= cur_s)
           break; // out of range, or a non-advancing offset -- treat as terminal
+
+        // h->DescIndex is the ORIGINAL (file-space) local index at next_s -- with
+        // multiple ranks each holding only its own forests' halos, that has to be
+        // translated to this rank's compacted runtime array position first, exactly
+        // like the normal galaxy/halo linking code in dracarys.c does.
+        int next_i = h->DescIndex;
+        int* lookup = run_globals.SnapshotIndexLookup[next_s];
+        if (lookup != NULL) {
+          next_i = find_original_index(h->DescIndex, lookup, run_globals.SnapshotTreesInfo[next_s].n_halos);
+          if (next_i == -1)
+            break; // descendant isn't part of this rank's (this forest's) kept set -- treat as terminal
+        }
         if (next_i < 0 || next_i >= run_globals.SnapshotTreesInfo[next_s].n_halos) {
           mlog_error("write_truncated_tree: snapshot %d halo %d's descendant chain points to an "
-                     "out-of-range halo at snapshot %d (DescIndex=%d, n_halos=%d).",
+                     "out-of-range halo at snapshot %d (DescIndex=%d, translated index=%d, n_halos=%d).",
                      s,
                      i,
                      next_s,
+                     h->DescIndex,
                      next_i,
                      run_globals.SnapshotTreesInfo[next_s].n_halos);
           ABORT(EXIT_FAILURE);
