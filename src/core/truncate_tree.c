@@ -126,7 +126,7 @@ int write_truncated_tree(void)
   const int n_snaps = last_snap + 1;
   assert(run_globals.NStoreSnapshots == n_snaps);
 
-  mlog("Writing Tvir>=1e4K-truncated tree...", MLOG_OPEN | MLOG_TIMERSTART);
+  mlog("Writing Tvir>=%gK-truncated tree...", MLOG_OPEN | MLOG_TIMERSTART, TVIR_CUT);
 
   tree_units_t units;
   read_source_units(&units);
