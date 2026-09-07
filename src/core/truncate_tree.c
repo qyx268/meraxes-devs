@@ -79,6 +79,36 @@ static inline bool fof_group_is_kept(const fof_group_t* fof_group)
   return tvir >= TVIR_CUT;
 }
 
+// A reasonable, HDF5-required-nonzero chunk size for a 1D dataset of length n.
+// These files are always read back in one shot (never partial/random access),
+// so this only needs to be "big enough for gzip to find patterns in" and "small
+// enough not to be one giant chunk" -- it doesn't need to match any particular
+// access pattern.
+static inline hsize_t chunk_size_for(hsize_t n)
+{
+  const hsize_t cap = 65536;
+  if (n == 0)
+    return 1;
+  return n < cap ? n : cap;
+}
+
+// Creates a chunked, gzip-compressed 1D dataset and writes the full array into
+// it in one step. Used for the (highly sparse, hugely compressible) forest
+// stats file -- see write_truncated_tree()'s size/compression discussion.
+static void write_compressed_dataset(hid_t loc, const char* name, hid_t type, hsize_t n, const void* data)
+{
+  hsize_t chunk = chunk_size_for(n);
+  hid_t dspace = H5Screate_simple(1, &n, NULL);
+  hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
+  H5Pset_chunk(dcpl, 1, &chunk);
+  H5Pset_deflate(dcpl, 6);
+  hid_t dset = H5Dcreate(loc, name, type, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
+  H5Dwrite(dset, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  H5Dclose(dset);
+  H5Pclose(dcpl);
+  H5Sclose(dspace);
+}
+
 int write_truncated_tree(void)
 {
   // read_halos.c's preload checks (initialize_halo_storage() and read_halos()
@@ -391,22 +421,28 @@ int write_truncated_tree(void)
       hsize_t dim[1] = { (hsize_t)nhalos_s };
       hid_t dspace = H5Screate_simple(1, dim, NULL);
 
+      hsize_t chunk = chunk_size_for(dim[0]);
+      hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
+      H5Pset_chunk(dcpl, 1, &chunk);
+      H5Pset_deflate(dcpl, 6);
+
       hid_t dset;
-      dset = H5Dcreate(grp, "ID", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dset = H5Dcreate(grp, "ID", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
       H5Dclose(dset);
-      dset = H5Dcreate(grp, "Head", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dset = H5Dcreate(grp, "Head", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
       H5Dclose(dset);
-      dset = H5Dcreate(grp, "hostHaloID", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dset = H5Dcreate(grp, "hostHaloID", H5T_NATIVE_LONG, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
       H5Dclose(dset);
-      dset = H5Dcreate(grp, "ForestID", H5T_NATIVE_ULONG, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dset = H5Dcreate(grp, "ForestID", H5T_NATIVE_ULONG, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
       H5Dclose(dset);
-      dset = H5Dcreate(grp, "npart", H5T_NATIVE_UINT, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dset = H5Dcreate(grp, "npart", H5T_NATIVE_UINT, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
       H5Dclose(dset);
       for (int k = 0; k < n_dset_float; k++) {
-        dset = H5Dcreate(grp, dset_names_float[k], H5T_NATIVE_FLOAT, dspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        dset = H5Dcreate(grp, dset_names_float[k], H5T_NATIVE_FLOAT, dspace, H5P_DEFAULT, dcpl, H5P_DEFAULT);
         H5Dclose(dset);
       }
 
+      H5Pclose(dcpl);
       H5Sclose(dspace);
       H5Gclose(grp);
     }
@@ -748,26 +784,26 @@ int write_truncated_tree(void)
     H5LTset_attribute_int(sfd, "/", "n_halos_max", &global_n_halos_max, 1);
     H5LTset_attribute_int(sfd, "/", "n_fof_groups_max", &global_n_fof_max, 1);
 
-    hsize_t dim_snap[1] = { (hsize_t)n_snaps };
-    H5LTmake_dataset(sfd, "n_halos", 1, dim_snap, H5T_NATIVE_INT, global_n_halos);
-    H5LTmake_dataset(sfd, "n_fof_groups", 1, dim_snap, H5T_NATIVE_INT, global_n_fof);
+    write_compressed_dataset(sfd, "n_halos", H5T_NATIVE_INT, (hsize_t)n_snaps, global_n_halos);
+    write_compressed_dataset(sfd, "n_fof_groups", H5T_NATIVE_INT, (hsize_t)n_snaps, global_n_fof);
 
     hid_t forests_grp = H5Gcreate(sfd, "forests", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     H5LTset_attribute_int(sfd, "forests", "n_forests", &n_forests_global, 1);
-    hsize_t dim_forest[1] = { (hsize_t)n_forests_global };
-    H5LTmake_dataset(forests_grp, "forest_ids", 1, dim_forest, H5T_NATIVE_LONG, global_forest_ids);
-    H5LTmake_dataset(forests_grp, "n_halos", 1, dim_forest, H5T_NATIVE_INT, global_forest_n_halos);
-    H5LTmake_dataset(forests_grp, "n_fof_groups", 1, dim_forest, H5T_NATIVE_INT, global_forest_n_fof);
-    H5LTmake_dataset(forests_grp, "max_contemporaneous_halos", 1, dim_forest, H5T_NATIVE_INT, global_forest_max_halos);
-    H5LTmake_dataset(
-      forests_grp, "max_contemporaneous_fof_groups", 1, dim_forest, H5T_NATIVE_INT, global_forest_max_fof);
+    const hsize_t n_forest_h = (hsize_t)n_forests_global;
+    write_compressed_dataset(forests_grp, "forest_ids", H5T_NATIVE_LONG, n_forest_h, global_forest_ids);
+    write_compressed_dataset(forests_grp, "n_halos", H5T_NATIVE_INT, n_forest_h, global_forest_n_halos);
+    write_compressed_dataset(forests_grp, "n_fof_groups", H5T_NATIVE_INT, n_forest_h, global_forest_n_fof);
+    write_compressed_dataset(
+      forests_grp, "max_contemporaneous_halos", H5T_NATIVE_INT, n_forest_h, global_forest_max_halos);
+    write_compressed_dataset(
+      forests_grp, "max_contemporaneous_fof_groups", H5T_NATIVE_INT, n_forest_h, global_forest_max_fof);
     H5Gclose(forests_grp);
 
     hid_t snaps_grp = H5Gcreate(sfd, "snapshots", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     for (int s = 0; s < n_snaps; s++) {
       char dset_name[16];
       sprintf(dset_name, "Snap%03d", s);
-      H5LTmake_dataset(snaps_grp, dset_name, 1, dim_forest, H5T_NATIVE_INT, global_forest_snap_halos[s]);
+      write_compressed_dataset(snaps_grp, dset_name, H5T_NATIVE_INT, n_forest_h, global_forest_snap_halos[s]);
     }
     H5Gclose(snaps_grp);
     H5Fclose(sfd);
