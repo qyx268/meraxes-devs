@@ -229,7 +229,8 @@ enum tree_ids
 {
   VELOCIRAPTOR_TREES,
   GBPTREES_TREES,
-  VELOCIRAPTOR_TREES_AUG
+  VELOCIRAPTOR_TREES_AUG,
+  VELOCIRAPTOR_TREES_TRUNCATED
 };
 
 //! Run params
@@ -351,6 +352,7 @@ typedef struct run_params_t
   double OIIILF_MaxLogL;  //!< Maximum log10(LOIII [erg/s]) for OIIILF bins
   int OIIILF_BinsPerDex;  //!< Number of OIIILF bins per dex
   int FlagIgnoreProgIndex;
+  int Flag_WriteTruncatedTree; //!< If set, write a Tvir>=1e4K-truncated copy of the halo tree instead of running the model
 } run_params_t;
 
 typedef struct run_units_t
@@ -761,8 +763,9 @@ typedef struct halo_t
   float Rvir; //!< Virial radius [Mpc/h]
   float Vvir; //!< Virial velocity [km/s]
 
-  float Vmax;       //!< Maximum circular velocity [km/s]
-  unsigned long ID; //!< Halo ID
+  float Vmax;             //!< Maximum circular velocity [km/s]
+  unsigned long ID;       //!< Halo ID
+  unsigned long ForestID; //!< Forest/tree membership ID (velociraptor formats only)
   int Type;         //!< Type (0 for central, 1 for satellite)
   int SnapOffset;   //!< Number of snapshots this halo skips before reappearing
   int DescIndex;    //!< Index of descendant in next relevant snapshot

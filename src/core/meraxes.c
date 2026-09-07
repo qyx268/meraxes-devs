@@ -5,6 +5,7 @@
 #include "init.h"
 #include "interactive.h"
 #include "meraxes.h"
+#include "truncate_tree.h"
 #include "utils.h"
 
 int main(int argc, char** argv)
@@ -44,7 +45,9 @@ int main(int argc, char** argv)
   init_storage();
 
   // Run the model!
-  if ((!run_globals.params.FlagInteractive) & (!run_globals.params.FlagMCMC))
+  if (run_globals.params.Flag_WriteTruncatedTree)
+    write_truncated_tree();
+  else if ((!run_globals.params.FlagInteractive) & (!run_globals.params.FlagMCMC))
     dracarys();
   else
     while (run_globals.params.FlagInteractive) {

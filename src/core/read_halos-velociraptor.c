@@ -25,6 +25,9 @@ trees_info_t read_trees_info__velociraptor(const int snapshot)
       case VELOCIRAPTOR_TREES_AUG:
         sprintf(fname, "%s/augmented_trees/meraxes_augmented_stats.h5", run_globals.params.SimulationDir);
         break;
+      case VELOCIRAPTOR_TREES_TRUNCATED:
+        sprintf(fname, "%s/truncated_trees/meraxes_augmented_stats.h5", run_globals.params.SimulationDir);
+        break;
       default:
         mlog_error("Unrecognised input trees identifier (TreesID).");
         break;
@@ -119,6 +122,9 @@ void read_trees__velociraptor(int snapshot,
     case VELOCIRAPTOR_TREES_AUG:
       mlog("Reading velociraptor augmented trees for snapshot %d...", MLOG_OPEN, snapshot);
       break;
+    case VELOCIRAPTOR_TREES_TRUNCATED:
+      mlog("Reading velociraptor truncated trees for snapshot %d...", MLOG_OPEN, snapshot);
+      break;
     default:
       mlog_error("Unrecognised input trees identifier (TreesID).");
       break;
@@ -141,6 +147,9 @@ void read_trees__velociraptor(int snapshot,
       break;
     case VELOCIRAPTOR_TREES_AUG:
       sprintf(fname, "%s/augmented_trees/%s", run_globals.params.SimulationDir, run_globals.params.CatalogFilePrefix);
+      break;
+    case VELOCIRAPTOR_TREES_TRUNCATED:
+      sprintf(fname, "%s/truncated_trees/%s", run_globals.params.SimulationDir, run_globals.params.CatalogFilePrefix);
       break;
     default:
       mlog_error("Unrecognised input trees identifier (TreesID).");
@@ -252,6 +261,7 @@ void read_trees__velociraptor(int snapshot,
         halo_t* halo = &(halos[*n_halos]);
 
         halo->ID = ID[ii];
+        halo->ForestID = (unsigned long)ForestID[ii];
         halo->DescIndex = id_to_ind(Head[ii]);
 
         if (run_globals.params.FlagIgnoreProgIndex)

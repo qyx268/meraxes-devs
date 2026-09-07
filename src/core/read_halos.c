@@ -139,6 +139,9 @@ static void select_forests()
       case VELOCIRAPTOR_TREES_AUG:
         sprintf(fname, "%s/augmented_trees/meraxes_augmented_stats.h5", run_globals.params.SimulationDir);
         break;
+      case VELOCIRAPTOR_TREES_TRUNCATED:
+        sprintf(fname, "%s/truncated_trees/meraxes_augmented_stats.h5", run_globals.params.SimulationDir);
+        break;
       case GBPTREES_TREES:
         sprintf(fname, "%s/trees/forests_info.hdf5", run_globals.params.SimulationDir);
         break;
@@ -160,6 +163,7 @@ static void select_forests()
         break;
       case VELOCIRAPTOR_TREES:
       case VELOCIRAPTOR_TREES_AUG:
+      case VELOCIRAPTOR_TREES_TRUNCATED:
         H5LTget_attribute_int(fd, "forests", "n_forests", &n_forests);
         break;
       default:
@@ -199,6 +203,7 @@ static void select_forests()
           break;
         case VELOCIRAPTOR_TREES:
         case VELOCIRAPTOR_TREES_AUG:
+        case VELOCIRAPTOR_TREES_TRUNCATED:
           H5LTread_dataset_long(fd, "forests/forest_ids", forest_ids);
           H5LTread_dataset_int(fd, "forests/max_contemporaneous_halos", max_contemp_halo);
           H5LTread_dataset_int(fd, "forests/max_contemporaneous_fof_groups", max_contemp_fof);
@@ -294,6 +299,7 @@ static void select_forests()
           break;
         case VELOCIRAPTOR_TREES:
         case VELOCIRAPTOR_TREES_AUG:
+        case VELOCIRAPTOR_TREES_TRUNCATED:
           sprintf(dset_name, "snapshots/Snap%03d", snap);
           break;
         default:
@@ -436,6 +442,7 @@ trees_info_t read_halos(const int snapshot,
   switch (run_globals.params.TreesID) {
     case VELOCIRAPTOR_TREES:
     case VELOCIRAPTOR_TREES_AUG:
+    case VELOCIRAPTOR_TREES_TRUNCATED:
       trees_info = read_trees_info__velociraptor(snapshot);
       break;
     case GBPTREES_TREES:
@@ -490,6 +497,7 @@ trees_info_t read_halos(const int snapshot,
   switch (run_globals.params.TreesID) {
     case VELOCIRAPTOR_TREES:
     case VELOCIRAPTOR_TREES_AUG:
+    case VELOCIRAPTOR_TREES_TRUNCATED:
       read_trees__velociraptor(snapshot, *halos, &n_halos, *fof_groups, &n_fof_groups, *index_lookup);
       break;
     case GBPTREES_TREES: {
