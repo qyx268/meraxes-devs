@@ -78,8 +78,6 @@ extern "C"
   X(BaryonFracModifier)                                                                                               \
   X(MvirCrit)                                                                                                         \
   X(MvirCrit_MC)                                                                                                      \
-  X(tau_cgm)                                                                                                          \
-  X(cumulative_ionization)                                                                                            \
   X(HaloMvir)                                                                                                         \
   X(HaloRvir)                                                                                                         \
   X(HaloVvir)                                                                                                         \

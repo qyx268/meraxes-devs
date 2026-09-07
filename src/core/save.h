@@ -74,7 +74,6 @@ typedef struct galaxy_output_t
   float MergTime;
   float BaryonFracModifier;
   float MvirCrit;
-  float tau_cgm;
   float dt;
 
   // baryonic histories

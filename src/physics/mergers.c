@@ -202,10 +202,6 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
     parent->DutyCycleAGN = check_float_cast((double)(gal->DutyCycleAGN), FloatField_DutyCycleAGN);
   parent->QuasarLuv = check_float_cast((double)(parent->QuasarLuv) + (gal->QuasarLuv), FloatField_QuasarLuv);
 
-  // take the CGM tau from the one with more CGM
-  if (parent->HotGas < gal->HotGas)
-    parent->tau_cgm = check_float_cast((double)(gal->tau_cgm), FloatField_tau_cgm);
-
   parent->BlackHoleAccretingColdMass = check_float_cast((double)(parent->BlackHoleAccretingColdMass) + (gal->BlackHoleAccretingColdMass), FloatField_BlackHoleAccretingColdMass);
   parent->BHemissivity = check_float_cast((double)(parent->BHemissivity) + (gal->BHemissivity), FloatField_BHemissivity);
   parent->BlackHoleMass = check_float_cast((double)(parent->BlackHoleMass) + (gal->BlackHoleMass), FloatField_BlackHoleMass);

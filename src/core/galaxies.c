@@ -60,8 +60,6 @@ galaxy_t* new_galaxy(void)
   gal->MergTime = check_float_cast((double)(99999.9), FloatField_MergTime);
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
   gal->MvirCrit = check_float_cast((double)(0.0), FloatField_MvirCrit);
-  gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
-  gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
 
 #if USE_MINI_HALOS
   gal->StellarMass_II = check_float_cast((double)(0.), FloatField_StellarMass_II);
@@ -156,8 +154,6 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   gal->Mcool = check_float_cast((double)(0.0), FloatField_Mcool);
   gal->Rcool = check_float_cast((double)(0.0), FloatField_Rcool);
   gal->MvirCrit = check_float_cast((double)(0.0), FloatField_MvirCrit);
-  gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
-  gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
   gal->BHemissivity = check_float_cast((double)(0.0), FloatField_BHemissivity);
   gal->QuasarLuv = check_float_cast((double)(0.0), FloatField_QuasarLuv);
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);

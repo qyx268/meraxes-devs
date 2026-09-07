@@ -184,11 +184,6 @@ typedef struct physics_params_t
   double EscapeFracRedshiftScaling;
   double EscapeFracPropScaling;
 
-  // CGM suppression of fesc
-  double FescCGMSuppressionNorm;
-  double FescCGMSuppressionScaling;
-  double FescCGMGamma12Scaling;
-
   // global reionization prescription
   double ReionSobacchi_Zre;
   double ReionSobacchi_DeltaZre;
@@ -220,7 +215,6 @@ typedef struct physics_params_t
   int Flag_FixDiskRadiusOnInfall;
   int Flag_FixVmaxOnInfall;
   int Flag_ReheatToFOFGroupTemp;
-  int Flag_FescCGMSuppression;
 } physics_params_t;
 
 enum tree_ids
@@ -711,8 +705,6 @@ typedef struct galaxy_t
   float MergTime;
   float BaryonFracModifier;
   float MvirCrit;
-  float tau_cgm;
-  float cumulative_ionization;  //!< Integrated Gamma12 * dt for CGM suppression mode 2
 
   int Type;
   int OldType;

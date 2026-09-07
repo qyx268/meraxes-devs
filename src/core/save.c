@@ -353,7 +353,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->Rcool = gal.Rcool;
   galout->BaryonFracModifier = gal.BaryonFracModifier;
   galout->MvirCrit = gal.MvirCrit;
-  galout->tau_cgm = gal.tau_cgm;
   galout->dt = (float)(gal.dt * units->UnitTime_in_Megayears);
   galout->MergTime = (float)(gal.MergTime * units->UnitTime_in_Megayears);
   galout->MWMSA = current_mwmsa(&gal, i_snap);
@@ -423,9 +422,10 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 40; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
+    h5props->n_props = 39; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
                             // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
-                            // BlackHoleAccretedColdMass, ionization_param, FescBH dropped -- see galaxies.c
+                            // BlackHoleAccretedColdMass, ionization_param, FescBH, tau_cgm
+                            // dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -791,13 +791,6 @@ void calc_hdf5_props()
     h5props->field_h_conv[i] = "v/h";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 #endif
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, tau_cgm);
-    h5props->dst_field_sizes[i] = sizeof(galout.tau_cgm);
-    h5props->field_names[i] = "tau_cgm";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MWMSA);
     h5props->dst_field_sizes[i] = sizeof(galout.MWMSA);
