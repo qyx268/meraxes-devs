@@ -6,6 +6,7 @@
 #include <gsl/gsl_rng.h>
 #include <hdf5.h>
 #include <mlog.h>
+#include <stdint.h>
 #include <stdio.h>
 
 /*
@@ -753,8 +754,12 @@ typedef struct halo_t
   struct halo_t* NextHaloInFOFGroup;
   galaxy_t* Galaxy;
 
-  float Pos[3];    //!< Most bound particle position [Mpc/h]
-  float Vel[3];    //!< Centre of mass velocity [Mpc/h]
+  float Pos[3]; //!< Most bound particle position [Mpc/h]
+  // N.B. Vel[3] was dropped from this struct -- it was only ever used to seed
+  // gal->Vel (galaxies.c), which is itself only read by the output writer.
+  // gal->Vel now just keeps its new_galaxy() sentinel (-99999.9) for the
+  // galaxy's whole life, the same convention already used for any other
+  // per-galaxy property that isn't tracked.
   float AngMom; //!< Specific angular momentum length [Mpc/h *km/s]
 
   float Mvir; //!< virial mass [M_sol/h]
@@ -763,12 +768,12 @@ typedef struct halo_t
 
   float Vmax;       //!< Maximum circular velocity [km/s]
   unsigned long ID; //!< Halo ID
-  int Type;         //!< Type (0 for central, 1 for satellite)
-  int SnapOffset;   //!< Number of snapshots this halo skips before reappearing
   int DescIndex;    //!< Index of descendant in next relevant snapshot
   int ProgIndex;    //!< Index of progenitor in previous relevant snapshot
   int TreeFlags;    //!< Bitwise flag indicating the type of match in the trees
   int Len;          //!< Number of particles in the structure
+  int16_t SnapOffset; //!< Number of snapshots this halo skips before reappearing (never seen to exceed a few dozen)
+  int8_t Type;         //!< Type (0 for central, 1 for satellite)
 } halo_t;
 
 typedef struct fof_group_t

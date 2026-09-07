@@ -156,10 +156,11 @@ void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
       gal->DiskScaleLength = check_float_cast((double)(gal->Spin * gal->Rvir / sqrt_2), FloatField_DiskScaleLength);
   }
 
-  for (int ii = 0; ii < 3; ii++) {
+  // gal->Vel is intentionally left untouched here -- halo_t no longer
+  // carries a Vel field, so gal->Vel just keeps its new_galaxy() sentinel
+  // (-99999.9) for the galaxy's whole life.
+  for (int ii = 0; ii < 3; ii++)
     gal->Pos[ii] = halo->Pos[ii];
-    gal->Vel[ii] = halo->Vel[ii];
-  }
 
   // record the maximum Len value if necessary
   if (halo->Len > gal->MaxLen)

@@ -182,9 +182,9 @@ void read_trees__velociraptor(int snapshot,
   float* Xc = malloc(sizeof(float) * buffer_size);
   float* Yc = malloc(sizeof(float) * buffer_size);
   float* Zc = malloc(sizeof(float) * buffer_size);
-  float* VXc = malloc(sizeof(float) * buffer_size);
-  float* VYc = malloc(sizeof(float) * buffer_size);
-  float* VZc = malloc(sizeof(float) * buffer_size);
+  // N.B. VXc/VYc/VZc are no longer read -- halo_t no longer carries a Vel
+  // field (it was only ever used to seed gal->Vel, which nothing but the
+  // output writer reads).
   float* AngMom = malloc(sizeof(float) * buffer_size);
   unsigned long* ID = malloc(sizeof(unsigned long) * buffer_size); 
   unsigned long* npart = malloc(sizeof(unsigned long) * buffer_size);
@@ -228,11 +228,8 @@ void read_trees__velociraptor(int snapshot,
 	READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT, 7);
 	READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT, 8);
 	READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT, 9);
-	READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);                                                                  
-	READ_TREE_ENTRY_PROP(VXc,          float, H5T_NATIVE_FLOAT, 11);                                                                  
-	READ_TREE_ENTRY_PROP(VYc,          float, H5T_NATIVE_FLOAT, 12);                                                                  
-	READ_TREE_ENTRY_PROP(VZc,          float, H5T_NATIVE_FLOAT, 13);                                                                  
-	READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);                                                                  
+	READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);
+	READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);
 	READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG, 15);                                                          
 	READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG, 16);                                                          
 
@@ -335,10 +332,7 @@ void read_trees__velociraptor(int snapshot,
         halo->Pos[0] = fmax(0.0, fmin(Xc[ii] * hubble_h / scale_factor, box_size));
         halo->Pos[1] = fmax(0.0, fmin(Yc[ii] * hubble_h / scale_factor, box_size));
         halo->Pos[2] = fmax(0.0, fmin(Zc[ii] * hubble_h / scale_factor, box_size));
-        halo->Vel[0] = VXc[ii] / scale_factor;
-        halo->Vel[1] = VYc[ii] / scale_factor;
-        halo->Vel[2] = VZc[ii] / scale_factor;
-        halo->Vmax = Vmax[ii]; 
+        halo->Vmax = Vmax[ii];
 
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
         halo->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_HaloMvir);
@@ -366,9 +360,6 @@ void read_trees__velociraptor(int snapshot,
   free(Xc);
   free(Yc);
   free(Zc);
-  free(VXc);
-  free(VYc);
-  free(VZc);
   free(AngMom);
   free(ID);
   free(npart);
