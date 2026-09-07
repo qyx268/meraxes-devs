@@ -86,7 +86,7 @@ void initialize_halo_storage()
       last_snap = run_globals.ListOutputSnaps[ii];
 
   // Allocate an array of last_snap halo array pointers
-  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC)
+  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC || run_globals.params.Flag_WriteTruncatedTree)
     *n_store_snapshots = last_snap + 1;
   else
     *n_store_snapshots = 1;
@@ -102,7 +102,7 @@ void initialize_halo_storage()
   }
 
   // loop through and read all snapshots
-  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC) {
+  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC || run_globals.params.Flag_WriteTruncatedTree) {
     mlog("Preloading input trees and halos...", MLOG_OPEN);
     for (int i_snap = 0; i_snap <= last_snap; i_snap++)
       read_halos(i_snap,
@@ -414,7 +414,8 @@ trees_info_t read_halos(const int snapshot,
                         trees_info_t* snapshot_trees_info)
 {
   // if we are doing multiple runs and have already read in this snapshot then we don't need to do read anything else
-  if ((run_globals.params.FlagInteractive || run_globals.params.FlagMCMC) &&
+  if ((run_globals.params.FlagInteractive || run_globals.params.FlagMCMC ||
+       run_globals.params.Flag_WriteTruncatedTree) &&
       (snapshot_trees_info[snapshot].n_halos != -1)) {
     mlog("Snapshot %d has already been read in... (n_halos = %d)",
          MLOG_MESG,
@@ -531,7 +532,7 @@ trees_info_t read_halos(const int snapshot,
   }
 
   // if we are doing multiple runs then resize the arrays to save space and store the trees_info
-  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC) {
+  if (run_globals.params.FlagInteractive || run_globals.params.FlagMCMC || run_globals.params.Flag_WriteTruncatedTree) {
     // Ok - what follows here is hacky as hell.  By calling realloc on these
     // arrays, there is a good chance that the actual array will be moved and
     // there is no way to prevent this.  A side effect will be that all of the

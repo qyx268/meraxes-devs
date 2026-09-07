@@ -2,12 +2,10 @@
 // halos whose FOF group Tvir >= 1e4K (the atomic-cooling threshold used by
 // gas_cooling() in src/physics/cooling.c), with descendant links re-derived so that
 // a dropped halo's lineage still resolves correctly to its next kept descendant,
-// however many snapshots ahead that is. See the design plan for the full rationale.
+// however many snapshots ahead that is.
 //
 // This runs in place of dracarys() (see meraxes.c) when Flag_WriteTruncatedTree is
-// set, relying on the normal FlagInteractive/FlagMCMC "preload every snapshot" path
-// (initialize_halo_storage()) having already loaded every snapshot for this rank's
-// assigned forests before this is called.
+// set. every snapshot is always loaded for this rank's assigned forests.before this.
 
 #include <assert.h>
 #include <stdbool.h>
@@ -86,11 +84,13 @@ static inline bool fof_group_is_kept(const fof_group_t* fof_group)
 
 int write_truncated_tree(void)
 {
-  if (!(run_globals.params.FlagInteractive || run_globals.params.FlagMCMC)) {
-    mlog_error("Flag_WriteTruncatedTree requires FlagInteractive (or FlagMCMC) so that every "
-               "snapshot is preloaded before truncation runs.");
-    ABORT(EXIT_FAILURE);
-  }
+  // read_halos.c's preload checks (initialize_halo_storage() and read_halos()
+  // itself) all treat Flag_WriteTruncatedTree the same as FlagInteractive/FlagMCMC,
+  // so every snapshot is always preloaded (SnapshotHalo/SnapshotFOFGroup/
+  // SnapshotTreesInfo) before we get here, regardless of what the param file's
+  // own FlagInteractive/FlagMCMC values are.
+  assert(run_globals.params.FlagInteractive || run_globals.params.FlagMCMC ||
+         run_globals.params.Flag_WriteTruncatedTree);
 
   int last_snap = 0;
   for (int ii = 0; ii < run_globals.NOutputSnaps; ii++)
@@ -246,13 +246,21 @@ int write_truncated_tree(void)
     if (global_n_fof[s] > global_n_fof_max)
       global_n_fof_max = global_n_fof[s];
 
+    // The *original* (pre-cut) counts also need to be summed across ranks --
+    // SnapshotTreesInfo[s] only holds this rank's own share of the source catalog.
+    int orig_n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
+    int orig_n_fof = run_globals.SnapshotTreesInfo[s].n_fof_groups;
+    int global_orig_n_halos, global_orig_n_fof;
+    MPI_Allreduce(&orig_n_halos, &global_orig_n_halos, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+    MPI_Allreduce(&orig_n_fof, &global_orig_n_fof, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+
     mlog("snapshot %d :: kept %d/%d halos, %d/%d FOF groups",
          MLOG_MESG,
          s,
          global_n_halos[s],
-         run_globals.SnapshotTreesInfo[s].n_halos,
+         global_orig_n_halos,
          global_n_fof[s],
-         run_globals.SnapshotTreesInfo[s].n_fof_groups);
+         global_orig_n_fof);
   }
 
   // ---- Create the output tree file + per-snapshot groups/datasets (rank 0 only).
