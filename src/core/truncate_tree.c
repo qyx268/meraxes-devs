@@ -132,6 +132,15 @@ int write_truncated_tree(void)
     for (int i = 0; i < n_halos; i++) {
       halo_t* h = &halos[i];
       int fof_idx = (int)(h->FOFGroup - fof_groups);
+      if (fof_idx < 0 || fof_idx >= n_fof) {
+        mlog_error("write_truncated_tree: snapshot %d halo %d has an out-of-range FOFGroup pointer "
+                   "(fof_idx=%d, n_fof=%d) -- halo->FOFGroup does not point into this snapshot's FOF array.",
+                   s,
+                   i,
+                   fof_idx,
+                   n_fof);
+        ABORT(EXIT_FAILURE);
+      }
       bool kept = group_kept[fof_idx];
       keep[s][i] = kept;
       if (kept) {
@@ -179,6 +188,16 @@ int write_truncated_tree(void)
         int next_i = h->DescIndex;
         if (next_s >= n_snaps || next_s <= cur_s)
           break; // out of range, or a non-advancing offset -- treat as terminal
+        if (next_i < 0 || next_i >= run_globals.SnapshotTreesInfo[next_s].n_halos) {
+          mlog_error("write_truncated_tree: snapshot %d halo %d's descendant chain points to an "
+                     "out-of-range halo at snapshot %d (DescIndex=%d, n_halos=%d).",
+                     s,
+                     i,
+                     next_s,
+                     next_i,
+                     run_globals.SnapshotTreesInfo[next_s].n_halos);
+          ABORT(EXIT_FAILURE);
+        }
         if (keep[next_s][next_i]) {
           target_s = next_s;
           target_i = new_index[next_s][next_i];
