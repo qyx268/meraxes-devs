@@ -44,11 +44,9 @@ typedef struct galaxy_output_t
 #ifdef CALC_MAGS
   float LOIII_dusty;
 #endif
-  float ionization_param;
   float EjectedGas;
   float MetalsEjectedGas;
   float BlackHoleMass;
-  float FescBH;
   float BHemissivity;
   float QuasarMag;
   float EffectiveBHM;

@@ -46,11 +46,9 @@ galaxy_t* new_galaxy(void)
   gal->FescWeightedGSM = check_float_cast((double)(0.0), FloatField_FescWeightedGSM);
   gal->MetalsStellarMass = check_float_cast((double)(0.0), FloatField_MetalsStellarMass);
   gal->LOIII = check_float_cast((double)(0.0), FloatField_LOIII);
-  gal->ionization_param = check_float_cast((double)(0.0), FloatField_ionization_param);
   gal->mwmsa_num = check_float_cast((double)(0.0), FloatField_mwmsa_num);
   gal->mwmsa_denom = check_float_cast((double)(0.0), FloatField_mwmsa_denom);
   gal->BlackHoleMass = check_float_cast((double)(run_globals.params.physics.BlackHoleSeed), FloatField_BlackHoleMass);
-  gal->FescBH = check_float_cast((double)(1.0), FloatField_FescBH);
   gal->BHemissivity = check_float_cast((double)(0.0), FloatField_BHemissivity);
   gal->QuasarLuv = check_float_cast((double)(0.0), FloatField_QuasarLuv);
   gal->EffectiveBHM = check_float_cast((double)(0.0), FloatField_EffectiveBHM);
@@ -154,7 +152,6 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   // snapshot basis.
   gal->Sfr = check_float_cast((double)(0.0), FloatField_Sfr);
   gal->LOIII = check_float_cast((double)(0.0), FloatField_LOIII);
-  gal->ionization_param = check_float_cast((double)(0.0), FloatField_ionization_param);
   gal->FescWeightedSfr = check_float_cast((double)(0.0), FloatField_FescWeightedSfr);
   gal->Mcool = check_float_cast((double)(0.0), FloatField_Mcool);
   gal->Rcool = check_float_cast((double)(0.0), FloatField_Rcool);

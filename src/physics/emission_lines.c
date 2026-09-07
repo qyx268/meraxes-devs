@@ -38,7 +38,7 @@ void compute_LOIII(galaxy_t* gal, int snapshot)
     return;
   }
 
-  double density, bubble_count, ionizing_photon_rate, ionization_param;
+  double density, bubble_count, ionizing_photon_rate;
 
   const run_units_t* units = &run_globals.units;
 
@@ -71,14 +71,6 @@ void compute_LOIII(galaxy_t* gal, int snapshot)
   density /= (1 + sn_velocity_cms_sq_norm + accretion_velocity_cms_sq_norm);
   bubble_count = total_mass_g / density / 4.0 * 3.0 / M_PI / starburst_radius_cm_cb;
   ionizing_photon_rate = (sfr_gs / bubble_count / PROTONMASS) * 4000.0;
-
-  const double stromgren_radius_sq = pow(3.0 * ionizing_photon_rate /
-                                      (4.0 * M_PI * ALPHA_HII * density * density),
-                                      2.0 / 3.0);
-  ionization_param = 1.5874 * ionizing_photon_rate /
-                      (4.0 * M_PI * stromgren_radius_sq * density);
-
-  gal->ionization_param = check_float_cast((double)(gal->ionization_param) + (clamp_non_finite(ionization_param)), FloatField_ionization_param);
 
   double metallicity = gal->MetalsColdGas / gal->ColdGas;
   double oiii_volume_fraction = 0.8;

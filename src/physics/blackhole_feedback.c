@@ -158,7 +158,7 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
   double accreted_mass;
   double BHemissivity, accretion_time, quasar_luv;
   double Vvir = get_vvir(gal);
-  double factor = EMISSIVITY_CONVERTOR * gal->FescBH / run_globals.params.physics.ReionNionPhotPerBary;
+  double factor = EMISSIVITY_CONVERTOR / run_globals.params.physics.ReionNionPhotPerBary; // FescBH fixed to 1.0
 
   // Use snapshot cadence timestep instead of gal->dt to ensure proper accretion
   // for ghost galaxies that have been in ghost state for multiple snapshots.

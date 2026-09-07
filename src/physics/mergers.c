@@ -196,7 +196,6 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   parent->EjectedGas = check_float_cast((double)(parent->EjectedGas) + (gal->EjectedGas), FloatField_EjectedGas);
   parent->MetalsEjectedGas = check_float_cast((double)(parent->MetalsEjectedGas) + (gal->MetalsEjectedGas), FloatField_MetalsEjectedGas);
   parent->LOIII = check_float_cast((double)(parent->LOIII) + (gal->LOIII), FloatField_LOIII);
-  parent->ionization_param = check_float_cast((double)(parent->ionization_param) + (gal->ionization_param), FloatField_ionization_param);
   
   // take the duty cycle of the bigger BH
   if (parent->BlackHoleMass < gal->BlackHoleMass)

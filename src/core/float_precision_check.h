@@ -41,11 +41,9 @@ extern "C"
   X(Sfr)                                                                                                              \
   X(LOIII)                                                                                                            \
   X(LOIII_dusty)                                                                                                      \
-  X(ionization_param)                                                                                                 \
   X(EjectedGas)                                                                                                       \
   X(MetalsEjectedGas)                                                                                                 \
   X(BlackHoleMass)                                                                                                    \
-  X(FescBH)                                                                                                           \
   X(BHemissivity)                                                                                                     \
   X(QuasarLuv)                                                                                                        \
   X(EffectiveBHM)                                                                                                     \

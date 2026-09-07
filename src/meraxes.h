@@ -183,8 +183,6 @@ typedef struct physics_params_t
   double EscapeFracRedshiftOffset;
   double EscapeFracRedshiftScaling;
   double EscapeFracPropScaling;
-  double EscapeFracBHNorm;
-  double EscapeFracBHScaling;
 
   // CGM suppression of fesc
   double FescCGMSuppressionNorm;
@@ -661,11 +659,9 @@ typedef struct galaxy_t
   float Sfr;
   float LOIII; //!< [O III] luminosity [1e40 erg/s]
   float LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
-  float ionization_param;
   float EjectedGas;
   float MetalsEjectedGas;
   float BlackHoleMass;
-  float FescBH;
   float BHemissivity;
   float QuasarLuv;  //!< UV luminosity LUV of quasar (1e10 Lsun, summable for mergers)
   float EffectiveBHM;

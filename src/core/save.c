@@ -339,7 +339,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->Fesc = gal.Fesc;
   galout->FescWeightedGSM = gal.FescWeightedGSM;
   galout->BlackHoleMass = gal.BlackHoleMass;
-  galout->FescBH = gal.FescBH;
   galout->BHemissivity = gal.BHemissivity;
   galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.826 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
   galout->DutyCycleAGN = gal.DutyCycleAGN;
@@ -348,7 +347,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->LOIII = (float)gal.LOIII; // gal.LOIII is already stored in units of 1e40 erg/s
-  galout->ionization_param = gal.ionization_param;
   galout->FescWeightedSfr = (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->EjectedGas = gal.EjectedGas;
   galout->MetalsEjectedGas = gal.MetalsEjectedGas;
@@ -425,9 +423,9 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 42; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
+    h5props->n_props = 40; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
                             // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
-                            // BlackHoleAccretedColdMass dropped -- see galaxies.c
+                            // BlackHoleAccretedColdMass, ionization_param, FescBH dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -681,13 +679,6 @@ void calc_hdf5_props()
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
   #endif
 
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, ionization_param);
-    h5props->dst_field_sizes[i] = sizeof(galout.ionization_param);
-    h5props->field_names[i] = "ionization_param";
-    h5props->field_units[i] = "cm/s";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, FescWeightedSfr);
     h5props->dst_field_sizes[i] = sizeof(galout.FescWeightedSfr);
     h5props->field_names[i] = "FescWeightedSfr";
@@ -865,13 +856,6 @@ void calc_hdf5_props()
     h5props->field_names[i] = "FescWeightedGSM";
     h5props->field_units[i] = "1e10 solMass";
     h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, FescBH);
-    h5props->dst_field_sizes[i] = sizeof(galout.FescBH);
-    h5props->field_names[i] = "FescBH";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, BHemissivity);

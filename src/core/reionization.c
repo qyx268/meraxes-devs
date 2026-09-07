@@ -93,9 +93,6 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
 {
   physics_params_t* params = &(run_globals.params.physics);
 
-  float fesc_bh = (float)(params->EscapeFracBHNorm *
-                          (powf((float)((1.0 + run_globals.ZZ[snapshot]) / 6.0), (float)params->EscapeFracBHScaling)));
-
   double fesc = params->EscapeFracNorm;
 #if USE_MINI_HALOS
   double fescIII = params->EscapeFracNormIII;
@@ -217,8 +214,6 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
   CLAMP_0_1(fescIII);
 #endif
 
-  CLAMP_0_1(fesc_bh);
-
 #if USE_MINI_HALOS
   if (gal->Galaxy_Population == 2) {
     gal->Fesc = check_float_cast((double)(fesc), FloatField_Fesc);
@@ -237,7 +232,6 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
   gal->FescWeightedSfr = check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * gal->Fesc), FloatField_FescWeightedSfr);
 #endif
 
-  gal->FescBH = check_float_cast((double)(fesc_bh), FloatField_FescBH);
 }
 
 void set_quasar_fobs()
