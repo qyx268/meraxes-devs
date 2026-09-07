@@ -356,7 +356,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->EjectedGas = gal.EjectedGas;
   galout->MetalsEjectedGas = gal.MetalsEjectedGas;
   galout->Rcool = gal.Rcool;
-  galout->Cos_Inc = gal.Cos_Inc;
   galout->BaryonFracModifier = gal.BaryonFracModifier;
   galout->FOFMvirModifier = gal.FOFMvirModifier;
   galout->MvirCrit = gal.MvirCrit;
@@ -432,7 +431,7 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 49; // Vel, HaloID, ID dropped (nothing tracks them any more -- see galaxies.c)
+    h5props->n_props = 48; // Vel, HaloID, ID, Cos_Inc dropped (nothing tracks them any more -- see galaxies.c)
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -781,13 +780,6 @@ void calc_hdf5_props()
     h5props->field_names[i] = "Rcool";
     h5props->field_units[i] = "Mpc"; // physical
     h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, Cos_Inc);
-    h5props->dst_field_sizes[i] = sizeof(galout.Cos_Inc);
-    h5props->field_names[i] = "Cos_Inc";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MergTime);

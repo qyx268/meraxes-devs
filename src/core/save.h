@@ -76,7 +76,6 @@ typedef struct galaxy_output_t
 
   // misc
   float Rcool;
-  float Cos_Inc;
   float MergTime;
   float MergerStartRadius;
   float BaryonFracModifier;

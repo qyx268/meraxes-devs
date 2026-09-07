@@ -63,7 +63,6 @@ galaxy_t* new_galaxy(void)
   gal->BHAccretionOnTime = check_float_cast((double)(-1.0), FloatField_BHAccretionOnTime);
   gal->Sfr = check_float_cast((double)(0.0), FloatField_Sfr);
   gal->FescWeightedSfr = check_float_cast((double)(0.0), FloatField_FescWeightedSfr);
-  gal->Cos_Inc = check_float_cast((double)(gsl_rng_uniform(run_globals.random_generator)), FloatField_Cos_Inc);
   gal->MergTime = check_float_cast((double)(99999.9), FloatField_MergTime);
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
   gal->FOFMvirModifier = check_float_cast((double)(1.0), FloatField_FOFMvirModifier);

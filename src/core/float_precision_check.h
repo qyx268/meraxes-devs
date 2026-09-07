@@ -80,7 +80,6 @@ extern "C"
   X(mwmsa_num)                                                                                                        \
   X(mwmsa_denom)                                                                                                      \
   X(Rcool)                                                                                                            \
-  X(Cos_Inc)                                                                                                          \
   X(MergTime)                                                                                                         \
   X(MergerStartRadius)                                                                                                \
   X(BaryonFracModifier)                                                                                               \
