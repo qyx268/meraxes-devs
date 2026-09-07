@@ -421,8 +421,8 @@ int write_truncated_tree(void)
   // ---- global row count at a time, freed each iteration) for dropping the MPI-IO
   // ---- parallel HDF5 driver entirely -- no more collective H5Fclose that can
   // ---- hang/corrupt the file if the job is killed before every rank arrives.
-  int* recvcounts = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
-  int* displs = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
+  int* tree_recvcounts = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
+  int* tree_displs = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
 
   for (int s = 0; s < n_snaps; s++) {
     const int n_local = local_n_halos_kept[s];
@@ -498,11 +498,11 @@ int write_truncated_tree(void)
     }
     assert(row == n_local);
 
-    MPI_Gather(&n_local, 1, MPI_INT, recvcounts, 1, MPI_INT, 0, run_globals.mpi_comm);
+    MPI_Gather(&n_local, 1, MPI_INT, tree_recvcounts, 1, MPI_INT, 0, run_globals.mpi_comm);
     if (run_globals.mpi_rank == 0) {
-      displs[0] = 0;
+      tree_displs[0] = 0;
       for (int r = 1; r < run_globals.mpi_size; r++)
-        displs[r] = displs[r - 1] + recvcounts[r - 1];
+        tree_displs[r] = tree_displs[r - 1] + tree_recvcounts[r - 1];
     }
 
     const int alloc_global = global_n_halos[s] > 0 ? global_n_halos[s] : 1;
@@ -516,15 +516,15 @@ int write_truncated_tree(void)
       full_float[k] = (run_globals.mpi_rank == 0) ? malloc(sizeof(float) * alloc_global) : NULL;
 
     MPI_Gatherv(
-      out_ID, n_local, MPI_LONG, full_ID, recvcounts, displs, MPI_LONG, 0, run_globals.mpi_comm);
+      out_ID, n_local, MPI_LONG, full_ID, tree_recvcounts, tree_displs, MPI_LONG, 0, run_globals.mpi_comm);
     MPI_Gatherv(
-      out_Head, n_local, MPI_LONG, full_Head, recvcounts, displs, MPI_LONG, 0, run_globals.mpi_comm);
+      out_Head, n_local, MPI_LONG, full_Head, tree_recvcounts, tree_displs, MPI_LONG, 0, run_globals.mpi_comm);
     MPI_Gatherv(out_hostHaloID,
                 n_local,
                 MPI_LONG,
                 full_hostHaloID,
-                recvcounts,
-                displs,
+                tree_recvcounts,
+                tree_displs,
                 MPI_LONG,
                 0,
                 run_globals.mpi_comm);
@@ -532,16 +532,16 @@ int write_truncated_tree(void)
                 n_local,
                 MPI_UNSIGNED_LONG,
                 full_ForestID,
-                recvcounts,
-                displs,
+                tree_recvcounts,
+                tree_displs,
                 MPI_UNSIGNED_LONG,
                 0,
                 run_globals.mpi_comm);
     MPI_Gatherv(
-      out_npart, n_local, MPI_UNSIGNED, full_npart, recvcounts, displs, MPI_UNSIGNED, 0, run_globals.mpi_comm);
+      out_npart, n_local, MPI_UNSIGNED, full_npart, tree_recvcounts, tree_displs, MPI_UNSIGNED, 0, run_globals.mpi_comm);
     for (int k = 0; k < n_dset_float; k++)
       MPI_Gatherv(
-        out_float[k], n_local, MPI_FLOAT, full_float[k], recvcounts, displs, MPI_FLOAT, 0, run_globals.mpi_comm);
+        out_float[k], n_local, MPI_FLOAT, full_float[k], tree_recvcounts, tree_displs, MPI_FLOAT, 0, run_globals.mpi_comm);
 
     if (run_globals.mpi_rank == 0) {
       char grp_name[16];
@@ -589,8 +589,8 @@ int write_truncated_tree(void)
       free(out_float[k]);
   }
 
-  free(recvcounts);
-  free(displs);
+  free(tree_recvcounts);
+  free(tree_displs);
 
   if (run_globals.mpi_rank == 0)
     H5Fclose(fd);
