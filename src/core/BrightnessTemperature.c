@@ -177,6 +177,7 @@ void ComputeBrightnessTemperatureBox(int snapshot) //
               break;
             case VELOCIRAPTOR_TREES:
             case VELOCIRAPTOR_TREES_AUG:
+            case VELOCIRAPTOR_TREES_TRUNCATED:
               vel[i_padded] = (float)((1. + redshift) * vel[i_padded]);
               break;
           }

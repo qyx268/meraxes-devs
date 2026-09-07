@@ -277,6 +277,7 @@ void connect_galaxy_and_halo(galaxy_t* gal, halo_t* halo, int* merger_counter)
 
       case VELOCIRAPTOR_TREES:
       case VELOCIRAPTOR_TREES_AUG:
+      case VELOCIRAPTOR_TREES_TRUNCATED:
         // For VELOCIraptor we have some guidance in the form of the progenitor indices.
 
         if (check_for_flag(TREE_CASE_NO_PROGENITORS, halo->TreeFlags)) {

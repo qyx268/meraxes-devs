@@ -19,6 +19,7 @@ void read_grid(const enum grid_prop property, const int snapshot, float* slab)
   switch (run_globals.params.TreesID) {
     case VELOCIRAPTOR_TREES:
     case VELOCIRAPTOR_TREES_AUG:
+    case VELOCIRAPTOR_TREES_TRUNCATED:
       read_grid__velociraptor(property, snapshot, slab);
       break;
     case GBPTREES_TREES:
