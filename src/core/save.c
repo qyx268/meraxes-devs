@@ -1505,6 +1505,15 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
     n_write = write_count;
   }
 
+  {
+    int global_write_count = write_count;
+    MPI_Allreduce(MPI_IN_PLACE, &global_write_count, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+    mlog("snapshot %d :: writing %d galaxies (global total, all ranks)",
+         MLOG_MESG,
+         output_snapshot,
+         global_write_count);
+  }
+
   // Create the file.
   file_id = H5Fopen(run_globals.FNameOut, H5F_ACC_RDWR, H5P_DEFAULT);
 

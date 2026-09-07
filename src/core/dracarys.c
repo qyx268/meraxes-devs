@@ -285,6 +285,45 @@ void dracarys()
       }
     }
 
+    // Galaxy census: how many live galaxies exist right now (post tree-walk,
+    // pre-physics), broken down by Type, so we can see how many halos
+    // actually end up carrying a galaxy at all (this has nothing to do with
+    // cooling -- it's purely about create_new_galaxy()/connect_galaxy_and_halo()
+    // outcomes).
+    {
+      int census_type0 = 0, census_type1 = 0, census_type2 = 0, census_type3plus = 0, census_ghost = 0,
+          census_total = 0;
+      gal = run_globals.FirstGal;
+      while (gal != NULL) {
+        census_total++;
+        if (gal->ghost_flag)
+          census_ghost++;
+        else if (gal->Type == 0)
+          census_type0++;
+        else if (gal->Type == 1)
+          census_type1++;
+        else if (gal->Type == 2)
+          census_type2++;
+        else
+          census_type3plus++;
+        gal = gal->Next;
+      }
+      MPI_Allreduce(MPI_IN_PLACE, &census_total, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type0, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type1, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type2, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type3plus, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_ghost, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      mlog("Galaxy census (post tree-walk, pre-physics) :: total=%d  Type0=%d Type1=%d Type2=%d Type3+=%d ghosts=%d",
+           MLOG_MESG,
+           census_total,
+           census_type0,
+           census_type1,
+           census_type2,
+           census_type3plus,
+           census_ghost);
+    }
+
     // We finish by copying the halo properties into the galaxy structure of
     // all galaxies with type<2, passively evolving ghosts, and updating the dt
     // values for non-ghosts.
@@ -356,6 +395,44 @@ void dracarys()
     else
       nout_gals = 0;
 
+    // Same census as above, but after evolve_galaxies() has run (mergers/kills
+    // that happen inside the physics loop, e.g. mergers.c setting Type=3, show
+    // up here) -- this is the population write_snapshot() will actually filter
+    // via pass_write_check() (Type<3 gets written).
+    {
+      int census_type0 = 0, census_type1 = 0, census_type2 = 0, census_type3plus = 0, census_ghost = 0,
+          census_total = 0;
+      gal = run_globals.FirstGal;
+      while (gal != NULL) {
+        census_total++;
+        if (gal->ghost_flag)
+          census_ghost++;
+        else if (gal->Type == 0)
+          census_type0++;
+        else if (gal->Type == 1)
+          census_type1++;
+        else if (gal->Type == 2)
+          census_type2++;
+        else
+          census_type3plus++;
+        gal = gal->Next;
+      }
+      MPI_Allreduce(MPI_IN_PLACE, &census_total, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type0, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type1, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type2, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_type3plus, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      MPI_Allreduce(MPI_IN_PLACE, &census_ghost, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
+      mlog("Galaxy census (post-physics, pre-write)     :: total=%d  Type0=%d Type1=%d Type2=%d Type3+=%d ghosts=%d",
+           MLOG_MESG,
+           census_total,
+           census_type0,
+           census_type1,
+           census_type2,
+           census_type3plus,
+           census_ghost);
+    }
+
     log_memory_usage("after evolve_galaxies", snapshot);
 
     // Add the ghost galaxies into the nout_gals count
@@ -424,8 +501,9 @@ void dracarys()
     }
 #endif
 
-#ifdef DEBUG
-    // print some statistics for this snapshot
+    // print some statistics for this snapshot (previously #ifdef DEBUG only --
+    // promoted to always-on since it's cheap and directly answers "how many
+    // halos actually got/kept a galaxy this snapshot, and why")
     MPI_Allreduce(MPI_IN_PLACE, &merger_counter, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(MPI_IN_PLACE, &kill_counter, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
     MPI_Allreduce(MPI_IN_PLACE, &new_gal_counter, 1, MPI_INT, MPI_SUM, run_globals.mpi_comm);
@@ -444,7 +522,6 @@ void dracarys()
     mlog("Newly formed PopIII gal           :: %d", MLOG_MESG, gal_counter_Pop3);
     mlog("Newly formed enriched gal         :: %d", MLOG_MESG, gal_counter_enriched);
     mlog("Newly formed PopII gal            :: %d", MLOG_MESG, gal_counter_Pop2);
-#endif
 #endif
 
     flag_output = 0;
