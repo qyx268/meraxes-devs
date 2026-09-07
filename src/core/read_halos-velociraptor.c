@@ -329,8 +329,23 @@ void read_trees__velociraptor(int snapshot,
           if (index_lookup)
             host_index = find_original_index(host_index, index_lookup, *n_halos);
 
-          assert(host_index > -1);
-          assert(host_index < *n_halos);
+          // Deliberately not assert() here: NDEBUG (RelWithDebInfo/Release) strips
+          // asserts, which would otherwise let a failed lookup silently proceed with
+          // host_index == -1 (or out of range) into &halos[host_index] -- an
+          // out-of-bounds access that corrupts halo->FOFGroup with whatever garbage
+          // memory precedes the array, causing a hard-to-diagnose crash far away
+          // from the actual cause.
+          if (host_index <= -1 || host_index >= *n_halos) {
+            mlog_error("read_trees__velociraptor: snapshot %d halo index %d has an unresolvable "
+                       "hostHaloID (raw hostHaloID=%ld, decoded host_index=%d, n_halos_so_far=%d) -- "
+                       "the host either doesn't exist in this file or wasn't read before this subhalo.",
+                       snapshot,
+                       ii,
+                       hostHaloID[ii],
+                       host_index,
+                       *n_halos);
+            ABORT(EXIT_FAILURE);
+          }
 
           halo_t* prev_halo = &halos[host_index];
           halo->FOFGroup = prev_halo->FOFGroup;

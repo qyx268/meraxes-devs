@@ -134,6 +134,18 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
 
 void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
 {
+  if (halo->FOFGroup == NULL) {
+    mlog_error("copy_halo_props_to_galaxy: halo->FOFGroup is NULL (halo ID=%lu, Type=%d, Len=%d, "
+               "DescIndex=%d, SnapOffset=%d, TreeFlags=%d).",
+               halo->ID,
+               halo->Type,
+               halo->Len,
+               halo->DescIndex,
+               halo->SnapOffset,
+               halo->TreeFlags);
+    ABORT(EXIT_FAILURE);
+  }
+
   gal->Type = halo->Type;
   gal->Len = halo->Len;
   gal->SnapSkipCounter = halo->SnapOffset;

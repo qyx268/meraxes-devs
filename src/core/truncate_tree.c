@@ -476,7 +476,6 @@ int write_truncated_tree(void)
     const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
     halo_t* halos = run_globals.SnapshotHalo[s];
     const double scale_factor = 1.0 / (1.0 + run_globals.ZZ[s]);
-    int64_t last_host_new_id = -1;
     int row = 0;
 
     for (int i = 0; i < n_halos; i++) {
@@ -501,7 +500,6 @@ int write_truncated_tree(void)
 
       if (h->Type == 0) {
         out_hostHaloID[row] = -1;
-        last_host_new_id = self_id;
 
         bool below_thresh = (h->TreeFlags & TREE_CASE_BELOW_VIRIAL_THRESHOLD) != 0;
         fof_group_t* fof_group = h->FOFGroup;
@@ -515,7 +513,25 @@ int write_truncated_tree(void)
           out_float[2][row] = (float)((double)(fof_group->Rvir) / hubble_h);
         }
       } else {
-        out_hostHaloID[row] = last_host_new_id;
+        // Look up this subhalo's *actual* host directly (via the FOFGroup it was
+        // assigned at read time), rather than assuming it's whatever Type==0 row
+        // happened to be seen most recently -- other forests' hosts can be
+        // interleaved in between, especially when halos are sparse (as they are
+        // at these high-z, low-halo-count snapshots).
+        halo_t* host_halo = h->FOFGroup->FirstHalo;
+        int host_i = (int)(host_halo - halos);
+        if (host_i < 0 || host_i >= n_halos || !keep[s][host_i]) {
+          mlog_error("write_truncated_tree: snapshot %d halo %d's FOFGroup->FirstHalo does not "
+                     "resolve to a valid, kept halo in this snapshot's array (host_i=%d, n_halos=%d).",
+                     s,
+                     i,
+                     host_i,
+                     n_halos);
+          ABORT(EXIT_FAILURE);
+        }
+        int64_t host_new_id =
+          (int64_t)s * 1000000000000LL + (int64_t)(halo_offset[s] + new_index[s][host_i]) + 1LL;
+        out_hostHaloID[row] = host_new_id;
         out_float[0][row] = (float)((double)(h->Mvir) / (hubble_h * units.mass_unit_to_internal)); // placeholder
         out_float[2][row] = 0.0f;                                                                   // placeholder
       }
