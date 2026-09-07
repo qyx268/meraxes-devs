@@ -635,7 +635,6 @@ typedef struct galaxy_t
 
   // properties of subhalo at the last time this galaxy was a central galaxy
   float Pos[3];
-  float Vel[3];
   float Mvir;
   float Rvir;
   float Vvir;

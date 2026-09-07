@@ -323,10 +323,8 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   }
   galout->GhostFlag = (int)gal.ghost_flag;
 
-  for (int ii = 0; ii < 3; ii++) {
+  for (int ii = 0; ii < 3; ii++)
     galout->Pos[ii] = gal.Pos[ii];
-    galout->Vel[ii] = gal.Vel[ii];
-  }
 
   galout->Len = gal.Len;
   galout->MaxLen = gal.MaxLen;
@@ -437,7 +435,7 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 52;
+    h5props->n_props = 51; // Vel dropped (halo_t no longer tracks it -- see galaxies.c)
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -545,13 +543,6 @@ void calc_hdf5_props()
     h5props->field_names[i] = "Pos";
     h5props->field_units[i] = "Mpc"; // comoving
     h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = h5props->array3f_tid;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, Vel);
-    h5props->dst_field_sizes[i] = sizeof(galout.Vel);
-    h5props->field_names[i] = "Vel";
-    h5props->field_units[i] = "km/s"; // comoving
-    h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = h5props->array3f_tid;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, Spin);

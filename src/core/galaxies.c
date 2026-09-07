@@ -101,10 +101,8 @@ galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
     gal->Galaxy_Population = 3;
 #endif
 
-  for (int ii = 0; ii < 3; ii++) {
+  for (int ii = 0; ii < 3; ii++)
     gal->Pos[ii] = (float)-99999.9;
-    gal->Vel[ii] = (float)-99999.9;
-  }
 
   for (int ii = 0; ii < N_HISTORY_SNAPS; ii++) {
     gal->NewStars[ii] = check_float_cast((double)(0.0), FloatField_NewStars);
@@ -156,9 +154,6 @@ void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
       gal->DiskScaleLength = check_float_cast((double)(gal->Spin * gal->Rvir / sqrt_2), FloatField_DiskScaleLength);
   }
 
-  // gal->Vel is intentionally left untouched here -- halo_t no longer
-  // carries a Vel field, so gal->Vel just keeps its new_galaxy() sentinel
-  // (-99999.9) for the galaxy's whole life.
   for (int ii = 0; ii < 3; ii++)
     gal->Pos[ii] = halo->Pos[ii];
 

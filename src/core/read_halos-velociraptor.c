@@ -182,9 +182,9 @@ void read_trees__velociraptor(int snapshot,
   float* Xc = malloc(sizeof(float) * buffer_size);
   float* Yc = malloc(sizeof(float) * buffer_size);
   float* Zc = malloc(sizeof(float) * buffer_size);
-  // N.B. VXc/VYc/VZc are no longer read -- halo_t no longer carries a Vel
-  // field (it was only ever used to seed gal->Vel, which nothing but the
-  // output writer reads).
+  // N.B. VXc/VYc/VZc are no longer read -- neither halo_t nor galaxy_t
+  // tracks a Vel field any more (it was only ever used by the output
+  // writer, which no longer has anywhere to source it from).
   float* AngMom = malloc(sizeof(float) * buffer_size);
   unsigned long* ID = malloc(sizeof(unsigned long) * buffer_size); 
   unsigned long* npart = malloc(sizeof(unsigned long) * buffer_size);

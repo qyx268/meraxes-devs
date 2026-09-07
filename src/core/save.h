@@ -25,7 +25,6 @@ typedef struct galaxy_output_t
   int MaxLen;
 
   float Pos[3];
-  float Vel[3];
   float Spin;
   float Mvir;
   float Rvir;
