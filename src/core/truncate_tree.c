@@ -478,11 +478,23 @@ int write_truncated_tree(void)
     }
 
     H5Gclose(grp);
+
+    // rank 0's own slice for this snapshot is done writing; MLOG_FLUSH so this
+    // is actually visible in a batch-job log file while the run keeps going,
+    // rather than sitting in a stdio buffer (see the earlier Pass-1 progress log).
+    mlog("snapshot %d :: wrote %d halos (rank 0's slice: %d rows at offset %d)",
+         MLOG_MESG | MLOG_FLUSH,
+         s,
+         global_n_halos[s],
+         local_n_halos_kept[s],
+         halo_offset[s]);
   }
 
   H5Pclose(xfer_plist);
   H5Fclose(fd);
   MPI_Barrier(run_globals.mpi_comm);
+
+  mlog("Regenerating forest stats file (meraxes_augmented_stats.h5)...", MLOG_OPEN | MLOG_FLUSH);
 
   // ---- Regenerate the forests stats file. This rank's owned forest list is
   // ---- whatever it was assigned to read (run_globals.RequestedForestId), or --
@@ -675,6 +687,8 @@ int write_truncated_tree(void)
   }
 
   MPI_Barrier(run_globals.mpi_comm);
+  mlog("...done", MLOG_CLOSE | MLOG_FLUSH);
+
   mlog("...done", MLOG_CLOSE | MLOG_TIMERSTOP);
 
   // ---- cleanup
