@@ -310,14 +310,11 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
 {
   run_units_t* units = &(run_globals.units);
 
-  galout->ID = gal.ID;
   galout->Type = gal.Type;
   if (!gal.ghost_flag) {
-    galout->HaloID = (long long)gal.Halo->ID;
     galout->CentralGal = gal.Halo->FOFGroup->FirstOccupiedHalo->Galaxy->output_index;
     galout->FOFMvir = (float)(gal.Halo->FOFGroup->Mvir);
   } else {
-    galout->HaloID = -1;
     galout->CentralGal = -1;
     galout->FOFMvir = (float)-1.0;
   }
@@ -435,7 +432,7 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 51; // Vel dropped (halo_t no longer tracks it -- see galaxies.c)
+    h5props->n_props = 49; // Vel, HaloID, ID dropped (nothing tracks them any more -- see galaxies.c)
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -472,20 +469,6 @@ void calc_hdf5_props()
     h5props->field_h_conv = malloc(sizeof(const char*) * h5props->n_props);
 
     i = 0;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, HaloID);
-    h5props->dst_field_sizes[i] = sizeof(galout.HaloID);
-    h5props->field_names[i] = "HaloID";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_LLONG;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, ID);
-    h5props->dst_field_sizes[i] = sizeof(galout.ID);
-    h5props->field_names[i] = "ID";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_LLONG;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, Type);
     h5props->dst_field_sizes[i] = sizeof(galout.Type);

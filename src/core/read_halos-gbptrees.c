@@ -452,7 +452,6 @@ void read_trees__gbptrees(int snapshot,
         catalog_halo_t* cur_cat_halo = &(catalog_buffer[jj]);
         tree_entry_t* cur_tree_entry = &(tree_buffer[jj]);
 
-        cur_halo->ID = (unsigned long)cur_tree_entry->id;
         cur_halo->TreeFlags = cur_tree_entry->flags;
         cur_halo->SnapOffset = cur_tree_entry->file_offset;
         cur_halo->DescIndex = cur_tree_entry->desc_index;

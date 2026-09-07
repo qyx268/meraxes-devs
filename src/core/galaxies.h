@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-  struct galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID);
+  struct galaxy_t* new_galaxy(void);
   void copy_halo_props_to_galaxy(struct halo_t* halo, struct galaxy_t* gal);
   void reset_galaxy_properties(struct galaxy_t* gal, int snapshot);
   void connect_galaxy_and_halo(struct galaxy_t* gal, struct halo_t* halo, int* merger_counter);

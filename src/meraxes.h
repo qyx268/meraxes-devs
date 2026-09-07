@@ -630,9 +630,6 @@ typedef struct galaxy_t
 #endif
 #endif
 
-  // Unique ID for the galaxy
-  unsigned long ID;
-
   // properties of subhalo at the last time this galaxy was a central galaxy
   float Pos[3];
   float Mvir;
@@ -765,9 +762,8 @@ typedef struct halo_t
   float Rvir; //!< Virial radius [Mpc/h]
   float Vvir; //!< Virial velocity [km/s]
 
-  float Vmax;       //!< Maximum circular velocity [km/s]
-  unsigned long ID; //!< Halo ID
-  int DescIndex;    //!< Index of descendant in next relevant snapshot
+  float Vmax;    //!< Maximum circular velocity [km/s]
+  int DescIndex; //!< Index of descendant in next relevant snapshot
   int ProgIndex;    //!< Index of progenitor in previous relevant snapshot
   int TreeFlags;    //!< Bitwise flag indicating the type of match in the trees
   int Len;          //!< Number of particles in the structure

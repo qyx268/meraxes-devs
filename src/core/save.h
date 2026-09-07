@@ -5,11 +5,6 @@
 
 typedef struct galaxy_output_t
 {
-  long long HaloID;
-
-  // Unique ID for the galaxy
-  unsigned long ID;
-
 #ifdef CALC_MAGS
   float Mags[MAGS_N_BANDS];
   float DustyMags[MAGS_N_BANDS];

@@ -8,12 +8,11 @@
 #include "tree_flags.h"
 #include "virial_properties.h"
 
-galaxy_t* new_galaxy(int snapshot, unsigned long halo_ID)
+galaxy_t* new_galaxy(void)
 {
   galaxy_t* gal = malloc(sizeof(galaxy_t));
 
   // Initialise the properties
-  gal->ID = (unsigned long)(snapshot * 1e10 + halo_ID);
   gal->Type = -1;
   gal->OldType = -1;
   gal->SnapSkipCounter = 0;
@@ -314,7 +313,7 @@ void create_new_galaxy(int snapshot, halo_t* halo, int* NGal, int* new_gal_count
 {
   galaxy_t* gal;
 
-  gal = new_galaxy(snapshot, halo->ID);
+  gal = new_galaxy();
   gal->Halo = halo;
 
   if (snapshot > 0)

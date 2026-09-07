@@ -248,7 +248,10 @@ void read_trees__velociraptor(int snapshot,
       if (keep_this_halo) {
         halo_t* halo = &(halos[*n_halos]);
 
-        halo->ID = ID[ii];
+        // N.B. halo_t no longer stores the raw catalogue ID (it was only
+        // ever used to seed gal->ID/galout->HaloID, both now dropped). The
+        // local `ID` array read above is still needed below though, for the
+        // self-referencing "Head[ii]==ID[ii]" terminal-halo check.
         halo->DescIndex = id_to_ind(Head[ii]);
 
         if (run_globals.params.FlagIgnoreProgIndex)
