@@ -81,7 +81,6 @@ extern "C"
   X(mwmsa_denom)                                                                                                      \
   X(Rcool)                                                                                                            \
   X(MergTime)                                                                                                         \
-  X(MergerStartRadius)                                                                                                \
   X(BaryonFracModifier)                                                                                               \
   X(FOFMvirModifier)                                                                                                  \
   X(MvirCrit)                                                                                                         \

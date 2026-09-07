@@ -70,7 +70,6 @@ galaxy_t* new_galaxy(void)
   gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
   gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
   gal->MergerBurstMass = check_float_cast((double)(0.0), FloatField_MergerBurstMass);
-  gal->MergerStartRadius = check_float_cast((double)(0.0), FloatField_MergerStartRadius);
 
 #if USE_MINI_HALOS
   gal->StellarMass_II = check_float_cast((double)(0.), FloatField_StellarMass_II);

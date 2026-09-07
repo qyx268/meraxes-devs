@@ -718,7 +718,6 @@ typedef struct galaxy_t
   // misc
   float Rcool;
   float MergTime;
-  float MergerStartRadius;
   float BaryonFracModifier;
   float FOFMvirModifier;
   float MvirCrit;

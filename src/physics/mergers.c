@@ -99,9 +99,6 @@ double calculate_merging_time(galaxy_t* orphan, int snapshot)
   // existed unmerged, so `snapshot-1` is as good a time as any to pick.
   sat_rad /= (1 + run_globals.ZZ[snapshot - 1]);
 
-  // TODO: Should this be parent or mother???
-  orphan->MergerStartRadius = check_float_cast((double)(sat_rad / mother->Rvir), FloatField_MergerStartRadius);
-
   if (sat_rad > mother->Rvir)
     sat_rad = mother->Rvir;
 

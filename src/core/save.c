@@ -363,7 +363,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->dt = (float)(gal.dt * units->UnitTime_in_Megayears);
   galout->MergerBurstMass = gal.MergerBurstMass;
   galout->MergTime = (float)(gal.MergTime * units->UnitTime_in_Megayears);
-  galout->MergerStartRadius = gal.MergerStartRadius;
   galout->MWMSA = current_mwmsa(&gal, i_snap);
 
 #if USE_MINI_HALOS
@@ -431,7 +430,7 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 48; // Vel, HaloID, ID, Cos_Inc dropped (nothing tracks them any more -- see galaxies.c)
+    h5props->n_props = 47; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -786,13 +785,6 @@ void calc_hdf5_props()
     h5props->dst_field_sizes[i] = sizeof(galout.MergTime);
     h5props->field_names[i] = "MergTime";
     h5props->field_units[i] = "Myr";
-    h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MergerStartRadius);
-    h5props->dst_field_sizes[i] = sizeof(galout.MergerStartRadius);
-    h5props->field_names[i] = "MergerStartRadius";
-    h5props->field_units[i] = "Mpc";
     h5props->field_h_conv[i] = "v/h";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
