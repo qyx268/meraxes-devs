@@ -126,6 +126,7 @@ int write_truncated_tree(void)
 
     int running_halos = 0;
     int running_fof = 0;
+    int n_dropped_shown = 0; // rank-0-only diagnostic: show a couple of dropped halos per snapshot
     for (int i = 0; i < n_halos; i++) {
       halo_t* h = &halos[i];
       int fof_idx = (int)(h->FOFGroup - fof_groups);
@@ -146,6 +147,22 @@ int write_truncated_tree(void)
           running_fof++;
       } else {
         new_index[s][i] = -1;
+        if (run_globals.mpi_rank == 0 && n_dropped_shown < 2) {
+          double tvir = Vvir_to_Tvir((double)fof_groups[fof_idx].Vvir, 1);
+          mlog("snapshot %d :: dropped example halo (array idx=%d, ID=%lu, Type=%d, Len=%d, Mvir=%.4g "
+               "[internal units]): host FOF Vvir=%.4g km/s -> Tvir=%.4g K (cut is %.0f K)",
+               MLOG_MESG,
+               s,
+               i,
+               h->ID,
+               h->Type,
+               h->Len,
+               (double)h->Mvir,
+               (double)fof_groups[fof_idx].Vvir,
+               tvir,
+               TVIR_CUT);
+          n_dropped_shown++;
+        }
       }
     }
     local_n_halos_kept[s] = running_halos;
