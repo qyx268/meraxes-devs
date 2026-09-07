@@ -490,6 +490,24 @@ int write_truncated_tree(void)
          halo_offset[s]);
   }
 
+  {
+    // H5Fclose() on an MPI-IO-backed file is effectively collective (metadata
+    // has to be synchronized across ranks) even though the H5Dwrite calls above
+    // were independent -- so a rank with a smaller/faster forest share can finish
+    // all n_snaps snapshots and then sit silently blocked here waiting for a
+    // slower rank. mlog() alone only shows rank 0's progress, which makes that
+    // completely invisible, so have every rank report in before the sync point.
+    long local_total_written = 0;
+    for (int s = 0; s < n_snaps; s++)
+      local_total_written += local_n_halos_kept[s];
+    // mlog() itself prefixes "rank %d: " when MLOG_ALLRANKS is set, so don't repeat it here.
+    mlog("finished writing all %d snapshots (%ld halos total) -- now waiting at the collective "
+         "H5Fclose/MPI_Barrier for any slower ranks",
+         MLOG_ALLRANKS | MLOG_FLUSH,
+         n_snaps,
+         local_total_written);
+  }
+
   H5Pclose(xfer_plist);
   H5Fclose(fd);
   MPI_Barrier(run_globals.mpi_comm);
