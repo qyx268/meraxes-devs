@@ -102,6 +102,41 @@ int write_truncated_tree(void)
   read_source_units(&units);
   const double hubble_h = run_globals.params.Hubble_h;
 
+  // ---- This rank's owned-forest list, built up front whenever possible (the
+  // ---- common, real-production-scale case: forest partitioning is active, so
+  // ---- run_globals.RequestedForestId is already populated by select_forests()
+  // ---- well before this function runs). Doing this early lets the per-forest
+  // ---- stats tally (used to regenerate meraxes_augmented_stats.h5, far below)
+  // ---- be folded into Pass 1's existing per-halo loop instead of requiring its
+  // ---- own separate full pass over every kept halo across every snapshot again.
+  long* my_forest_ids = NULL;
+  int n_my_forests = 0;
+  bool have_forest_ids_early = false;
+  int* forest_n_halos = NULL;
+  int* forest_n_fof = NULL;
+  int* forest_max_contemp_halos = NULL;
+  int* forest_max_contemp_fof = NULL;
+  int** forest_snap_halos = NULL;
+  int* snap_fof_count_scratch = NULL;
+
+  if (run_globals.RequestedForestId != NULL && run_globals.NRequestedForests > 0) {
+    n_my_forests = run_globals.NRequestedForests;
+    my_forest_ids = malloc(sizeof(long) * n_my_forests);
+    memcpy(my_forest_ids, run_globals.RequestedForestId, sizeof(long) * n_my_forests);
+    have_forest_ids_early = true;
+
+    forest_n_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_n_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_max_contemp_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_max_contemp_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_snap_halos = malloc(sizeof(int*) * n_snaps);
+    for (int s = 0; s < n_snaps; s++)
+      forest_snap_halos[s] = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    // Reused every snapshot (memset, not realloc'd/freed) to avoid 120 rounds of
+    // allocator overhead for what's otherwise identical scratch space each time.
+    snap_fof_count_scratch = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+  }
+
   // ---- Pass 1: mark keep/drop per halo, per snapshot, and assign compact
   // ---- (per-rank-local) new indices to kept halos.
   bool** keep = malloc(sizeof(bool*) * n_snaps);
@@ -110,6 +145,8 @@ int write_truncated_tree(void)
   int* local_n_fof_kept = calloc(n_snaps, sizeof(int));
 
   for (int s = 0; s < n_snaps; s++) {
+    if (have_forest_ids_early && n_my_forests > 0)
+      memset(snap_fof_count_scratch, 0, sizeof(int) * n_my_forests);
     const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
     const int n_fof = run_globals.SnapshotTreesInfo[s].n_fof_groups;
     halo_t* halos = run_globals.SnapshotHalo[s];
@@ -145,6 +182,20 @@ int write_truncated_tree(void)
         new_index[s][i] = running_halos++;
         if (h->Type == 0)
           running_fof++;
+
+        if (have_forest_ids_early) {
+          long fid = (long)h->ForestID;
+          long* pos = bsearch(&fid, my_forest_ids, (size_t)n_my_forests, sizeof(long), compare_longs);
+          if (pos != NULL) { // a mismatch here would mean this halo's forest isn't one this rank was assigned
+            int fp = (int)(pos - my_forest_ids);
+            forest_snap_halos[s][fp]++;
+            forest_n_halos[fp]++;
+            if (h->Type == 0) {
+              snap_fof_count_scratch[fp]++;
+              forest_n_fof[fp]++;
+            }
+          }
+        }
       } else {
         new_index[s][i] = -1;
         if (run_globals.mpi_rank == 0 && n_dropped_shown < 2) {
@@ -168,6 +219,15 @@ int write_truncated_tree(void)
     local_n_halos_kept[s] = running_halos;
     local_n_fof_kept[s] = running_fof;
     free(group_kept);
+
+    if (have_forest_ids_early) {
+      for (int fp = 0; fp < n_my_forests; fp++) {
+        if (forest_snap_halos[s][fp] > forest_max_contemp_halos[fp])
+          forest_max_contemp_halos[fp] = forest_snap_halos[s][fp];
+        if (snap_fof_count_scratch[fp] > forest_max_contemp_fof[fp])
+          forest_max_contemp_fof[fp] = snap_fof_count_scratch[fp];
+      }
+    }
   }
 
   // ---- Pass 2: for every kept halo, walk DescIndex/SnapOffset forward (this
@@ -294,12 +354,13 @@ int write_truncated_tree(void)
                                       "VYc",          "VZc",      "AngMom" };
   const int n_dset_float = sizeof(dset_names_float) / sizeof(dset_names_float[0]);
 
+  hid_t fd = -1; // rank 0 only; kept open across the whole write loop below (see there for why)
   if (run_globals.mpi_rank == 0) {
     struct stat st;
     if (stat(tree_dir, &st) != 0)
       mkdir(tree_dir, 02755);
 
-    hid_t fd = H5Fcreate(tree_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    fd = H5Fcreate(tree_fname, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (fd < 0) {
       mlog_error("write_truncated_tree: failed to create %s", tree_fname);
       ABORT(EXIT_FAILURE);
@@ -349,185 +410,204 @@ int write_truncated_tree(void)
       H5Sclose(dspace);
       H5Gclose(grp);
     }
-    H5Fclose(fd);
-  }
-  MPI_Barrier(run_globals.mpi_comm);
-
-  // ---- Each rank writes its own disjoint slice of kept halos, per snapshot.
-  hid_t plist_acc = H5Pcreate(H5P_FILE_ACCESS);
-  H5Pset_fapl_mpio(plist_acc, run_globals.mpi_comm, MPI_INFO_NULL);
-  hid_t fd = H5Fopen(tree_fname, H5F_ACC_RDWR, plist_acc);
-  H5Pclose(plist_acc);
-  if (fd < 0) {
-    mlog_error("write_truncated_tree: rank %d failed to reopen %s for writing", run_globals.mpi_rank, tree_fname);
-    ABORT(EXIT_FAILURE);
+    // fd stays open (rank 0 only) -- writing below reuses this same handle, so
+    // there's no parallel reopen and no collective H5Fclose to hang on later.
   }
 
-  hid_t xfer_plist = H5Pcreate(H5P_DATASET_XFER);
-  H5Pset_dxpl_mpio(xfer_plist, H5FD_MPIO_INDEPENDENT);
+  // ---- Every rank builds its own local slice of kept halos per snapshot (same
+  // ---- computation as before), then MPI_Gatherv's each column to rank 0, which
+  // ---- does all the actual HDF5 writing with plain, single-process I/O. This
+  // ---- trades some communication + a rank-0 memory buffer (one snapshot's full
+  // ---- global row count at a time, freed each iteration) for dropping the MPI-IO
+  // ---- parallel HDF5 driver entirely -- no more collective H5Fclose that can
+  // ---- hang/corrupt the file if the job is killed before every rank arrives.
+  int* recvcounts = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
+  int* displs = (run_globals.mpi_rank == 0) ? malloc(sizeof(int) * run_globals.mpi_size) : NULL;
 
   for (int s = 0; s < n_snaps; s++) {
     const int n_local = local_n_halos_kept[s];
-    char grp_name[16];
-    sprintf(grp_name, "Snap_%03d", s);
-    hid_t grp = H5Gopen(fd, grp_name, H5P_DEFAULT);
+    const int alloc_local = n_local > 0 ? n_local : 1;
 
-    if (n_local > 0) {
-      int64_t* out_ID = malloc(sizeof(int64_t) * n_local);
-      int64_t* out_Head = malloc(sizeof(int64_t) * n_local);
-      int64_t* out_hostHaloID = malloc(sizeof(int64_t) * n_local);
-      uint64_t* out_ForestID = malloc(sizeof(uint64_t) * n_local);
-      uint32_t* out_npart = malloc(sizeof(uint32_t) * n_local);
-      float* out_float[11];
-      for (int k = 0; k < n_dset_float; k++)
-        out_float[k] = malloc(sizeof(float) * n_local);
+    int64_t* out_ID = malloc(sizeof(int64_t) * alloc_local);
+    int64_t* out_Head = malloc(sizeof(int64_t) * alloc_local);
+    int64_t* out_hostHaloID = malloc(sizeof(int64_t) * alloc_local);
+    uint64_t* out_ForestID = malloc(sizeof(uint64_t) * alloc_local);
+    uint32_t* out_npart = malloc(sizeof(uint32_t) * alloc_local);
+    float* out_float[11];
+    for (int k = 0; k < n_dset_float; k++)
+      out_float[k] = malloc(sizeof(float) * alloc_local);
 
-      const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
-      halo_t* halos = run_globals.SnapshotHalo[s];
-      const double scale_factor = 1.0 / (1.0 + run_globals.ZZ[s]);
-      int64_t last_host_new_id = -1;
-      int row = 0;
+    const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
+    halo_t* halos = run_globals.SnapshotHalo[s];
+    const double scale_factor = 1.0 / (1.0 + run_globals.ZZ[s]);
+    int64_t last_host_new_id = -1;
+    int row = 0;
 
-      for (int i = 0; i < n_halos; i++) {
-        if (!keep[s][i])
-          continue;
+    for (int i = 0; i < n_halos; i++) {
+      if (!keep[s][i])
+        continue;
 
-        halo_t* h = &halos[i];
-        int64_t self_id = (int64_t)s * 1000000000000LL + (int64_t)(halo_offset[s] + new_index[s][i]) + 1LL;
+      halo_t* h = &halos[i];
+      int64_t self_id = (int64_t)s * 1000000000000LL + (int64_t)(halo_offset[s] + new_index[s][i]) + 1LL;
 
-        out_ID[row] = self_id;
-        out_ForestID[row] = (uint64_t)h->ForestID;
-        out_npart[row] = (uint32_t)h->Len;
+      out_ID[row] = self_id;
+      out_ForestID[row] = (uint64_t)h->ForestID;
+      out_npart[row] = (uint32_t)h->Len;
 
-        int target_s = head_target_snap[s][i];
-        if (target_s >= 0) {
-          int64_t target_id =
-            (int64_t)target_s * 1000000000000LL + (int64_t)(halo_offset[target_s] + head_target_index[s][i]) + 1LL;
-          out_Head[row] = target_id;
-        } else {
-          out_Head[row] = self_id; // matches the reader's cyclic "life ends here" convention
-        }
-
-        if (h->Type == 0) {
-          out_hostHaloID[row] = -1;
-          last_host_new_id = self_id;
-
-          bool below_thresh = (h->TreeFlags & TREE_CASE_BELOW_VIRIAL_THRESHOLD) != 0;
-          fof_group_t* fof_group = h->FOFGroup;
-          if (below_thresh) {
-            out_float[0][row] = 0.0f;  // Mass_200crit
-            out_float[2][row] = -1.0f; // R_200crit
-          } else {
-            out_float[0][row] =
-              (float)((double)(fof_group->Mvir) / (double)(fof_group->FOFMvirModifier) /
-                      (hubble_h * units.mass_unit_to_internal));
-            out_float[2][row] = (float)((double)(fof_group->Rvir) / hubble_h);
-          }
-        } else {
-          out_hostHaloID[row] = last_host_new_id;
-          out_float[0][row] = (float)((double)(h->Mvir) / (hubble_h * units.mass_unit_to_internal)); // placeholder
-          out_float[2][row] = 0.0f;                                                                   // placeholder
-        }
-
-        out_float[1][row] = (float)((double)(h->Mvir) / (hubble_h * units.mass_unit_to_internal)); // Mass_tot
-        out_float[3][row] = h->Vmax;
-        out_float[4][row] = (float)((double)(h->Pos[0]) * scale_factor / hubble_h); // Xc
-        out_float[5][row] = (float)((double)(h->Pos[1]) * scale_factor / hubble_h); // Yc
-        out_float[6][row] = (float)((double)(h->Pos[2]) * scale_factor / hubble_h); // Zc
-        out_float[7][row] = (float)((double)(h->Vel[0]) * scale_factor);            // VXc
-        out_float[8][row] = (float)((double)(h->Vel[1]) * scale_factor);            // VYc
-        out_float[9][row] = (float)((double)(h->Vel[2]) * scale_factor);            // VZc
-        out_float[10][row] = (float)((double)(h->AngMom) / hubble_h);               // AngMom
-
-        row++;
+      int target_s = head_target_snap[s][i];
+      if (target_s >= 0) {
+        int64_t target_id =
+          (int64_t)target_s * 1000000000000LL + (int64_t)(halo_offset[target_s] + head_target_index[s][i]) + 1LL;
+        out_Head[row] = target_id;
+      } else {
+        out_Head[row] = self_id; // matches the reader's cyclic "life ends here" convention
       }
-      assert(row == n_local);
 
-      hsize_t offset[1] = { (hsize_t)halo_offset[s] };
-      hsize_t count[1] = { (hsize_t)n_local };
-      hid_t memspace = H5Screate_simple(1, count, NULL);
+      if (h->Type == 0) {
+        out_hostHaloID[row] = -1;
+        last_host_new_id = self_id;
 
-#define WRITE_COL(name, h5type, buf)                                                                                 \
+        bool below_thresh = (h->TreeFlags & TREE_CASE_BELOW_VIRIAL_THRESHOLD) != 0;
+        fof_group_t* fof_group = h->FOFGroup;
+        if (below_thresh) {
+          out_float[0][row] = 0.0f;  // Mass_200crit
+          out_float[2][row] = -1.0f; // R_200crit
+        } else {
+          out_float[0][row] =
+            (float)((double)(fof_group->Mvir) / (double)(fof_group->FOFMvirModifier) /
+                    (hubble_h * units.mass_unit_to_internal));
+          out_float[2][row] = (float)((double)(fof_group->Rvir) / hubble_h);
+        }
+      } else {
+        out_hostHaloID[row] = last_host_new_id;
+        out_float[0][row] = (float)((double)(h->Mvir) / (hubble_h * units.mass_unit_to_internal)); // placeholder
+        out_float[2][row] = 0.0f;                                                                   // placeholder
+      }
+
+      out_float[1][row] = (float)((double)(h->Mvir) / (hubble_h * units.mass_unit_to_internal)); // Mass_tot
+      out_float[3][row] = h->Vmax;
+      out_float[4][row] = (float)((double)(h->Pos[0]) * scale_factor / hubble_h); // Xc
+      out_float[5][row] = (float)((double)(h->Pos[1]) * scale_factor / hubble_h); // Yc
+      out_float[6][row] = (float)((double)(h->Pos[2]) * scale_factor / hubble_h); // Zc
+      out_float[7][row] = (float)((double)(h->Vel[0]) * scale_factor);            // VXc
+      out_float[8][row] = (float)((double)(h->Vel[1]) * scale_factor);            // VYc
+      out_float[9][row] = (float)((double)(h->Vel[2]) * scale_factor);            // VZc
+      out_float[10][row] = (float)((double)(h->AngMom) / hubble_h);               // AngMom
+
+      row++;
+    }
+    assert(row == n_local);
+
+    MPI_Gather(&n_local, 1, MPI_INT, recvcounts, 1, MPI_INT, 0, run_globals.mpi_comm);
+    if (run_globals.mpi_rank == 0) {
+      displs[0] = 0;
+      for (int r = 1; r < run_globals.mpi_size; r++)
+        displs[r] = displs[r - 1] + recvcounts[r - 1];
+    }
+
+    const int alloc_global = global_n_halos[s] > 0 ? global_n_halos[s] : 1;
+    int64_t* full_ID = (run_globals.mpi_rank == 0) ? malloc(sizeof(int64_t) * alloc_global) : NULL;
+    int64_t* full_Head = (run_globals.mpi_rank == 0) ? malloc(sizeof(int64_t) * alloc_global) : NULL;
+    int64_t* full_hostHaloID = (run_globals.mpi_rank == 0) ? malloc(sizeof(int64_t) * alloc_global) : NULL;
+    uint64_t* full_ForestID = (run_globals.mpi_rank == 0) ? malloc(sizeof(uint64_t) * alloc_global) : NULL;
+    uint32_t* full_npart = (run_globals.mpi_rank == 0) ? malloc(sizeof(uint32_t) * alloc_global) : NULL;
+    float* full_float[11];
+    for (int k = 0; k < n_dset_float; k++)
+      full_float[k] = (run_globals.mpi_rank == 0) ? malloc(sizeof(float) * alloc_global) : NULL;
+
+    MPI_Gatherv(
+      out_ID, n_local, MPI_LONG, full_ID, recvcounts, displs, MPI_LONG, 0, run_globals.mpi_comm);
+    MPI_Gatherv(
+      out_Head, n_local, MPI_LONG, full_Head, recvcounts, displs, MPI_LONG, 0, run_globals.mpi_comm);
+    MPI_Gatherv(out_hostHaloID,
+                n_local,
+                MPI_LONG,
+                full_hostHaloID,
+                recvcounts,
+                displs,
+                MPI_LONG,
+                0,
+                run_globals.mpi_comm);
+    MPI_Gatherv(out_ForestID,
+                n_local,
+                MPI_UNSIGNED_LONG,
+                full_ForestID,
+                recvcounts,
+                displs,
+                MPI_UNSIGNED_LONG,
+                0,
+                run_globals.mpi_comm);
+    MPI_Gatherv(
+      out_npart, n_local, MPI_UNSIGNED, full_npart, recvcounts, displs, MPI_UNSIGNED, 0, run_globals.mpi_comm);
+    for (int k = 0; k < n_dset_float; k++)
+      MPI_Gatherv(
+        out_float[k], n_local, MPI_FLOAT, full_float[k], recvcounts, displs, MPI_FLOAT, 0, run_globals.mpi_comm);
+
+    if (run_globals.mpi_rank == 0) {
+      char grp_name[16];
+      sprintf(grp_name, "Snap_%03d", s);
+      hid_t grp = H5Gopen(fd, grp_name, H5P_DEFAULT);
+
+#define WRITE_COL_FULL(name, h5type, buf)                                                                            \
   {                                                                                                                   \
     hid_t dset_id = H5Dopen(grp, name, H5P_DEFAULT);                                                                  \
-    hid_t fspace_id = H5Dget_space(dset_id);                                                                          \
-    H5Sselect_hyperslab(fspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);                                        \
-    H5Dwrite(dset_id, h5type, memspace, fspace_id, xfer_plist, buf);                                                  \
-    H5Sclose(fspace_id);                                                                                              \
+    H5Dwrite(dset_id, h5type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);                                                    \
     H5Dclose(dset_id);                                                                                                \
   }
 
-      WRITE_COL("ID", H5T_NATIVE_LONG, out_ID);
-      WRITE_COL("Head", H5T_NATIVE_LONG, out_Head);
-      WRITE_COL("hostHaloID", H5T_NATIVE_LONG, out_hostHaloID);
-      WRITE_COL("ForestID", H5T_NATIVE_ULONG, out_ForestID);
-      WRITE_COL("npart", H5T_NATIVE_UINT, out_npart);
+      WRITE_COL_FULL("ID", H5T_NATIVE_LONG, full_ID);
+      WRITE_COL_FULL("Head", H5T_NATIVE_LONG, full_Head);
+      WRITE_COL_FULL("hostHaloID", H5T_NATIVE_LONG, full_hostHaloID);
+      WRITE_COL_FULL("ForestID", H5T_NATIVE_ULONG, full_ForestID);
+      WRITE_COL_FULL("npart", H5T_NATIVE_UINT, full_npart);
       for (int k = 0; k < n_dset_float; k++)
-        WRITE_COL(dset_names_float[k], H5T_NATIVE_FLOAT, out_float[k]);
+        WRITE_COL_FULL(dset_names_float[k], H5T_NATIVE_FLOAT, full_float[k]);
 
-#undef WRITE_COL
+#undef WRITE_COL_FULL
 
-      H5Sclose(memspace);
-      free(out_ID);
-      free(out_Head);
-      free(out_hostHaloID);
-      free(out_ForestID);
-      free(out_npart);
+      H5Gclose(grp);
+
+      // MLOG_FLUSH so this is actually visible in a batch-job log file while the
+      // run keeps going, rather than sitting in a stdio buffer.
+      mlog("snapshot %d :: wrote %d halos", MLOG_MESG | MLOG_FLUSH, s, global_n_halos[s]);
+
+      free(full_ID);
+      free(full_Head);
+      free(full_hostHaloID);
+      free(full_ForestID);
+      free(full_npart);
       for (int k = 0; k < n_dset_float; k++)
-        free(out_float[k]);
+        free(full_float[k]);
     }
 
-    H5Gclose(grp);
-
-    // rank 0's own slice for this snapshot is done writing; MLOG_FLUSH so this
-    // is actually visible in a batch-job log file while the run keeps going,
-    // rather than sitting in a stdio buffer (see the earlier Pass-1 progress log).
-    mlog("snapshot %d :: wrote %d halos (rank 0's slice: %d rows at offset %d)",
-         MLOG_MESG | MLOG_FLUSH,
-         s,
-         global_n_halos[s],
-         local_n_halos_kept[s],
-         halo_offset[s]);
+    free(out_ID);
+    free(out_Head);
+    free(out_hostHaloID);
+    free(out_ForestID);
+    free(out_npart);
+    for (int k = 0; k < n_dset_float; k++)
+      free(out_float[k]);
   }
 
-  {
-    // H5Fclose() on an MPI-IO-backed file is effectively collective (metadata
-    // has to be synchronized across ranks) even though the H5Dwrite calls above
-    // were independent -- so a rank with a smaller/faster forest share can finish
-    // all n_snaps snapshots and then sit silently blocked here waiting for a
-    // slower rank. mlog() alone only shows rank 0's progress, which makes that
-    // completely invisible, so have every rank report in before the sync point.
-    long local_total_written = 0;
-    for (int s = 0; s < n_snaps; s++)
-      local_total_written += local_n_halos_kept[s];
-    // mlog() itself prefixes "rank %d: " when MLOG_ALLRANKS is set, so don't repeat it here.
-    mlog("finished writing all %d snapshots (%ld halos total) -- now waiting at the collective "
-         "H5Fclose/MPI_Barrier for any slower ranks",
-         MLOG_ALLRANKS | MLOG_FLUSH,
-         n_snaps,
-         local_total_written);
-  }
+  free(recvcounts);
+  free(displs);
 
-  H5Pclose(xfer_plist);
-  H5Fclose(fd);
+  if (run_globals.mpi_rank == 0)
+    H5Fclose(fd);
   MPI_Barrier(run_globals.mpi_comm);
 
   mlog("Regenerating forest stats file (meraxes_augmented_stats.h5)...", MLOG_OPEN | MLOG_FLUSH);
 
-  // ---- Regenerate the forests stats file. This rank's owned forest list is
-  // ---- whatever it was assigned to read (run_globals.RequestedForestId), or --
-  // ---- for a run with no forest partitioning at all (e.g. a single-rank test
-  // ---- run) -- the distinct ForestIDs actually seen among this rank's kept
-  // ---- halos.
-  long* my_forest_ids = NULL;
-  int n_my_forests = 0;
-  bool owns_forest_id_list = false;
-
-  if (run_globals.RequestedForestId != NULL && run_globals.NRequestedForests > 0) {
-    n_my_forests = run_globals.NRequestedForests;
-    my_forest_ids = malloc(sizeof(long) * n_my_forests);
-    memcpy(my_forest_ids, run_globals.RequestedForestId, sizeof(long) * n_my_forests);
-  } else {
+  // ---- This rank's owned forest list and per-forest tally were already built
+  // ---- above, folded into Pass 1, whenever forest partitioning was active
+  // ---- (have_forest_ids_early). The only case left to handle here is a run
+  // ---- with no forest partitioning at all (e.g. a single-rank test run),
+  // ---- where the owned-forest list can only be the distinct ForestIDs seen
+  // ---- among this rank's kept halos -- which isn't known until Pass 1 (just
+  // ---- above) has already run, so it can't be folded in the same way. That
+  // ---- case is small-scale by construction (no partitioning => everything is
+  // ---- on one rank), so a separate pass here doesn't cost anything real.
+  if (!have_forest_ids_early) {
     int cap = 1024;
     int n_seen = 0;
     long* seen = malloc(sizeof(long) * cap);
@@ -551,44 +631,42 @@ int write_truncated_tree(void)
         seen[n_unique++] = seen[ii];
     my_forest_ids = seen;
     n_my_forests = n_unique;
-    owns_forest_id_list = true;
-  }
-  (void)owns_forest_id_list;
 
-  int* forest_n_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-  int* forest_n_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-  int* forest_max_contemp_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-  int* forest_max_contemp_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-  int** forest_snap_halos = malloc(sizeof(int*) * n_snaps);
+    forest_n_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_n_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_max_contemp_halos = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_max_contemp_fof = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+    forest_snap_halos = malloc(sizeof(int*) * n_snaps);
 
-  for (int s = 0; s < n_snaps; s++) {
-    forest_snap_halos[s] = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-    int* snap_fof_count = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
-    const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
-    halo_t* halos = run_globals.SnapshotHalo[s];
+    for (int s = 0; s < n_snaps; s++) {
+      forest_snap_halos[s] = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+      int* snap_fof_count = calloc(n_my_forests > 0 ? n_my_forests : 1, sizeof(int));
+      const int n_halos = run_globals.SnapshotTreesInfo[s].n_halos;
+      halo_t* halos = run_globals.SnapshotHalo[s];
 
-    for (int i = 0; i < n_halos; i++) {
-      if (!keep[s][i])
-        continue;
-      long fid = (long)halos[i].ForestID;
-      long* pos = bsearch(&fid, my_forest_ids, (size_t)n_my_forests, sizeof(long), compare_longs);
-      if (pos == NULL)
-        continue; // should not happen
-      int fp = (int)(pos - my_forest_ids);
-      forest_snap_halos[s][fp]++;
-      forest_n_halos[fp]++;
-      if (halos[i].Type == 0) {
-        snap_fof_count[fp]++;
-        forest_n_fof[fp]++;
+      for (int i = 0; i < n_halos; i++) {
+        if (!keep[s][i])
+          continue;
+        long fid = (long)halos[i].ForestID;
+        long* pos = bsearch(&fid, my_forest_ids, (size_t)n_my_forests, sizeof(long), compare_longs);
+        if (pos == NULL)
+          continue; // should not happen
+        int fp = (int)(pos - my_forest_ids);
+        forest_snap_halos[s][fp]++;
+        forest_n_halos[fp]++;
+        if (halos[i].Type == 0) {
+          snap_fof_count[fp]++;
+          forest_n_fof[fp]++;
+        }
       }
+      for (int fp = 0; fp < n_my_forests; fp++) {
+        if (forest_snap_halos[s][fp] > forest_max_contemp_halos[fp])
+          forest_max_contemp_halos[fp] = forest_snap_halos[s][fp];
+        if (snap_fof_count[fp] > forest_max_contemp_fof[fp])
+          forest_max_contemp_fof[fp] = snap_fof_count[fp];
+      }
+      free(snap_fof_count);
     }
-    for (int fp = 0; fp < n_my_forests; fp++) {
-      if (forest_snap_halos[s][fp] > forest_max_contemp_halos[fp])
-        forest_max_contemp_halos[fp] = forest_snap_halos[s][fp];
-      if (snap_fof_count[fp] > forest_max_contemp_fof[fp])
-        forest_max_contemp_fof[fp] = snap_fof_count[fp];
-    }
-    free(snap_fof_count);
   }
 
   int* recvcounts = malloc(sizeof(int) * run_globals.mpi_size);
@@ -712,6 +790,7 @@ int write_truncated_tree(void)
   // ---- cleanup
   free(recvcounts);
   free(displs);
+  free(snap_fof_count_scratch);
   free(my_forest_ids);
   free(forest_n_halos);
   free(forest_n_fof);
