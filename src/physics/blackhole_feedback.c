@@ -157,32 +157,13 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
   double m_reheat;
   double accreted_mass;
   double BHemissivity, accretion_time, quasar_luv;
-  double t_off, t_resp;
   double Vvir = get_vvir(gal);
-  run_units_t* units = &(run_globals.units);
   double factor = EMISSIVITY_CONVERTOR * gal->FescBH / run_globals.params.physics.ReionNionPhotPerBary;
 
   // Use snapshot cadence timestep instead of gal->dt to ensure proper accretion
   // for ghost galaxies that have been in ghost state for multiple snapshots.
   // snapshot is the current snapshot, snapshot+1 is the next snapshot in the past.
   double dt = (snapshot > 0) ? (run_globals.LTTime[snapshot - 1] - run_globals.LTTime[snapshot]) : 0.0;
-
-  // Determine the accretion on-time within this snapshot
-  if (run_globals.params.physics.Flag_BHARExponentialCut) {
-    if (gal->BHAccretionOnTime < 0.0) {
-      // First snapshot of accretion after merger - assign random on-time
-      gal->BHAccretionOnTime = check_float_cast((double)(gsl_rng_uniform(run_globals.random_generator)), FloatField_BHAccretionOnTime);
-    } else {
-      // Accretion was already happening in previous snapshot - start immediately
-      gal->BHAccretionOnTime = check_float_cast((double)(0.0), FloatField_BHAccretionOnTime);
-    }
-    // Adjust effective timestep based on when accretion starts
-    dt *= (1.0 - gal->BHAccretionOnTime);
-  } else {
-    // No random on-time when using duty-cycle weighting
-    gal->BHAccretionOnTime = check_float_cast((double)(0.0), FloatField_BHAccretionOnTime);
-  }
-
 
   if (dt > 0.0){
     // Eddington rate (using effective timestep)
@@ -194,10 +175,6 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
       accreted_mass = gal->BlackHoleAccretingColdMass;
 
     gal->BlackHoleAccretingColdMass = check_float_cast((double)(gal->BlackHoleAccretingColdMass) - (accreted_mass), FloatField_BlackHoleAccretingColdMass);
-
-    // Reset on-time if accretion is complete
-    if (gal->BlackHoleAccretingColdMass <= 0.0)
-      gal->BHAccretionOnTime = check_float_cast((double)(-1.0), FloatField_BHAccretionOnTime);
 
     // N_gamma,q * N_bh; later 1e60*BHemissivity * PROTONMASS/1e10/SOLAR_MASS will be N_gamma,q * M_bh
     calculate_BHemissivity(gal->BlackHoleMass, accreted_mass, &BHemissivity, &accretion_time, &quasar_luv);
@@ -212,15 +189,7 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
 
     BHemissivity *= factor / accretion_time;
 
-    if (run_globals.params.physics.Flag_BHARExponentialCut) {
-      t_off = (1.0 - gal->DutyCycleAGN) * dt;
-      if (t_off > 0.0) {
-        t_resp = gal->t_resp * run_globals.params.Hubble_h / units->UnitTime_in_Megayears;
-        if (t_resp > 0.0)
-          BHemissivity *= exp(-t_off / t_resp);
-      }
-    } else
-      BHemissivity *= gal->DutyCycleAGN;
+    BHemissivity *= gal->DutyCycleAGN;
 
     gal->EffectiveBHAR = check_float_cast((double)(gal->EffectiveBHAR) + (BHemissivity), FloatField_EffectiveBHAR);
 

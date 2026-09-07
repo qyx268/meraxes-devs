@@ -57,7 +57,6 @@ galaxy_t* new_galaxy(void)
   gal->EffectiveBHAR = check_float_cast((double)(0.0), FloatField_EffectiveBHAR);
   gal->DutyCycleAGN = check_float_cast((double)(0.0), FloatField_DutyCycleAGN);
   gal->BlackHoleAccretingColdMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretingColdMass);
-  gal->BHAccretionOnTime = check_float_cast((double)(-1.0), FloatField_BHAccretionOnTime);
   gal->Sfr = check_float_cast((double)(0.0), FloatField_Sfr);
   gal->FescWeightedSfr = check_float_cast((double)(0.0), FloatField_FescWeightedSfr);
   gal->MergTime = check_float_cast((double)(99999.9), FloatField_MergTime);
@@ -167,7 +166,6 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
   gal->EffectiveBHAR = check_float_cast((double)(0.0), FloatField_EffectiveBHAR);
   gal->DutyCycleAGN = check_float_cast((double)(0.0), FloatField_DutyCycleAGN);
-  gal->t_resp = check_float_cast((double)(1e30), FloatField_t_resp);
 #if USE_MINI_HALOS
   gal->SfrIII = check_float_cast((double)(0.0), FloatField_SfrIII);
   gal->FescIIIWeightedSfr = check_float_cast((double)(0.0), FloatField_FescIIIWeightedSfr);

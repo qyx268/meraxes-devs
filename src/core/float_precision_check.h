@@ -52,8 +52,6 @@ extern "C"
   X(EffectiveBHAR)                                                                                                    \
   X(DutyCycleAGN)                                                                                                     \
   X(BlackHoleAccretingColdMass)                                                                                       \
-  X(BHAccretionOnTime)                                                                                                \
-  X(t_resp)                                                                                                          \
   X(SfrIII)                                                                                                           \
   X(StellarMass_II)                                                                                                   \
   X(StellarMass_III)                                                                                                  \

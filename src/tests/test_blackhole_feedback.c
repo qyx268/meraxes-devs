@@ -43,7 +43,6 @@ void setup(void)
   run_globals.params.physics.quasar_fobs = 1.0;
   run_globals.params.physics.Flag_BHObscuedIonization = 1;
   run_globals.params.physics.ReionNionPhotPerBary = 5000.0;
-  run_globals.params.physics.Flag_BHARExponentialCut = 0;
 }
 
 void teardown(void)

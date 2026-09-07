@@ -218,7 +218,6 @@ typedef struct physics_params_t
   int Flag_ReionizationModifier;
   int Flag_BHFeedback;
   int Flag_BHObscuedIonization;
-  int Flag_BHARExponentialCut;
   int Flag_IRA;
   int Flag_FixDiskRadiusOnInfall;
   int Flag_FixVmaxOnInfall;
@@ -673,8 +672,6 @@ typedef struct galaxy_t
   float EffectiveBHAR;
   float DutyCycleAGN;
   float BlackHoleAccretingColdMass;
-  float BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
-  float t_resp;                //!< Local relaxation timescale (in Myr)
 #if USE_MINI_HALOS
   int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
   // Differentiation Pop III / Pop II

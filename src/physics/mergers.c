@@ -198,14 +198,9 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   parent->LOIII = check_float_cast((double)(parent->LOIII) + (gal->LOIII), FloatField_LOIII);
   parent->ionization_param = check_float_cast((double)(parent->ionization_param) + (gal->ionization_param), FloatField_ionization_param);
   
-  // parent has not prior accretion but sallite does
-  if (parent->BHAccretionOnTime < 0 && gal->BHAccretionOnTime > 0)
-    parent->BHAccretionOnTime = check_float_cast((double)(gal->BHAccretionOnTime), FloatField_BHAccretionOnTime);
-  // take the duty cycle and t_resp of the bigger BH
-  if (parent->BlackHoleMass < gal->BlackHoleMass) {
+  // take the duty cycle of the bigger BH
+  if (parent->BlackHoleMass < gal->BlackHoleMass)
     parent->DutyCycleAGN = check_float_cast((double)(gal->DutyCycleAGN), FloatField_DutyCycleAGN);
-    parent->t_resp = check_float_cast((double)(gal->t_resp), FloatField_t_resp);
-  }
   parent->QuasarLuv = check_float_cast((double)(parent->QuasarLuv) + (gal->QuasarLuv), FloatField_QuasarLuv);
 
   // take the CGM tau from the one with more CGM

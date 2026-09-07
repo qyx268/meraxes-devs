@@ -1370,7 +1370,6 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
   int ReionGridDim = run_globals.params.ReionGridDim;
   double box_size = run_globals.params.BoxSize;
   float* Mvir_crit = run_globals.reion_grids.Mvir_crit;
-  float* t_resp_grid = run_globals.reion_grids.t_resp;
   float* Gamma12_grid = run_globals.reion_grids.Gamma12;
   float* clumping_factor_grid = run_globals.reion_grids.clumping_factor;
   int cgm_mode = run_globals.params.physics.Flag_FescCGMSuppression;
@@ -1391,15 +1390,6 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
 #else
     mlog_error("Cannot assign Mvir_crit_MC to galaxies when not USE_MINI_HALOS...");
 #endif
-  }
-
-  if (flag_feed == 3) {
-    if (t_resp_grid != NULL)
-      mlog("Assigning t_resp to galaxies...", MLOG_OPEN);
-    else {
-      mlog_error("Cannot assign t_resp to galaxies when t_resp grid is not available...");
-      ABORT(EXIT_FAILURE);
-    }
   }
 
   if (flag_feed == 4) {
@@ -1532,46 +1522,6 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
     }
 #endif
 
-    if (flag_feed == 3) {
-      if (i_skip > 0) {
-        MPI_Sendrecv(&recv_flag,
-                     sizeof(bool),
-                     MPI_BYTE,
-                     recv_from_rank,
-                     6393764,
-                     &send_flag,
-                     sizeof(bool),
-                     MPI_BYTE,
-                     send_to_rank,
-                     6393764,
-                     run_globals.mpi_comm,
-                     MPI_STATUS_IGNORE);
-
-        if (send_to_rank > run_globals.mpi_rank) {
-          if (send_flag) {
-            int n_cells = (int)(slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim);
-            MPI_Send(t_resp_grid, n_cells, MPI_FLOAT, send_to_rank, 793711, run_globals.mpi_comm);
-          }
-          if (recv_flag) {
-            int n_cells = (int)(slab_nix[recv_from_rank] * ReionGridDim * ReionGridDim);
-            MPI_Recv(buffer, n_cells, MPI_FLOAT, recv_from_rank, 793711, run_globals.mpi_comm, MPI_STATUS_IGNORE);
-          }
-        } else {
-          if (recv_flag) {
-            int n_cells = (int)(slab_nix[recv_from_rank] * ReionGridDim * ReionGridDim);
-            MPI_Recv(buffer, n_cells, MPI_FLOAT, recv_from_rank, 793711, run_globals.mpi_comm, MPI_STATUS_IGNORE);
-          }
-          if (send_flag) {
-            int n_cells = (int)(slab_nix[run_globals.mpi_rank] * ReionGridDim * ReionGridDim);
-            MPI_Send(t_resp_grid, n_cells, MPI_FLOAT, send_to_rank, 793711, run_globals.mpi_comm);
-          }
-        }
-      } else {
-        int n_cells = (int)(slab_nix[recv_from_rank] * ReionGridDim * ReionGridDim);
-        memcpy(buffer, t_resp_grid, sizeof(float) * n_cells);
-      }
-    }
-
     if (flag_feed == 4) {
       // Choose grid based on CGM suppression mode: 1,2 = Gamma12, 3 = clumping_factor
       float* source_grid = (cgm_mode == 3) ? clumping_factor_grid : Gamma12_grid;
@@ -1638,9 +1588,6 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
         if (flag_feed == 2)
           gal->MvirCrit_MC = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit_MC);
 #endif
-
-        if (flag_feed == 3)
-          gal->t_resp = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_t_resp);
 
         // Compute tau_cgm based on CGM suppression mode
         // Mode 1: instantaneous Gamma12, Mode 2: cumulative Gamma12, Mode 3: clumping factor
