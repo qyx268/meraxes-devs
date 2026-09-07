@@ -17,7 +17,6 @@ typedef struct galaxy_output_t
   int CentralGal;
   int GhostFlag;
   int Len;
-  int MaxLen;
 
   float Pos[3];
   float Spin;
@@ -53,8 +52,6 @@ typedef struct galaxy_output_t
   float BHemissivity;
   float QuasarMag;
   float EffectiveBHM;
-  float BlackHoleAccretedHotMass;
-  float BlackHoleAccretedColdMass;
   float DutyCycleAGN;
 
 #if USE_MINI_HALOS
@@ -78,11 +75,9 @@ typedef struct galaxy_output_t
   float Rcool;
   float MergTime;
   float BaryonFracModifier;
-  float FOFMvirModifier;
   float MvirCrit;
   float tau_cgm;
   float dt;
-  float MergerBurstMass;
 
   // baryonic histories
   float MWMSA; // Mass weighted mean stellar age

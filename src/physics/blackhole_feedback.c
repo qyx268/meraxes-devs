@@ -108,8 +108,6 @@ double radio_mode_BH_heating(galaxy_t* gal, double cooling_mass, double x)
       heated_mass = cooling_mass;
     }
 
-    gal->BlackHoleAccretedHotMass = check_float_cast((double)(accreted_mass), FloatField_BlackHoleAccretedHotMass);
-
     // add the accreted mass to the black hole from hotgas
     double metallicity = calc_metallicity(gal->HotGas, gal->MetalsHotGas);
 
@@ -195,7 +193,6 @@ void previous_merger_driven_BH_growth(galaxy_t* gal, int snapshot)
     if (accreted_mass > gal->BlackHoleAccretingColdMass)
       accreted_mass = gal->BlackHoleAccretingColdMass;
 
-    gal->BlackHoleAccretedColdMass = check_float_cast((double)(gal->BlackHoleAccretedColdMass) + (accreted_mass), FloatField_BlackHoleAccretedColdMass);
     gal->BlackHoleAccretingColdMass = check_float_cast((double)(gal->BlackHoleAccretingColdMass) - (accreted_mass), FloatField_BlackHoleAccretingColdMass);
 
     // Reset on-time if accretion is complete

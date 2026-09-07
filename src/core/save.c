@@ -324,7 +324,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
     galout->Pos[ii] = gal.Pos[ii];
 
   galout->Len = gal.Len;
-  galout->MaxLen = gal.MaxLen;
   galout->Mvir = gal.Mvir;
   galout->Rvir = gal.Rvir;
   galout->Vvir = gal.Vvir;
@@ -345,8 +344,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->QuasarMag = (gal.QuasarLuv > 0.0) ? (float)(-19.826 - 2.5 * log10(gal.QuasarLuv)) : 999.9f;
   galout->DutyCycleAGN = gal.DutyCycleAGN;
   galout->EffectiveBHM = gal.EffectiveBHM;
-  galout->BlackHoleAccretedHotMass = gal.BlackHoleAccretedHotMass;
-  galout->BlackHoleAccretedColdMass = gal.BlackHoleAccretedColdMass;
   galout->DiskScaleLength = gal.DiskScaleLength;
   galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
@@ -357,11 +354,9 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->MetalsEjectedGas = gal.MetalsEjectedGas;
   galout->Rcool = gal.Rcool;
   galout->BaryonFracModifier = gal.BaryonFracModifier;
-  galout->FOFMvirModifier = gal.FOFMvirModifier;
   galout->MvirCrit = gal.MvirCrit;
   galout->tau_cgm = gal.tau_cgm;
   galout->dt = (float)(gal.dt * units->UnitTime_in_Megayears);
-  galout->MergerBurstMass = gal.MergerBurstMass;
   galout->MergTime = (float)(gal.MergTime * units->UnitTime_in_Megayears);
   galout->MWMSA = current_mwmsa(&gal, i_snap);
 
@@ -430,7 +425,9 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 47; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius dropped -- see galaxies.c
+    h5props->n_props = 42; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
+                            // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
+                            // BlackHoleAccretedColdMass dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -508,13 +505,6 @@ void calc_hdf5_props()
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, Len);
     h5props->dst_field_sizes[i] = sizeof(galout.Len);
     h5props->field_names[i] = "Len";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_INT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MaxLen);
-    h5props->dst_field_sizes[i] = sizeof(galout.MaxLen);
-    h5props->field_names[i] = "MaxLen";
     h5props->field_units[i] = "None";
     h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_INT;
@@ -795,13 +785,6 @@ void calc_hdf5_props()
     h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, FOFMvirModifier);
-    h5props->dst_field_sizes[i] = sizeof(galout.FOFMvirModifier);
-    h5props->field_names[i] = "FOFMvirModifier";
-    h5props->field_units[i] = "None";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MvirCrit);
     h5props->dst_field_sizes[i] = sizeof(galout.MvirCrit);
     h5props->field_names[i] = "MvirCrit";
@@ -823,13 +806,6 @@ void calc_hdf5_props()
     h5props->field_names[i] = "tau_cgm";
     h5props->field_units[i] = "None";
     h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MergerBurstMass);
-    h5props->dst_field_sizes[i] = sizeof(galout.MergerBurstMass);
-    h5props->field_names[i] = "MergerBurstMass";
-    h5props->field_units[i] = "1e10 solMass";
-    h5props->field_h_conv[i] = "v/h";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, MWMSA);
@@ -922,20 +898,6 @@ void calc_hdf5_props()
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, EffectiveBHM);
     h5props->dst_field_sizes[i] = sizeof(galout.EffectiveBHM);
     h5props->field_names[i] = "EffectiveBHM";
-    h5props->field_units[i] = "1e10 solMass";
-    h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, BlackHoleAccretedHotMass);
-    h5props->dst_field_sizes[i] = sizeof(galout.BlackHoleAccretedHotMass);
-    h5props->field_names[i] = "BlackHoleAccretedHotMass";
-    h5props->field_units[i] = "1e10 solMass";
-    h5props->field_h_conv[i] = "v/h";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, BlackHoleAccretedColdMass);
-    h5props->dst_field_sizes[i] = sizeof(galout.BlackHoleAccretedColdMass);
-    h5props->field_names[i] = "BlackHoleAccretedColdMass";
     h5props->field_units[i] = "1e10 solMass";
     h5props->field_h_conv[i] = "v/h";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;

@@ -672,8 +672,6 @@ typedef struct galaxy_t
   float EffectiveBHM;
   float EffectiveBHAR;
   float DutyCycleAGN;
-  float BlackHoleAccretedHotMass;
-  float BlackHoleAccretedColdMass;
   float BlackHoleAccretingColdMass;
   float BHAccretionOnTime;     //!< Random on-time fraction [0, 1] for when accretion starts within snapshot; -1 indicates no prior accretion
   float t_resp;                //!< Local relaxation timescale (in Myr)
@@ -719,16 +717,13 @@ typedef struct galaxy_t
   float Rcool;
   float MergTime;
   float BaryonFracModifier;
-  float FOFMvirModifier;
   float MvirCrit;
   float tau_cgm;
   float cumulative_ionization;  //!< Integrated Gamma12 * dt for CGM suppression mode 2
-  float MergerBurstMass;
 
   int Type;
   int OldType;
   int Len;
-  int MaxLen;
   int SnapSkipCounter;
   int HaloDescIndex;
   int TreeFlags;

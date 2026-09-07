@@ -51,8 +51,6 @@ extern "C"
   X(EffectiveBHM)                                                                                                     \
   X(EffectiveBHAR)                                                                                                    \
   X(DutyCycleAGN)                                                                                                     \
-  X(BlackHoleAccretedHotMass)                                                                                         \
-  X(BlackHoleAccretedColdMass)                                                                                        \
   X(BlackHoleAccretingColdMass)                                                                                       \
   X(BHAccretionOnTime)                                                                                                \
   X(t_resp)                                                                                                          \
@@ -82,12 +80,10 @@ extern "C"
   X(Rcool)                                                                                                            \
   X(MergTime)                                                                                                         \
   X(BaryonFracModifier)                                                                                               \
-  X(FOFMvirModifier)                                                                                                  \
   X(MvirCrit)                                                                                                         \
   X(MvirCrit_MC)                                                                                                      \
   X(tau_cgm)                                                                                                          \
   X(cumulative_ionization)                                                                                            \
-  X(MergerBurstMass)                                                                                                  \
   X(HaloMvir)                                                                                                         \
   X(HaloRvir)                                                                                                         \
   X(HaloVvir)                                                                                                         \

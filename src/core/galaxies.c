@@ -25,7 +25,6 @@ galaxy_t* new_galaxy(void)
   gal->Next = NULL;
   gal->MergerTarget = NULL;
   gal->Len = 0;
-  gal->MaxLen = 0;
   gal->dt = check_float_cast((double)(0.0), FloatField_dt);
   gal->Mvir = check_float_cast((double)(0.0), FloatField_Mvir);
   gal->Rvir = check_float_cast((double)(0.0), FloatField_Rvir);
@@ -57,19 +56,15 @@ galaxy_t* new_galaxy(void)
   gal->EffectiveBHM = check_float_cast((double)(0.0), FloatField_EffectiveBHM);
   gal->EffectiveBHAR = check_float_cast((double)(0.0), FloatField_EffectiveBHAR);
   gal->DutyCycleAGN = check_float_cast((double)(0.0), FloatField_DutyCycleAGN);
-  gal->BlackHoleAccretedHotMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretedHotMass);
-  gal->BlackHoleAccretedColdMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretedColdMass);
   gal->BlackHoleAccretingColdMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretingColdMass);
   gal->BHAccretionOnTime = check_float_cast((double)(-1.0), FloatField_BHAccretionOnTime);
   gal->Sfr = check_float_cast((double)(0.0), FloatField_Sfr);
   gal->FescWeightedSfr = check_float_cast((double)(0.0), FloatField_FescWeightedSfr);
   gal->MergTime = check_float_cast((double)(99999.9), FloatField_MergTime);
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
-  gal->FOFMvirModifier = check_float_cast((double)(1.0), FloatField_FOFMvirModifier);
   gal->MvirCrit = check_float_cast((double)(0.0), FloatField_MvirCrit);
   gal->tau_cgm = check_float_cast((double)(0.0), FloatField_tau_cgm);
   gal->cumulative_ionization = check_float_cast((double)(0.0), FloatField_cumulative_ionization);
-  gal->MergerBurstMass = check_float_cast((double)(0.0), FloatField_MergerBurstMass);
 
 #if USE_MINI_HALOS
   gal->StellarMass_II = check_float_cast((double)(0.), FloatField_StellarMass_II);
@@ -138,7 +133,6 @@ void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
   gal->Vvir = check_float_cast((double)(halo->Vvir), FloatField_Vvir);
   gal->TreeFlags = halo->TreeFlags;
   gal->Spin = check_float_cast((double)(calculate_spin_param(halo)), FloatField_Spin);
-  gal->FOFMvirModifier = check_float_cast((double)(halo->FOFGroup->FOFMvirModifier), FloatField_FOFMvirModifier);
 
   double sqrt_2 = 1.414213562;
   if (gal->Type == 0) {
@@ -153,10 +147,6 @@ void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
 
   for (int ii = 0; ii < 3; ii++)
     gal->Pos[ii] = halo->Pos[ii];
-
-  // record the maximum Len value if necessary
-  if (halo->Len > gal->MaxLen)
-    gal->MaxLen = halo->Len;
 }
 
 void reset_galaxy_properties(galaxy_t* gal, int snapshot)
@@ -175,11 +165,8 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   gal->BHemissivity = check_float_cast((double)(0.0), FloatField_BHemissivity);
   gal->QuasarLuv = check_float_cast((double)(0.0), FloatField_QuasarLuv);
   gal->BaryonFracModifier = check_float_cast((double)(1.0), FloatField_BaryonFracModifier);
-  gal->FOFMvirModifier = check_float_cast((double)(1.0), FloatField_FOFMvirModifier);
   gal->EffectiveBHAR = check_float_cast((double)(0.0), FloatField_EffectiveBHAR);
   gal->DutyCycleAGN = check_float_cast((double)(0.0), FloatField_DutyCycleAGN);
-  gal->BlackHoleAccretedHotMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretedHotMass);
-  gal->BlackHoleAccretedColdMass = check_float_cast((double)(0.0), FloatField_BlackHoleAccretedColdMass);
   gal->t_resp = check_float_cast((double)(1e30), FloatField_t_resp);
 #if USE_MINI_HALOS
   gal->SfrIII = check_float_cast((double)(0.0), FloatField_SfrIII);

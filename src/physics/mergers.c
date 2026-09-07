@@ -130,7 +130,6 @@ static void merger_driven_starburst(galaxy_t* parent, double merger_ratio, int s
         parent, &burst_mass, snapshot, &m_reheat, &m_eject, &m_recycled, &m_remnant, &new_metals);
       // update the baryonic reservoirs (note that the order we do this in will change the result!)
       update_reservoirs_from_sf(parent, burst_mass, snapshot, MERGER);
-      parent->MergerBurstMass = check_float_cast((double)(parent->MergerBurstMass) + (burst_mass), FloatField_MergerBurstMass);
 #if USE_MINI_HALOS
       if (parent->Galaxy_Population == 2)
 #endif
@@ -213,8 +212,6 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   if (parent->HotGas < gal->HotGas)
     parent->tau_cgm = check_float_cast((double)(gal->tau_cgm), FloatField_tau_cgm);
 
-  parent->BlackHoleAccretedHotMass = check_float_cast((double)(parent->BlackHoleAccretedHotMass) + (gal->BlackHoleAccretedHotMass), FloatField_BlackHoleAccretedHotMass);
-  parent->BlackHoleAccretedColdMass = check_float_cast((double)(parent->BlackHoleAccretedColdMass) + (gal->BlackHoleAccretedColdMass), FloatField_BlackHoleAccretedColdMass);
   parent->BlackHoleAccretingColdMass = check_float_cast((double)(parent->BlackHoleAccretingColdMass) + (gal->BlackHoleAccretingColdMass), FloatField_BlackHoleAccretingColdMass);
   parent->BHemissivity = check_float_cast((double)(parent->BHemissivity) + (gal->BHemissivity), FloatField_BHemissivity);
   parent->BlackHoleMass = check_float_cast((double)(parent->BlackHoleMass) + (gal->BlackHoleMass), FloatField_BlackHoleMass);
@@ -223,7 +220,6 @@ void merge_with_target(galaxy_t* gal, int* dead_gals, int snapshot)
   
   parent->mwmsa_num = check_float_cast((double)(parent->mwmsa_num) + (gal->mwmsa_num), FloatField_mwmsa_num);
   parent->mwmsa_denom = check_float_cast((double)(parent->mwmsa_denom) + (gal->mwmsa_denom), FloatField_mwmsa_denom);
-  parent->MergerBurstMass = check_float_cast((double)(parent->MergerBurstMass) + (gal->MergerBurstMass), FloatField_MergerBurstMass);
 
 
 #if USE_MINI_HALOS
