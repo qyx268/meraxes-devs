@@ -74,11 +74,15 @@ void compute_LOIII(galaxy_t* gal, int snapshot)
 
   double metallicity = gal->MetalsColdGas / gal->ColdGas;
   double oiii_volume_fraction = 0.8;
-  // Scaled by 1e-40 so gal->LOIII is stored in units of 1e40 erg/s (matches
-  // galaxy_output_t.LOIII) and stays well within float range.
+  // Scaled by 1e-40 so this is stored in units of 1e40 erg/s (matches
+  // galaxy_output_t.LOIII_dusty) and stays well within float range.
   double loiii = run_globals.loiii_params.oxygen_abundance_over_z_sun * metallicity *
                        run_globals.loiii_params.excitation_rate * run_globals.loiii_params.branching_ratio *
                        (ionizing_photon_rate * bubble_count / ALPHA_HII) * PLANCK * nu32 * oiii_volume_fraction * 1e-40;
 
-  gal->LOIII = check_float_cast((double)(gal->LOIII) + (clamp_non_finite(loiii)), FloatField_LOIII);
+  // Stash the intrinsic (non-dust-attenuated) luminosity in LOIII_dusty --
+  // there's no separate LOIII field any more. The output/cache preparation
+  // code (save.c) reads this as its intrinsic input and overwrites it in
+  // place with the real dust-attenuated value once computed.
+  gal->LOIII_dusty = check_float_cast((double)(gal->LOIII_dusty) + (clamp_non_finite(loiii)), FloatField_LOIII_dusty);
 }

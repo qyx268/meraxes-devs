@@ -124,13 +124,6 @@ static void initialize_luminosity_function_cache(int snapshot)
                                           "Dusty OIII Luminosity Function");
 #endif
 
-  if (run_globals.params.Flag_OutputOIIILF)
-    initialize_cached_luminosity_function(MERAXES_LF_OIII,
-                                          run_globals.params.OIIILF_MinLogL,
-                                          run_globals.params.OIIILF_MaxLogL,
-                                          run_globals.params.OIIILF_BinsPerDex,
-                                          "OIII Luminosity Function");
-
   if (run_globals.params.Flag_OutputQuasarLF)
     initialize_cached_luminosity_function(MERAXES_LF_QUASAR,
                                           run_globals.params.UVLF_MinMag,
@@ -177,9 +170,6 @@ static void accumulate_cached_luminosity_functions(const galaxy_output_t* galaxy
   if (luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY] && galaxy->LOIII_dusty > 0.0f)
     add_to_cached_luminosity_function(MERAXES_LF_OIII_DUSTY, log10(galaxy->LOIII_dusty) + 40.0, 1.0);
 #endif
-
-  if (luminosity_function_cache.valid[MERAXES_LF_OIII] && galaxy->LOIII > 0.0f)
-    add_to_cached_luminosity_function(MERAXES_LF_OIII, log10(galaxy->LOIII) + 40.0, 1.0);
 
   if (luminosity_function_cache.valid[MERAXES_LF_QUASAR]) {
     const double weight = galaxy->DutyCycleAGN * run_globals.params.physics.quasar_fobs;
@@ -231,14 +221,16 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
   output->GhostFlag = (int)galaxy->ghost_flag;
   output->Mvir = (float)galaxy->Mvir;
   output->StellarMass = (float)galaxy->StellarMass;
-  output->LOIII = (float)galaxy->LOIII; // galaxy->LOIII is already stored in units of 1e40 erg/s
   output->QuasarMag = galaxy->QuasarLuv > 0.0 ? (float)(-19.826 - 2.5 * log10(galaxy->QuasarLuv)) : 999.9f;
   output->DutyCycleAGN = (float)galaxy->DutyCycleAGN;
 
 #ifdef CALC_MAGS
   if (luminosity_function_cache.valid[MERAXES_LF_UV] || luminosity_function_cache.valid[MERAXES_LF_DUSTY] ||
       luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY]) {
-    output->LOIII_dusty = output->LOIII;
+    // galaxy->LOIII_dusty currently holds the intrinsic (non-dust-attenuated)
+    // luminosity staged there by compute_LOIII() -- already in units of
+    // 1e40 erg/s, matching galaxy_output_t.LOIII_dusty.
+    output->LOIII_dusty = (float)galaxy->LOIII_dusty;
     get_output_magnitudes(output->Mags, output->DustyMags, galaxy, snapshot);
 
     if (luminosity_function_cache.valid[MERAXES_LF_OIII_DUSTY]) {
@@ -249,7 +241,7 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
       if (isfinite(mag) && isfinite(dusty_mag) && mag < 900.0f && dusty_mag < 900.0f) {
         const double attenuation_mag = (double)mag - (double)dusty_mag;
         const double attenuation_factor = pow(10.0, 0.4 * attenuation_mag);
-        const double loiii_dusty = (double)output->LOIII * attenuation_factor;
+        const double loiii_dusty = (double)output->LOIII_dusty * attenuation_factor;
 
         if (isfinite(loiii_dusty) && loiii_dusty >= 0.0)
           output->LOIII_dusty = (float)loiii_dusty;
@@ -346,7 +338,6 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->DiskScaleLength = gal.DiskScaleLength;
   galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  galout->LOIII = (float)gal.LOIII; // gal.LOIII is already stored in units of 1e40 erg/s
   galout->FescWeightedSfr = (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->EjectedGas = gal.EjectedGas;
   galout->MetalsEjectedGas = gal.MetalsEjectedGas;
@@ -384,7 +375,10 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   }
 
 #ifdef CALC_MAGS
-  galout->LOIII_dusty = galout->LOIII;
+  // gal.LOIII_dusty currently holds the intrinsic (non-dust-attenuated)
+  // luminosity staged there by compute_LOIII() -- already in units of
+  // 1e40 erg/s, matching galaxy_output_t.LOIII_dusty.
+  galout->LOIII_dusty = (float)gal.LOIII_dusty;
   get_output_magnitudes(galout->Mags, galout->DustyMags, &gal, run_globals.ListOutputSnaps[i_snap]);
 
   const int loiii_band_idx = run_globals.loiii_rest_band_mag_index;
@@ -395,7 +389,7 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
     if (isfinite(mag) && isfinite(dusty_mag) && mag < 900.0f && dusty_mag < 900.0f) {
       const double attenuation_mag = (double)mag - (double)dusty_mag;
       const double attenuation_factor = pow(10.0, 0.4 * attenuation_mag);
-      const double loiii_dusty = (double)galout->LOIII * attenuation_factor;
+      const double loiii_dusty = (double)galout->LOIII_dusty * attenuation_factor;
 
       if (isfinite(loiii_dusty) && loiii_dusty >= 0.0)
         galout->LOIII_dusty = (float)loiii_dusty;
@@ -422,9 +416,9 @@ void calc_hdf5_props()
     galaxy_output_t galout;
     int i; // dummy
 
-    h5props->n_props = 39; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
+    h5props->n_props = 38; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
                             // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
-                            // BlackHoleAccretedColdMass, ionization_param, FescBH, tau_cgm
+                            // BlackHoleAccretedColdMass, ionization_param, FescBH, tau_cgm, LOIII
                             // dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
@@ -660,13 +654,6 @@ void calc_hdf5_props()
     h5props->dst_field_sizes[i] = sizeof(galout.Sfr);
     h5props->field_names[i] = "Sfr";
     h5props->field_units[i] = "solMass/yr";
-    h5props->field_h_conv[i] = "None";
-    h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-
-    h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, LOIII);
-    h5props->dst_field_sizes[i] = sizeof(galout.LOIII);
-    h5props->field_names[i] = "LOIII";
-    h5props->field_units[i] = "1e40 erg/s";
     h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
@@ -1241,11 +1228,6 @@ void create_master_file()
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "QuasarLF", H5P_DEFAULT, H5P_DEFAULT);
     }
 
-    if (run_globals.params.Flag_OutputOIIILF && H5LTfind_dataset(source_group_id, "OIIILF")) {
-      sprintf(source_ds, "Snap%03d/OIIILF", run_globals.ListOutputSnaps[i_out]);
-      H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "OIIILF", H5P_DEFAULT, H5P_DEFAULT);
-    }
-    
     H5Gclose(source_group_id);
     H5Fclose(source_file_id);
 
@@ -1615,9 +1597,6 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
     if (luminosity_function_cache.valid[MERAXES_LF_DUSTY])
       df_write_hdf5(
         file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_DUSTY], "DustyLF", "per Mpc^3 per mag");
-    if (luminosity_function_cache.valid[MERAXES_LF_OIII])
-      df_write_hdf5(
-        file_id, target_group, &luminosity_function_cache.functions[MERAXES_LF_OIII], "OIIILF", "per Mpc^3 per dex");
     if (luminosity_function_cache.valid[MERAXES_LF_QUASAR])
       df_write_hdf5(file_id,
                     target_group,

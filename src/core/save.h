@@ -40,7 +40,6 @@ typedef struct galaxy_output_t
   float FescWeightedSfr;
   float MetalsStellarMass;
   float Sfr;
-  float LOIII;
 #ifdef CALC_MAGS
   float LOIII_dusty;
 #endif

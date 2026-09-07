@@ -39,7 +39,6 @@ extern "C"
   X(MetalsStellarMass)                                                                                                \
   X(DiskScaleLength)                                                                                                  \
   X(Sfr)                                                                                                              \
-  X(LOIII)                                                                                                            \
   X(LOIII_dusty)                                                                                                      \
   X(EjectedGas)                                                                                                       \
   X(MetalsEjectedGas)                                                                                                 \

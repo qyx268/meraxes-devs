@@ -651,8 +651,12 @@ typedef struct galaxy_t
   float MetalsStellarMass;
   float DiskScaleLength;
   float Sfr;
-  float LOIII; //!< [O III] luminosity [1e40 erg/s]
-  float LOIII_dusty; //!< Cached dust-attenuated [O III] luminosity [erg/s]
+  // Doubles as scratch space: compute_LOIII() first accumulates the intrinsic
+  // (non-dust-attenuated) luminosity here (1e40 erg/s, same convention as
+  // galaxy_output_t.LOIII_dusty); save.c's output-prep functions then
+  // overwrite it in place with the real dust-attenuated value, in physical
+  // erg/s, before anything else (including the mhysa wrapper) reads it.
+  float LOIII_dusty;
   float EjectedGas;
   float MetalsEjectedGas;
   float BlackHoleMass;

@@ -86,15 +86,15 @@ Test(emission_lines, compute_LOIII_invalid_inputs_set_zero)
 
   galaxy_t gal = make_valid_test_galaxy();
 
-  gal.LOIII = 123.0;
+  gal.LOIII_dusty = 123.0;
 
   gal.ColdGas = 0.0;
   compute_LOIII(&gal, 0);
-  cr_expect_float_eq(gal.LOIII, 0.0, 0.0);
+  cr_expect_float_eq(gal.LOIII_dusty, 0.0, 0.0);
 
   gal = make_valid_test_galaxy();
-  gal.LOIII = 456.0;
+  gal.LOIII_dusty = 456.0;
   gal.Mvir = 0.0;
   compute_LOIII(&gal, 0);
-  cr_expect_float_eq(gal.LOIII, 0.0, 0.0);
+  cr_expect_float_eq(gal.LOIII_dusty, 0.0, 0.0);
 }

@@ -45,7 +45,7 @@ galaxy_t* new_galaxy(void)
   gal->Fesc = check_float_cast((double)(1.0), FloatField_Fesc);
   gal->FescWeightedGSM = check_float_cast((double)(0.0), FloatField_FescWeightedGSM);
   gal->MetalsStellarMass = check_float_cast((double)(0.0), FloatField_MetalsStellarMass);
-  gal->LOIII = check_float_cast((double)(0.0), FloatField_LOIII);
+  gal->LOIII_dusty = check_float_cast((double)(0.0), FloatField_LOIII_dusty);
   gal->mwmsa_num = check_float_cast((double)(0.0), FloatField_mwmsa_num);
   gal->mwmsa_denom = check_float_cast((double)(0.0), FloatField_mwmsa_denom);
   gal->BlackHoleMass = check_float_cast((double)(run_globals.params.physics.BlackHoleSeed), FloatField_BlackHoleMass);
@@ -149,7 +149,7 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   // Here we reset any galaxy properties which are calculated on a snapshot by
   // snapshot basis.
   gal->Sfr = check_float_cast((double)(0.0), FloatField_Sfr);
-  gal->LOIII = check_float_cast((double)(0.0), FloatField_LOIII);
+  gal->LOIII_dusty = check_float_cast((double)(0.0), FloatField_LOIII_dusty);
   gal->FescWeightedSfr = check_float_cast((double)(0.0), FloatField_FescWeightedSfr);
   gal->Mcool = check_float_cast((double)(0.0), FloatField_Mcool);
   gal->Rcool = check_float_cast((double)(0.0), FloatField_Rcool);
