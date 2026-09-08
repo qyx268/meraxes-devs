@@ -324,9 +324,9 @@ void read_trees__velociraptor(int snapshot,
         }
 
         halo->Len = (int)npart[ii];
-        halo->Pos[0] = fmax(0.0, fmin(Xc[ii] * hubble_h / scale_factor, box_size));
-        halo->Pos[1] = fmax(0.0, fmin(Yc[ii] * hubble_h / scale_factor, box_size));
-        halo->Pos[2] = fmax(0.0, fmin(Zc[ii] * hubble_h / scale_factor, box_size));
+        halo->Pos[0] = apply_pbc_pos(Xc[ii] * hubble_h / scale_factor);
+        halo->Pos[1] = apply_pbc_pos(Yc[ii] * hubble_h / scale_factor);
+        halo->Pos[2] = apply_pbc_pos(Zc[ii] * hubble_h / scale_factor);
         halo->Vmax = Vmax[ii];
 
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
