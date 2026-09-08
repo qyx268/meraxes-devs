@@ -125,7 +125,8 @@ void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
   gal->HaloDescIndex = halo->DescIndex;
   gal->Mvir = check_float_cast((double)(halo->Mvir), FloatField_Mvir);
   gal->Rvir = check_float_cast((double)(halo->Rvir), FloatField_Rvir);
-  gal->Vvir = check_float_cast((double)(halo->Vvir), FloatField_Vvir);
+  // halo_t no longer stores Vvir -- recompute it from Mvir/Rvir (see meraxes.h).
+  gal->Vvir = check_float_cast(calculate_Vvir((double)(halo->Mvir), (double)(halo->Rvir)), FloatField_Vvir);
   gal->TreeFlags = halo->TreeFlags;
   gal->Spin = check_float_cast((double)(calculate_spin_param(halo)), FloatField_Spin);
 
@@ -248,25 +249,19 @@ void connect_galaxy_and_halo(galaxy_t* gal, halo_t* halo, int* merger_counter)
 
       case VELOCIRAPTOR_TREES:
       case VELOCIRAPTOR_TREES_AUG:
-        // For VELOCIraptor we have some guidance in the form of the progenitor indices.
-
-        if (check_for_flag(TREE_CASE_NO_PROGENITORS, halo->TreeFlags)) {
-          // The host halo has been marked as having no progenitors.
-          // Since we have a merger though, their are clearly halos which
-          // think this is their descendant.  In this case, none of the
-          // halo progenitors are deemed to be good enough matches and so
-          // we can't use the pointers to select the main progenitor.
-          // Let's use the mass instead in this case.
-          //
-          // N.B. We haven't yet copied any halo properties into the
-          // galaxies and so the galaxy.Mvir values still correspond to
-          // the previous snapshot.
-          parent = gal->Mvir > halo->Galaxy->Mvir ? gal : halo->Galaxy;
-        } else {
-          // Here we can use the pointers.
-          parent = gal->HaloDescIndex == halo->ProgIndex ? gal : halo->Galaxy;
-        }
-
+        // We used to also have a "use the progenitor-index pointers when
+        // the host halo isn't marked TREE_CASE_NO_PROGENITORS" branch here,
+        // but it was unreachable in practice: FlagIgnoreProgIndex is 1 for
+        // every simulation config in this repo, which makes
+        // read_halos-velociraptor.c set TREE_CASE_NO_PROGENITORS
+        // unconditionally on every halo, so this mass-comparison branch is
+        // the only one that ever actually ran. halo_t's ProgIndex field
+        // (which that dead branch read) has been dropped accordingly.
+        //
+        // N.B. We haven't yet copied any halo properties into the
+        // galaxies and so the galaxy.Mvir values still correspond to
+        // the previous snapshot.
+        parent = gal->Mvir > halo->Galaxy->Mvir ? gal : halo->Galaxy;
         infaller = halo->Galaxy == parent ? gal : halo->Galaxy;
         break;
 

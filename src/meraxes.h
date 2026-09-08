@@ -744,11 +744,28 @@ typedef struct halo_t
 
   float Mvir; //!< virial mass [M_sol/h]
   float Rvir; //!< Virial radius [Mpc/h]
-  float Vvir; //!< Virial velocity [km/s]
+  // N.B. Vvir was dropped from this struct -- it's a pure function of Mvir
+  // and Rvir (calculate_Vvir() in virial_properties.c, just sqrt(G*Mvir/Rvir)
+  // with no other per-halo state), so every reader recomputes it on the spot
+  // instead of paying to store it. See calculate_spin_param()
+  // (virial_properties.c) and copy_halo_props_to_galaxy() (galaxies.c) for
+  // the two places that used to read halo->Vvir directly.
 
-  float Vmax;    //!< Maximum circular velocity [km/s]
+  float Vmax; //!< Maximum circular velocity [km/s]
   int DescIndex; //!< Index of descendant in next relevant snapshot
-  int ProgIndex;    //!< Index of progenitor in previous relevant snapshot
+  // N.B. ProgIndex (index of progenitor in previous relevant snapshot) was
+  // dropped from this struct -- it was write-only. The VELOCIraptor reader
+  // only ever set it when FlagIgnoreProgIndex was true (to the sentinel -1);
+  // the alternative, "real" computation (from the tree file's `Tail` column)
+  // was never actually implemented (`Tail` is never read from the file at
+  // all), and every simulation config in this repo
+  // (input/params/simulations/*.par) sets FlagIgnoreProgIndex=1 regardless.
+  // Its only reader (galaxies.c's merger-parent selection for
+  // VELOCIRAPTOR_TREES(_AUG)) was consequently unreachable: with
+  // FlagIgnoreProgIndex always true, TreeFlags is unconditionally
+  // TREE_CASE_NO_PROGENITORS, so the branch that compared against
+  // ProgIndex never ran. See galaxies.c's connect_galaxy_and_halo() for the
+  // now-unconditional mass-comparison fallback that branch collapsed to.
   // Bitwise flag indicating the type of match in the trees (TREE_CASE_* in
   // tree_flags.h, bits 0-22). N.B. Type (0=central, 1=satellite) and
   // SnapOffset (number of snapshots this halo skips before reappearing --

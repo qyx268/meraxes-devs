@@ -458,7 +458,9 @@ void read_trees__gbptrees(int snapshot,
         // `=` there would otherwise wipe it out.
         halo_set_snap_offset(cur_halo, cur_tree_entry->file_offset);
         cur_halo->DescIndex = cur_tree_entry->desc_index;
-        cur_halo->ProgIndex = -1; // This information is used in the VELOCIraptor trees, but not here.
+        // N.B. halo_t no longer stores ProgIndex (see meraxes.h) -- it was
+        // never read for GBPTrees trees anyway (galaxies.c's merger-parent
+        // selection only uses it for VELOCIraptor trees).
         cur_halo->NextHaloInFOFGroup = NULL;
 
         if (index_lookup)
@@ -509,7 +511,15 @@ void read_trees__gbptrees(int snapshot,
         else
           Len = cur_halo->Len;
 
-        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), &(cur_halo->Vvir), NULL, Len, snapshot, false);
+        // halo_t no longer stores Vvir -- it's recomputed on demand from
+        // Mvir/Rvir wherever needed (see meraxes.h); this call's Vvir output
+        // is only needed transiently, to let it resolve Mvir/Rvir. Seed it
+        // with the same -1 "not yet known" sentinel convert_input_virial_props()
+        // itself checks for, rather than leaving it uninitialized.
+        {
+          float vvir_unused = -1;
+          convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), &vvir_unused, NULL, Len, snapshot, false);
+        }
 
         // // Replace the virial properties of the FOF group by those of the first
         // // subgroup

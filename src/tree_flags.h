@@ -1,4 +1,16 @@
 // TTPXX=Two-to-the-power-XX
+//
+// !!! WARNING !!! Do not define a new TREE_CASE_* flag using TTTP23 or
+// higher (i.e. do not use bit 23 or above). halo_t.TreeFlags (meraxes.h) is
+// an int whose bits 23-31 are reserved -- they're used to pack halo_t's
+// Type and SnapOffset fields (see halo_get_type()/halo_set_type()/
+// halo_get_snap_offset()/halo_set_snap_offset() in misc_tools.h), not
+// available for tree-matching flags. Every TREE_CASE_* flag must fit in
+// bits 0-22 (TTTP00-TTTP22); TREE_CASE_BELOW_VIRIAL_THRESHOLD (TTTP22) is
+// the last bit still available for a new flag -- there is no bit left
+// after it. Defining a flag at TTTP23+ would silently corrupt Type/
+// SnapOffset (or vice versa) wherever TreeFlags is next written with `=`
+// or `|=`, with no compiler error and no immediate crash.
 #define TTTP00 1
 #define TTTP01 2
 #define TTTP02 4
@@ -71,3 +83,8 @@
 //    it's subgroups isn't.
 #define TREE_CASE_BELOW_VIRIAL_THRESHOLD                                                                               \
   TTTP22 // !!TREEFROG!! marks a halo where Mass_200crit == -1, indicating a FOF structure below the virial threshold
+
+// !!! STOP !!! TTTP22 above is the last bit available for a TREE_CASE_*
+// flag -- see the warning at the top of this file. Do NOT add a new flag
+// using TTTP23 or higher; those bits are reserved by halo_t.TreeFlags for
+// packing Type/SnapOffset.

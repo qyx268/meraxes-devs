@@ -254,9 +254,11 @@ void read_trees__velociraptor(int snapshot,
         // self-referencing "Head[ii]==ID[ii]" terminal-halo check.
         halo->DescIndex = id_to_ind(Head[ii]);
 
-        if (run_globals.params.FlagIgnoreProgIndex)
-          halo->ProgIndex = -1;
-        //else
+        // N.B. halo_t no longer stores ProgIndex -- see meraxes.h for why
+        // (write-only: FlagIgnoreProgIndex is 1 for every simulation config
+        // in this repo, and the alternative computation below was never
+        // implemented anyway, since `Tail` is never read from the file).
+        //if (!run_globals.params.FlagIgnoreProgIndex)
         //  halo->ProgIndex = id_to_ind(Tail[ii]);
 
         halo->NextHaloInFOFGroup = NULL;
@@ -344,8 +346,13 @@ void read_trees__velociraptor(int snapshot,
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
         halo->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_HaloMvir);
         halo->Rvir = check_float_cast(-1, FloatField_HaloRvir);
-        halo->Vvir = check_float_cast(-1, FloatField_HaloVvir);
-        convert_input_virial_props(&halo->Mvir, &halo->Rvir, &halo->Vvir, NULL, -1, snapshot, false);
+        // halo_t no longer stores Vvir -- it's recomputed on demand from
+        // Mvir/Rvir wherever needed (see meraxes.h), so this call's Vvir
+        // output is only needed transiently, to let it resolve Rvir.
+        {
+          float vvir_unused = check_float_cast(-1, FloatField_HaloVvir);
+          convert_input_virial_props(&halo->Mvir, &halo->Rvir, &vvir_unused, NULL, -1, snapshot, false);
+        }
 
         halo->AngMom = AngMom[ii] * hubble_h;
         halo->Galaxy = NULL;

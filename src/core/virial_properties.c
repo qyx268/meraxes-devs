@@ -114,7 +114,8 @@ double calculate_Vvir(double Mvir, double Rvir)
 
 double calculate_spin_param(halo_t* halo)
 {
-  return halo->AngMom / (1.414213562 * halo->Vvir * halo->Rvir);
+  // halo_t no longer stores Vvir (see meraxes.h) -- recompute it on the spot.
+  return halo->AngMom / (1.414213562 * calculate_Vvir((double)halo->Mvir, (double)halo->Rvir) * halo->Rvir);
 }
 
 double Vvir_to_Tvir(double Vvir, int halo_type)
