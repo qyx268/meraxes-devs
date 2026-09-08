@@ -10,8 +10,21 @@
 // Reads this rank's current resident set size from /proc/self/status (Linux-only)
 // and MPI_Reduces it to rank 0, so a single per-checkpoint log line reports both
 // the worst-offending rank and the total RAM footprint across the whole job.
-void log_memory_usage(const char* label, int snapshot)
+// `ngal` is this rank's current live galaxy_t count (pass 0 if not tracked at the
+// call site); it is summed across ranks and multiplied by sizeof(galaxy_t) to give
+// an independent estimate of how much of the reported RSS is the galaxy array
+// itself, versus halo storage / everything else.
+void log_memory_usage(const char* label, int snapshot, int ngal)
 {
+  static bool printed_struct_sizes = false;
+  if (!printed_struct_sizes) {
+    mlog("MEMORY :: sizeof(halo_t) = %zu bytes, sizeof(galaxy_t) = %zu bytes",
+         MLOG_MESG,
+         sizeof(halo_t),
+         sizeof(galaxy_t));
+    printed_struct_sizes = true;
+  }
+
   double vmrss_kb = 0.0;
   FILE* status_file = fopen("/proc/self/status", "r");
   if (status_file != NULL) {
@@ -31,12 +44,20 @@ void log_memory_usage(const char* label, int snapshot)
   MPI_Reduce(&vmrss_gb, &max_rss_gb, 1, MPI_DOUBLE, MPI_MAX, 0, run_globals.mpi_comm);
   MPI_Reduce(&vmrss_gb, &sum_rss_gb, 1, MPI_DOUBLE, MPI_SUM, 0, run_globals.mpi_comm);
 
-  mlog("MEMORY [%s] snapshot %d :: max rank RSS = %.2f GB, total RSS (sum over ranks) = %.2f GB",
+  long ngal_local = (long)ngal;
+  long ngal_total = 0;
+  MPI_Reduce(&ngal_local, &ngal_total, 1, MPI_LONG, MPI_SUM, 0, run_globals.mpi_comm);
+  double galaxy_gb = ((double)ngal_total * (double)sizeof(galaxy_t)) / (1024.0 * 1024.0 * 1024.0);
+
+  mlog("MEMORY [%s] snapshot %d :: max rank RSS = %.2f GB, total RSS (sum over ranks) = %.2f GB, "
+       "live galaxies = %ld (est. galaxy_t footprint = %.2f GB)",
        MLOG_MESG,
        label,
        snapshot,
        max_rss_gb,
-       sum_rss_gb);
+       sum_rss_gb,
+       ngal_total,
+       galaxy_gb);
 }
 
 void myexit(int signum)

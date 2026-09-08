@@ -734,10 +734,9 @@ typedef struct halo_t
 
   float Pos[3]; //!< Most bound particle position [Mpc/h]
   // N.B. Vel[3] was dropped from this struct -- it was only ever used to seed
-  // gal->Vel (galaxies.c), which is itself only read by the output writer.
-  // gal->Vel now just keeps its new_galaxy() sentinel (-99999.9) for the
-  // galaxy's whole life, the same convention already used for any other
-  // per-galaxy property that isn't tracked.
+  // gal->Vel (galaxies.c), which was itself only read by the HDF5 output
+  // writer. gal->Vel has since been dropped from galaxy_t too, as no other
+  // code ever read it back.
   float AngMom; //!< Specific angular momentum length [Mpc/h *km/s]
 
   float Mvir; //!< virial mass [M_sol/h]
