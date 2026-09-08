@@ -327,8 +327,9 @@ void delayed_supernova_feedback(galaxy_t* gal, int snapshot)
 #endif
 
   // how much mass is ejected due to this star formation episode?
+  // fof_group_t no longer stores Vvir (see meraxes.h) -- recompute it.
   if (!gal->ghost_flag)
-    fof_Vvir = gal->Halo->FOFGroup->Vvir;
+    fof_Vvir = calculate_Vvir((double)gal->Halo->FOFGroup->Mvir, (double)gal->Halo->FOFGroup->Rvir);
   else
     fof_Vvir = -1;
 
@@ -455,7 +456,9 @@ void contemporaneous_supernova_feedback(galaxy_t* gal,
   assert(*m_remnant >= 0);
 
   // how much mass is ejected due to this star formation episode? (ala Croton+ 2006)
-  *m_eject = calc_ejected_mass(m_reheat, sn_energy, gal->Vvir, gal->Halo->FOFGroup->Vvir);
+  // fof_group_t no longer stores Vvir (see meraxes.h) -- recompute it.
+  *m_eject = calc_ejected_mass(
+    m_reheat, sn_energy, gal->Vvir, calculate_Vvir((double)gal->Halo->FOFGroup->Mvir, (double)gal->Halo->FOFGroup->Rvir));
 
   assert(*m_reheat >= 0);
   assert(*m_eject >= 0);

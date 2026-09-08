@@ -1,6 +1,7 @@
 #include "reincorporation.h"
 #include "core/float_precision_check.h"
 #include "core/misc_tools.h"
+#include "core/virial_properties.h"
 #include "meraxes.h"
 
 static void update_reservoirs_from_reincorporation(galaxy_t* gal, double reincorporated)
@@ -21,7 +22,8 @@ void reincorporate_ejected_gas(galaxy_t* gal)
     int ReincorporationModel = run_globals.params.physics.ReincorporationModel;
     fof_group_t* fof_group = gal->Halo->FOFGroup;
     double reincorporated = 0.;
-    double t_dyn = fof_group->Rvir / fof_group->Vvir;
+    // fof_group_t no longer stores Vvir (see meraxes.h) -- recompute it.
+    double t_dyn = fof_group->Rvir / calculate_Vvir((double)fof_group->Mvir, (double)fof_group->Rvir);
     double t_rein;
 
     switch (ReincorporationModel) {

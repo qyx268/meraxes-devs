@@ -788,7 +788,15 @@ typedef struct fof_group_t
   halo_t* FirstOccupiedHalo;
   float Mvir;
   float Rvir;
-  float Vvir;
+  // N.B. Vvir was dropped from this struct -- same reasoning as halo_t.Vvir
+  // above: it's a pure function of Mvir/Rvir (calculate_Vvir(), just
+  // sqrt(G*Mvir/Rvir)) with no other per-group state, and Mvir/Rvir are only
+  // ever set once, at halo-read time, and never mutated afterwards -- so
+  // recomputing it wherever it's needed (cooling.c, reincorporation.c,
+  // supernova_feedback.c, blackhole_feedback.c) always gives exactly the
+  // value that used to be cached here. Dropping this one also removes
+  // struct-alignment padding this tail was otherwise wasted on: 40 -> 32
+  // bytes, not just 4.
   float FOFMvirModifier;
   int TotalSubhaloLen;
 } fof_group_t;

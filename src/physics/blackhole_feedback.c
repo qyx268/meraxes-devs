@@ -2,6 +2,7 @@
 #include "blackhole_feedback.h"
 #include "core/float_precision_check.h"
 #include "core/misc_tools.h"
+#include "core/virial_properties.h"
 #include "meraxes.h"
 #include <assert.h>
 
@@ -33,7 +34,10 @@ void calculate_BHemissivity(double BlackHoleMass, double accreted_mass, double *
 static double get_vvir(galaxy_t* gal) {
     // If this galaxy is the central of it's FOF group then use the FOF Halo properties
     // TODO: This needs closer thought as to if this is the best thing to do...
-  return ((gal->Type == 0) && (!gal->ghost_flag)) ? gal->Halo->FOFGroup->Vvir : gal->Vvir;
+  // fof_group_t no longer stores Vvir (see meraxes.h) -- recompute it.
+  return ((gal->Type == 0) && (!gal->ghost_flag))
+           ? calculate_Vvir((double)gal->Halo->FOFGroup->Mvir, (double)gal->Halo->FOFGroup->Rvir)
+           : gal->Vvir;
 }
 
 // quasar feedback suggested by Croton et al. 2016

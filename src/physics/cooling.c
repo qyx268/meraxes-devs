@@ -18,9 +18,12 @@ double gas_cooling(galaxy_t* gal)
   if (gal->HotGas > 1e-10) {
     fof_group_t* fof_group = gal->Halo->FOFGroup;
     int halo_type = 1; // (1 = AC, 2 = MC, 0 = None)
+    // fof_group_t no longer stores Vvir (see meraxes.h) -- it's a pure
+    // function of Mvir/Rvir, computed once here and reused below.
+    double fof_vvir = calculate_Vvir((double)fof_group->Mvir, (double)fof_group->Rvir);
 
     // calculate the halo virial temperature and log10 metallicity value
-    double Tvir = Vvir_to_Tvir(fof_group->Vvir, halo_type);
+    double Tvir = Vvir_to_Tvir(fof_vvir, halo_type);
     double log10Tvir = log10(Tvir);
     double logZ;
     double t_cool, max_cooling_mass;
@@ -35,7 +38,7 @@ double gas_cooling(galaxy_t* gal)
 
     if (Tvir >= 1e4) {
 
-      t_cool = fof_group->Rvir / fof_group->Vvir; // internal units
+      t_cool = fof_group->Rvir / fof_vvir; // internal units
 
       // interpolate the temperature and metallicity dependant cooling rate (lambda)
       lambda = interpolate_cooling_rate(log10Tvir, logZ);
@@ -47,14 +50,14 @@ double gas_cooling(galaxy_t* gal)
 #if USE_MINI_HALOS
     else {
       halo_type = 2;
-      Tvir = Vvir_to_Tvir(fof_group->Vvir, halo_type);
+      Tvir = Vvir_to_Tvir(fof_vvir, halo_type);
       log10Tvir = log10(Tvir);
       if (Tvir >= 1e3 && gal->Mvir >= gal->MvirCrit_MC) {
         double loglambdalim, LTEcool;
         double nH = 1e2; // Use value of low density regime
 
         // Identical procedure, only thing that changes is lambda!
-        t_cool = fof_group->Rvir / fof_group->Vvir; // internal units
+        t_cool = fof_group->Rvir / fof_vvir; // internal units
 
         // interpolate the temperature and metallicity dependant cooling rate (lambda)
         LTEcool = LTE_Mcool(Tvir, nH);

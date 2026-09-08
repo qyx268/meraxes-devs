@@ -478,8 +478,14 @@ void read_trees__gbptrees(int snapshot,
           cur_group->Rvir = check_float_cast((double)cur_cat_group->R_vir, FloatField_FOFGroupRvir);
           cur_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
-          convert_input_virial_props(
-            &(cur_group->Mvir), &(cur_group->Rvir), &(cur_group->Vvir), &(cur_group->FOFMvirModifier), -1, snapshot, true);
+          // fof_group_t no longer stores Vvir -- it's recomputed on demand
+          // from Mvir/Rvir wherever needed (see meraxes.h), so this call's
+          // Vvir output is only needed transiently, to let it resolve Mvir/Rvir.
+          {
+            float vvir_unused = -1;
+            convert_input_virial_props(
+              &(cur_group->Mvir), &(cur_group->Rvir), &vvir_unused, &(cur_group->FOFMvirModifier), -1, snapshot, true);
+          }
 
           fof_group[(*n_fof_groups_kept)++].FirstHalo = &(halo[*n_halos_kept]);
         } else {

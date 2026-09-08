@@ -308,11 +308,16 @@ void read_trees__velociraptor(int snapshot,
             fof_group->Rvir = check_float_cast((double)R_200crit[ii] * hubble_h, FloatField_FOFGroupRvir);
           }
 
-          fof_group->Vvir = check_float_cast(-1, FloatField_FOFGroupVvir);
           fof_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
-          convert_input_virial_props(
-            &fof_group->Mvir, &fof_group->Rvir, &fof_group->Vvir, &fof_group->FOFMvirModifier, -1, snapshot, true);
+          // fof_group_t no longer stores Vvir -- it's recomputed on demand
+          // from Mvir/Rvir wherever needed (see meraxes.h), so this call's
+          // Vvir output is only needed transiently, to let it resolve Rvir.
+          {
+            float vvir_unused = check_float_cast(-1, FloatField_FOFGroupVvir);
+            convert_input_virial_props(
+              &fof_group->Mvir, &fof_group->Rvir, &vvir_unused, &fof_group->FOFMvirModifier, -1, snapshot, true);
+          }
 
           halo->FOFGroup = &(fof_groups[*n_fof_groups]);
           fof_groups[(*n_fof_groups)++].FirstHalo = halo;
