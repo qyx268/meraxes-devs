@@ -425,3 +425,61 @@ bool check_for_flag(int flag, int tree_flags)
   else
     return false;
 }
+
+// halo_t.Type and halo_t.SnapOffset are packed into the otherwise-unused top
+// bits of halo_t.TreeFlags (bits 0-22 are the TREE_CASE_* flags from
+// tree_flags.h; TREE_CASE_BELOW_VIRIAL_THRESHOLD, the highest one currently
+// defined, is bit 22). This avoids halo_t's tail being padded out to the
+// next 8-byte boundary (needed for its pointer members) for the sake of two
+// tiny fields that would otherwise sit there mostly wasted.
+#define HALO_TYPE_SHIFT 23
+#define HALO_TYPE_BITS 1
+#define HALO_TYPE_MAX ((1 << HALO_TYPE_BITS) - 1) // 1
+#define HALO_SNAP_OFFSET_SHIFT 24
+#define HALO_SNAP_OFFSET_BITS 8
+#define HALO_SNAP_OFFSET_MAX ((1 << HALO_SNAP_OFFSET_BITS) - 1) // 255
+
+int halo_get_type(const halo_t* halo)
+{
+  return (int)(((uint32_t)halo->TreeFlags >> HALO_TYPE_SHIFT) & HALO_TYPE_MAX);
+}
+
+void halo_set_type(halo_t* halo, int type)
+{
+  if ((type < 0) || (type > HALO_TYPE_MAX)) {
+    mlog_error("halo Type value %d does not fit in the %d bit(s) packed into "
+               "TreeFlags (max %d) -- clamping. This should never happen -- "
+               "investigate the tree file/reader before trusting results.",
+               type,
+               HALO_TYPE_BITS,
+               HALO_TYPE_MAX);
+    type = type < 0 ? 0 : HALO_TYPE_MAX;
+  }
+  uint32_t packed = (uint32_t)halo->TreeFlags;
+  packed &= ~((uint32_t)HALO_TYPE_MAX << HALO_TYPE_SHIFT);
+  packed |= ((uint32_t)type << HALO_TYPE_SHIFT);
+  halo->TreeFlags = (int)packed;
+}
+
+int halo_get_snap_offset(const halo_t* halo)
+{
+  return (int)(((uint32_t)halo->TreeFlags >> HALO_SNAP_OFFSET_SHIFT) & HALO_SNAP_OFFSET_MAX);
+}
+
+void halo_set_snap_offset(halo_t* halo, int snap_offset)
+{
+  if ((snap_offset < 0) || (snap_offset > HALO_SNAP_OFFSET_MAX)) {
+    mlog_error("halo SnapOffset value %d does not fit in the %d bits packed "
+               "into TreeFlags (max %d) -- clamping. This should never "
+               "happen -- investigate the tree file/reader before trusting "
+               "results.",
+               snap_offset,
+               HALO_SNAP_OFFSET_BITS,
+               HALO_SNAP_OFFSET_MAX);
+    snap_offset = snap_offset < 0 ? 0 : HALO_SNAP_OFFSET_MAX;
+  }
+  uint32_t packed = (uint32_t)halo->TreeFlags;
+  packed &= ~((uint32_t)HALO_SNAP_OFFSET_MAX << HALO_SNAP_OFFSET_SHIFT);
+  packed |= ((uint32_t)snap_offset << HALO_SNAP_OFFSET_SHIFT);
+  halo->TreeFlags = (int)packed;
+}

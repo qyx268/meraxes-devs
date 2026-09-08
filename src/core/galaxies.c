@@ -119,9 +119,9 @@ galaxy_t* new_galaxy(void)
 
 void copy_halo_props_to_galaxy(halo_t* halo, galaxy_t* gal)
 {
-  gal->Type = halo->Type;
+  gal->Type = halo_get_type(halo);
   gal->Len = halo->Len;
-  gal->SnapSkipCounter = halo->SnapOffset;
+  gal->SnapSkipCounter = halo_get_snap_offset(halo);
   gal->HaloDescIndex = halo->DescIndex;
   gal->Mvir = check_float_cast((double)(halo->Mvir), FloatField_Mvir);
   gal->Rvir = check_float_cast((double)(halo->Rvir), FloatField_Rvir);

@@ -28,7 +28,7 @@ static inline bool check_if_valid_host(halo_t* halo)
     (TREE_CASE_FRAGMENTED_NORMAL | TREE_CASE_FRAGMENTED_NEW | TREE_CASE_FRAGMENTED_EJECTED // TODO: Now marked as other
      | TREE_CASE_FRAGMENTED_STRAYED | TREE_CASE_MERGER); // TODO: Try off and think about closely
 
-  if ((halo->Type == 0) && ((halo->Galaxy == NULL) || check_for_flag(TREE_CASE_MERGER, halo->Galaxy->TreeFlags)) &&
+  if ((halo_get_type(halo) == 0) && ((halo->Galaxy == NULL) || check_for_flag(TREE_CASE_MERGER, halo->Galaxy->TreeFlags)) &&
       !(invalid_flags & halo->TreeFlags))
     return true;
   else

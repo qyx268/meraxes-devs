@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "meraxes.h" // for halo_t
+
 #define CLAMP_NEGATIVE(x) do { if ((x) < 0) (x) = 0.0; } while(0)
 #define CLAMP_0_1(x) do { if ((x) < 0.0) (x) = 0.0; else if ((x) > 1.0) (x) = 1.0; } while(0)
 
@@ -48,6 +50,18 @@ extern "C"
   double trapz_table(double* y, double* x, int nPts, double a, double b);
   bool check_for_flag(int flag, int tree_flags);
   void log_memory_usage(const char* label, int snapshot, int ngal);
+
+  // halo_t no longer has its own Type/SnapOffset fields -- they're packed
+  // into unused high bits of halo_t.TreeFlags instead (bits 0-22 are the
+  // TREE_CASE_* flags from tree_flags.h). Always go through these accessors;
+  // never bit-twiddle TreeFlags directly for Type/SnapOffset, and never
+  // assign TreeFlags a raw value without preserving bits 23-31 (a plain `|=`
+  // with a TREE_CASE_* constant is always safe, since none of those flags
+  // use bits above 22).
+  int halo_get_type(const halo_t* halo);
+  void halo_set_type(halo_t* halo, int type);
+  int halo_get_snap_offset(const halo_t* halo);
+  void halo_set_snap_offset(halo_t* halo, int snap_offset);
 
 #ifdef __cplusplus
 }

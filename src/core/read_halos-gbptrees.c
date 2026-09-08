@@ -453,7 +453,10 @@ void read_trees__gbptrees(int snapshot,
         tree_entry_t* cur_tree_entry = &(tree_buffer[jj]);
 
         cur_halo->TreeFlags = cur_tree_entry->flags;
-        cur_halo->SnapOffset = cur_tree_entry->file_offset;
+        // N.B. must come after the TreeFlags assignment above, since
+        // SnapOffset is packed into TreeFlags's own high bits and a plain
+        // `=` there would otherwise wipe it out.
+        halo_set_snap_offset(cur_halo, cur_tree_entry->file_offset);
         cur_halo->DescIndex = cur_tree_entry->desc_index;
         cur_halo->ProgIndex = -1; // This information is used in the VELOCIraptor trees, but not here.
         cur_halo->NextHaloInFOFGroup = NULL;
@@ -462,7 +465,7 @@ void read_trees__gbptrees(int snapshot,
           index_lookup[*n_halos_kept] = n_read + jj;
 
         if (n_read + jj == tree_buffer[jj].central_index) {
-          cur_halo->Type = 0;
+          halo_set_type(cur_halo, 0);
 
           assert((*n_fof_groups_kept) < run_globals.NFOFGroupsMax);
           assert((tree_buffer[jj].group_index - first_group_index) < n_groups);
@@ -478,7 +481,7 @@ void read_trees__gbptrees(int snapshot,
 
           fof_group[(*n_fof_groups_kept)++].FirstHalo = &(halo[*n_halos_kept]);
         } else {
-          cur_halo->Type = 1;
+          halo_set_type(cur_halo, 1);
           halo[(*n_halos_kept) - 1].NextHaloInFOFGroup = &(halo[*n_halos_kept]);
         }
 
@@ -501,7 +504,7 @@ void read_trees__gbptrees(int snapshot,
         cur_halo->Pos[2] = apply_pbc_pos(cur_halo->Pos[2]);
 
         // TODO: sort this out once and for all!
-        if ((cur_halo->Type == 0) && run_globals.params.FlagSubhaloVirialProps)
+        if ((halo_get_type(cur_halo) == 0) && run_globals.params.FlagSubhaloVirialProps)
           Len = -1;
         else
           Len = cur_halo->Len;

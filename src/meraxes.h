@@ -749,10 +749,20 @@ typedef struct halo_t
   float Vmax;    //!< Maximum circular velocity [km/s]
   int DescIndex; //!< Index of descendant in next relevant snapshot
   int ProgIndex;    //!< Index of progenitor in previous relevant snapshot
-  int TreeFlags;    //!< Bitwise flag indicating the type of match in the trees
-  int Len;          //!< Number of particles in the structure
-  int16_t SnapOffset; //!< Number of snapshots this halo skips before reappearing (never seen to exceed a few dozen)
-  int8_t Type;         //!< Type (0 for central, 1 for satellite)
+  // Bitwise flag indicating the type of match in the trees (TREE_CASE_* in
+  // tree_flags.h, bits 0-22). N.B. Type (0=central, 1=satellite) and
+  // SnapOffset (number of snapshots this halo skips before reappearing --
+  // never seen to exceed a few dozen) no longer have their own fields: they
+  // are packed into this field's otherwise-unused bits 23 and 24-31
+  // respectively, since halo_t's tail was going to be padded out to the next
+  // 8-byte boundary regardless of how small they were. Always use
+  // halo_get_type()/halo_set_type()/halo_get_snap_offset()/
+  // halo_set_snap_offset() (misc_tools.h) -- never bit-twiddle this
+  // directly for Type/SnapOffset, and never assign it a raw value without
+  // preserving bits 23-31 (a plain `|=` with a TREE_CASE_* constant is
+  // always safe, since none of those flags use bits above 22).
+  int TreeFlags;
+  int Len; //!< Number of particles in the structure
 } halo_t;
 
 typedef struct fof_group_t

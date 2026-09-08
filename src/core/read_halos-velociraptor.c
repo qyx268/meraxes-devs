@@ -260,8 +260,6 @@ void read_trees__velociraptor(int snapshot,
         //  halo->ProgIndex = id_to_ind(Tail[ii]);
 
         halo->NextHaloInFOFGroup = NULL;
-        halo->Type = hostHaloID[ii] == -1 ? 0 : 1;
-        halo->SnapOffset = id_to_snap(Head[ii]) - snapshot;
 
         // Any other tree flags need to be set using both the current and
         // progenitor halo information (stored in the galaxy), therefore we
@@ -271,6 +269,12 @@ void read_trees__velociraptor(int snapshot,
         //else
         //  halo->TreeFlags = (unsigned long)Tail[ii] != ID[ii] ? 0 : TREE_CASE_NO_PROGENITORS;
 
+        // N.B. Type/SnapOffset must be set after the TreeFlags assignment(s)
+        // above, since they're packed into TreeFlags's own high bits and a
+        // plain `=` (as opposed to `|=`) would otherwise wipe them out.
+        halo_set_type(halo, hostHaloID[ii] == -1 ? 0 : 1);
+        halo_set_snap_offset(halo, id_to_snap(Head[ii]) - snapshot);
+
         // Here we have a cyclic pointer, indicating that this halo's life ends here
         if ((unsigned long)Head[ii] == ID[ii])
           halo->DescIndex = -1;
@@ -279,7 +283,7 @@ void read_trees__velociraptor(int snapshot,
           index_lookup[*n_halos] = ii + n_read;
 
         // TODO: What masses and radii should I use for centrals (inclusive vs. exclusive etc.)?
-        if (halo->Type == 0) {
+        if (halo_get_type(halo) == 0) {
           fof_group_t* fof_group = &fof_groups[*n_fof_groups];
           
           // This check is to ensure sensible values of mass_200crit and avoid having 
