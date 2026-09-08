@@ -67,9 +67,11 @@ static int id_to_snap(long id)
   return (int)(id / 1e12l);
 }
 
+// N.B. no longer takes/returns a Vvir -- neither halo_t nor fof_group_t
+// stores it any more (see meraxes.h); every caller just recomputes it with
+// calculate_Vvir(Mvir, Rvir) wherever it's actually needed instead.
 inline static void convert_input_virial_props(float* Mvir,
                                               float* Rvir,
-                                              float* Vvir,
                                               float* FOFMvirModifier,
                                               const int len,
                                               const int snapshot,
@@ -77,7 +79,6 @@ inline static void convert_input_virial_props(float* Mvir,
 {
   double mvir = (double)(*Mvir);
   double rvir = (double)(*Rvir);
-  double vvir = (double)(*Vvir);
 
   // Update the virial properties for subhalos
   if (mvir == -1) {
@@ -97,12 +98,8 @@ inline static void convert_input_virial_props(float* Mvir,
   if (rvir == -1)
     rvir = calculate_Rvir(mvir, snapshot);
 
-  if (vvir == -1)
-    vvir = calculate_Vvir(mvir, rvir);
-
   *Mvir = check_float_cast(mvir, fof_flag ? FloatField_FOFGroupMvir : FloatField_HaloMvir);
   *Rvir = check_float_cast(rvir, fof_flag ? FloatField_FOFGroupRvir : FloatField_HaloRvir);
-  *Vvir = check_float_cast(vvir, fof_flag ? FloatField_FOFGroupVvir : FloatField_HaloVvir);
 }
 
 void read_trees__velociraptor(int snapshot,
@@ -310,14 +307,8 @@ void read_trees__velociraptor(int snapshot,
 
           fof_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
-          // fof_group_t no longer stores Vvir -- it's recomputed on demand
-          // from Mvir/Rvir wherever needed (see meraxes.h), so this call's
-          // Vvir output is only needed transiently, to let it resolve Rvir.
-          {
-            float vvir_unused = check_float_cast(-1, FloatField_FOFGroupVvir);
-            convert_input_virial_props(
-              &fof_group->Mvir, &fof_group->Rvir, &vvir_unused, &fof_group->FOFMvirModifier, -1, snapshot, true);
-          }
+          convert_input_virial_props(
+            &fof_group->Mvir, &fof_group->Rvir, &fof_group->FOFMvirModifier, -1, snapshot, true);
 
           halo->FOFGroup = &(fof_groups[*n_fof_groups]);
           fof_groups[(*n_fof_groups)++].FirstHalo = halo;
@@ -351,13 +342,7 @@ void read_trees__velociraptor(int snapshot,
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
         halo->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_HaloMvir);
         halo->Rvir = check_float_cast(-1, FloatField_HaloRvir);
-        // halo_t no longer stores Vvir -- it's recomputed on demand from
-        // Mvir/Rvir wherever needed (see meraxes.h), so this call's Vvir
-        // output is only needed transiently, to let it resolve Rvir.
-        {
-          float vvir_unused = check_float_cast(-1, FloatField_HaloVvir);
-          convert_input_virial_props(&halo->Mvir, &halo->Rvir, &vvir_unused, NULL, -1, snapshot, false);
-        }
+        convert_input_virial_props(&halo->Mvir, &halo->Rvir, NULL, -1, snapshot, false);
 
         halo->AngMom = AngMom[ii] * hubble_h;
         halo->Galaxy = NULL;

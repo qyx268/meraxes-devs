@@ -223,9 +223,11 @@ static void read_catalog_halos(FILE** fin,
   }
 }
 
+// N.B. no longer takes/returns a Vvir -- neither halo_t nor fof_group_t
+// stores it any more (see meraxes.h); every caller just recomputes it with
+// calculate_Vvir(Mvir, Rvir) wherever it's actually needed instead.
 static void inline convert_input_virial_props(float* Mvir,
                                               float* Rvir,
-                                              float* Vvir,
                                               float* FOFMvirModifier,
                                               int len,
                                               int snapshot,
@@ -250,11 +252,9 @@ static void inline convert_input_virial_props(float* Mvir,
       rvir = calculate_Rvir(mvir, snapshot);
     }
   }
-  double vvir = calculate_Vvir(mvir, rvir);
 
   *Mvir = check_float_cast(mvir, fof_flag ? FloatField_FOFGroupMvir : FloatField_HaloMvir);
   *Rvir = check_float_cast(rvir, fof_flag ? FloatField_FOFGroupRvir : FloatField_HaloRvir);
-  *Vvir = check_float_cast(vvir, fof_flag ? FloatField_FOFGroupVvir : FloatField_HaloVvir);
 }
 
 //! Buffered read of hdf5 trees into halo structures
@@ -478,14 +478,8 @@ void read_trees__gbptrees(int snapshot,
           cur_group->Rvir = check_float_cast((double)cur_cat_group->R_vir, FloatField_FOFGroupRvir);
           cur_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
-          // fof_group_t no longer stores Vvir -- it's recomputed on demand
-          // from Mvir/Rvir wherever needed (see meraxes.h), so this call's
-          // Vvir output is only needed transiently, to let it resolve Mvir/Rvir.
-          {
-            float vvir_unused = -1;
-            convert_input_virial_props(
-              &(cur_group->Mvir), &(cur_group->Rvir), &vvir_unused, &(cur_group->FOFMvirModifier), -1, snapshot, true);
-          }
+          convert_input_virial_props(
+            &(cur_group->Mvir), &(cur_group->Rvir), &(cur_group->FOFMvirModifier), -1, snapshot, true);
 
           fof_group[(*n_fof_groups_kept)++].FirstHalo = &(halo[*n_halos_kept]);
         } else {
@@ -517,15 +511,7 @@ void read_trees__gbptrees(int snapshot,
         else
           Len = cur_halo->Len;
 
-        // halo_t no longer stores Vvir -- it's recomputed on demand from
-        // Mvir/Rvir wherever needed (see meraxes.h); this call's Vvir output
-        // is only needed transiently, to let it resolve Mvir/Rvir. Seed it
-        // with the same -1 "not yet known" sentinel convert_input_virial_props()
-        // itself checks for, rather than leaving it uninitialized.
-        {
-          float vvir_unused = -1;
-          convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), &vvir_unused, NULL, Len, snapshot, false);
-        }
+        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), NULL, Len, snapshot, false);
 
         // // Replace the virial properties of the FOF group by those of the first
         // // subgroup
