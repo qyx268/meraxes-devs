@@ -1336,7 +1336,12 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
   double df_volume = (run_globals.params.BoxSize / run_globals.params.Hubble_h);
   df_volume = df_volume * df_volume * df_volume;
 
-  mlog("Writing output file (n_write = %d)...", MLOG_OPEN | MLOG_TIMERSTART, n_write);
+  // n_write is this rank's local count; report the global total across all
+  // ranks in the log instead, since that's what's actually meaningful here.
+  int n_write_global = 0;
+  MPI_Reduce(&n_write, &n_write_global, 1, MPI_INT, MPI_SUM, 0, run_globals.mpi_comm);
+
+  mlog("Writing output file (n_write = %d)...", MLOG_OPEN | MLOG_TIMERSTART, n_write_global);
 
   // We aren't going to write any galaxies that have zero stellar mass, so
   // modify n_write appropriately...

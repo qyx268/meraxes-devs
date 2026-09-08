@@ -112,6 +112,8 @@ void dracarys()
                             &(snapshot_index_lookup[i_snap]),
                             snapshot_trees_info);
 
+    log_memory_usage("after read_halos", snapshot, NGal);
+
     // Set the relevant pointers to this snapshot
     halo = snapshot_halo[i_snap];
     fof_group = snapshot_fof_group[i_snap];
@@ -352,6 +354,8 @@ void dracarys()
 #endif
     else
       nout_gals = 0;
+
+    log_memory_usage("after evolve_galaxies", snapshot, NGal);
 
     // Add the ghost galaxies into the nout_gals count
     nout_gals += ghost_counter;
