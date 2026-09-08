@@ -269,7 +269,12 @@ void prepare_luminosity_function_cache(int snapshot)
 
   galaxy_t* galaxy = run_globals.FirstGal;
   while (galaxy != NULL) {
-    galaxy->LOIII_dusty = check_float_cast((double)(0.0), FloatField_LOIII_dusty);
+    // N.B. galaxy->LOIII_dusty must NOT be reset here: it still holds the
+    // intrinsic luminosity staged by compute_LOIII() earlier this snapshot,
+    // which prepare_cached_luminosity_function_output() below is about to
+    // read as its input before overwriting it with the final dust-attenuated
+    // value. (reset_galaxy_properties() already zeroes it at the start of
+    // each snapshot, before compute_LOIII() runs, for the next accumulation.)
     if (galaxy->Type < 3 && !galaxy->ghost_flag) {
       galaxy_output_t output;
       prepare_cached_luminosity_function_output(galaxy, snapshot, &output);
