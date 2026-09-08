@@ -18,9 +18,10 @@ void log_memory_usage(const char* label, int snapshot, int ngal)
 {
   static bool printed_struct_sizes = false;
   if (!printed_struct_sizes) {
-    mlog("MEMORY :: sizeof(halo_t) = %zu bytes, sizeof(galaxy_t) = %zu bytes",
+    mlog("MEMORY :: sizeof(halo_t) = %zu bytes, sizeof(fof_group_t) = %zu bytes, sizeof(galaxy_t) = %zu bytes",
          MLOG_MESG,
          sizeof(halo_t),
+         sizeof(fof_group_t),
          sizeof(galaxy_t));
     printed_struct_sizes = true;
   }
@@ -49,15 +50,44 @@ void log_memory_usage(const char* label, int snapshot, int ngal)
   MPI_Reduce(&ngal_local, &ngal_total, 1, MPI_LONG, MPI_SUM, 0, run_globals.mpi_comm);
   double galaxy_gb = ((double)ngal_total * (double)sizeof(galaxy_t)) / (1024.0 * 1024.0 * 1024.0);
 
+  // Sum this rank's halo/FOF-group counts over every snapshot slot loaded so
+  // far (SnapshotTreesInfo[0..snapshot], clamped to what's actually been
+  // allocated). Under FlagInteractive/FlagMCMC every snapshot's halos stay
+  // resident for the whole run (needed for descendant lookups), so this is
+  // the running total that actually drives RSS -- not just this snapshot's.
+  long nhalo_local = 0;
+  long nfof_local = 0;
+  if (run_globals.SnapshotTreesInfo != NULL) {
+    int max_ii = snapshot;
+    if (max_ii > run_globals.NStoreSnapshots - 1)
+      max_ii = run_globals.NStoreSnapshots - 1;
+    for (int ii = 0; ii <= max_ii; ii++) {
+      nhalo_local += run_globals.SnapshotTreesInfo[ii].n_halos;
+      nfof_local += run_globals.SnapshotTreesInfo[ii].n_fof_groups;
+    }
+  }
+  long nhalo_total = 0;
+  long nfof_total = 0;
+  MPI_Reduce(&nhalo_local, &nhalo_total, 1, MPI_LONG, MPI_SUM, 0, run_globals.mpi_comm);
+  MPI_Reduce(&nfof_local, &nfof_total, 1, MPI_LONG, MPI_SUM, 0, run_globals.mpi_comm);
+  double halo_gb = ((double)nhalo_total * (double)sizeof(halo_t)) / (1024.0 * 1024.0 * 1024.0);
+  double fof_gb = ((double)nfof_total * (double)sizeof(fof_group_t)) / (1024.0 * 1024.0 * 1024.0);
+
   mlog("MEMORY [%s] snapshot %d :: max rank RSS = %.2f GB, total RSS (sum over ranks) = %.2f GB, "
-       "live galaxies = %ld (est. galaxy_t footprint = %.2f GB)",
+       "live galaxies = %ld (est. galaxy_t footprint = %.2f GB), "
+       "halos loaded so far = %ld (est. halo_t footprint = %.2f GB), "
+       "FOF groups loaded so far = %ld (est. fof_group_t footprint = %.2f GB)",
        MLOG_MESG,
        label,
        snapshot,
        max_rss_gb,
        sum_rss_gb,
        ngal_total,
-       galaxy_gb);
+       galaxy_gb,
+       nhalo_total,
+       halo_gb,
+       nfof_total,
+       fof_gb);
 }
 
 void myexit(int signum)
