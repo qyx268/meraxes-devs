@@ -654,8 +654,11 @@ typedef struct galaxy_t
   // Doubles as scratch space: compute_LOIII() first accumulates the intrinsic
   // (non-dust-attenuated) luminosity here (1e40 erg/s, same convention as
   // galaxy_output_t.LOIII_dusty); save.c's output-prep functions then
-  // overwrite it in place with the real dust-attenuated value, in physical
-  // erg/s, before anything else (including the mhysa wrapper) reads it.
+  // overwrite it in place with the real dust-attenuated value -- still in
+  // units of 1e40 erg/s, never rescaled to physical erg/s, since real
+  // [O III] luminosities (~1e40-1e44 erg/s) would overflow float. Anything
+  // reading this field directly (e.g. the mhysa wrapper) must multiply by
+  // 1e40 itself, in double precision.
   float LOIII_dusty;
   float EjectedGas;
   float MetalsEjectedGas;

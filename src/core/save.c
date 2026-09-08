@@ -253,9 +253,13 @@ static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
 #endif
 
   // Reuse the same dust calculation for any galaxy-level Mhysa constraints.
-  // galaxy_output_t stores line luminosities in units of 1e40 erg/s, whereas
-  // galaxy_t keeps physical luminosities in erg/s.
-  galaxy->LOIII_dusty = check_float_cast((double)(output->LOIII_dusty * 1e40), FloatField_LOIII_dusty);
+  // N.B. galaxy->LOIII_dusty is kept in the same units of 1e40 erg/s as
+  // output->LOIII_dusty here -- NOT rescaled to physical erg/s. Real [O III]
+  // luminosities (~1e40-1e44 erg/s) overflow float's ~3.4e38 max, so any
+  // consumer of the live galaxy_t.LOIII_dusty field (e.g. the mhysa Python
+  // wrapper) must multiply by 1e40 itself, in double precision, once the
+  // value has crossed into a representation with enough range.
+  galaxy->LOIII_dusty = check_float_cast((double)(output->LOIII_dusty), FloatField_LOIII_dusty);
 }
 
 void prepare_luminosity_function_cache(int snapshot)
