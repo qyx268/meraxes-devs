@@ -17,7 +17,6 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
   double total_baryons = 0.;
   double infall_mass = 0.;
   double FOF_Mvir = FOFgroup->Mvir;
-  double FOFMvirModifier = FOFgroup->FOFMvirModifier;
   double fb_modifier;
 
   double total_stellarmass = 0.0;
@@ -78,8 +77,11 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
   // fraction of this halo.
   fb_modifier = reionization_modifier(central, FOF_Mvir, snapshot);
   if (run_globals.RequestedBaryonFracModifier == 1)
+    // N.B. no longer divides by a FOFMvirModifier (fof_group_t no longer has
+    // one -- see meraxes.h) -- it was always exactly 1.0 in every real run,
+    // since mass-ratio-modifier support has been removed entirely.
     fb_modifier *= interpolate_modifier(run_globals.baryon_frac_modifier,
-                                        log10(FOF_Mvir / FOFMvirModifier / run_globals.params.Hubble_h) + 10.0);
+                                        log10(FOF_Mvir / run_globals.params.Hubble_h) + 10.0);
   infall_mass = fb_modifier * run_globals.params.BaryonFrac * FOF_Mvir - total_baryons;
 
   // record the infall modifier

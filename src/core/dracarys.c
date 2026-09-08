@@ -240,18 +240,13 @@ void dracarys()
     // it should come after the while loop...
     for (int i_fof = 0; i_fof < trees_info.n_fof_groups; i_fof++) {
       halo_t* cur_halo = fof_group[i_fof].FirstHalo;
-      int total_subhalo_len = 0;
 
       while (cur_halo != NULL) {
         if (check_if_valid_host(cur_halo))
           create_new_galaxy(snapshot, cur_halo, &NGal, &new_gal_counter, &merger_counter);
 
-        total_subhalo_len += cur_halo->Len;
-
         cur_halo = cur_halo->NextHaloInFOFGroup;
       }
-
-      fof_group[i_fof].TotalSubhaloLen = total_subhalo_len;
     }
 
     // Loop through each galaxy and set the merger clocks for new infallers

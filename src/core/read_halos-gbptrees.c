@@ -6,7 +6,6 @@
 #include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
-#include "modifiers.h"
 #include "read_halos.h"
 #include "virial_properties.h"
 
@@ -223,12 +222,15 @@ static void read_catalog_halos(FILE** fin,
   }
 }
 
-// N.B. no longer takes/returns a Vvir -- neither halo_t nor fof_group_t
-// stores it any more (see meraxes.h); every caller just recomputes it with
-// calculate_Vvir(Mvir, Rvir) wherever it's actually needed instead.
+// N.B. no longer takes/returns a Vvir (neither halo_t nor fof_group_t
+// stores it any more, see meraxes.h) or a FOFMvirModifier (mass-ratio-
+// modifier support was removed entirely: RequestedMassRatioModifier only
+// became 1 if the MassRatioModifier param pointed at a real table file, and
+// no simulation config in this repo ever set it, so this was always a
+// no-op in practice). Every caller just recomputes Vvir with
+// calculate_Vvir(Mvir, Rvir) wherever it's actually needed.
 static void inline convert_input_virial_props(float* Mvir,
                                               float* Rvir,
-                                              float* FOFMvirModifier,
                                               int len,
                                               int snapshot,
                                               const bool fof_flag)
@@ -243,14 +245,6 @@ static void inline convert_input_virial_props(float* Mvir,
   } else {
     // Convert the mass unit for FoFs
     mvir /= 1.0e10;
-    if (run_globals.RequestedMassRatioModifier == 1) {
-      // Modifier the FoF mass and update the virial radius
-      double fof_mvir_modifier =
-        interpolate_modifier(run_globals.mass_ratio_modifier, log10(mvir / run_globals.params.Hubble_h) + 10.0);
-      *FOFMvirModifier = check_float_cast(fof_mvir_modifier, FloatField_FOFGroupMvirModifier);
-      mvir *= fof_mvir_modifier;
-      rvir = calculate_Rvir(mvir, snapshot);
-    }
   }
 
   *Mvir = check_float_cast(mvir, fof_flag ? FloatField_FOFGroupMvir : FloatField_HaloMvir);
@@ -476,10 +470,8 @@ void read_trees__gbptrees(int snapshot,
 
           cur_group->Mvir = check_float_cast((double)cur_cat_group->M_vir, FloatField_FOFGroupMvir);
           cur_group->Rvir = check_float_cast((double)cur_cat_group->R_vir, FloatField_FOFGroupRvir);
-          cur_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
 
-          convert_input_virial_props(
-            &(cur_group->Mvir), &(cur_group->Rvir), &(cur_group->FOFMvirModifier), -1, snapshot, true);
+          convert_input_virial_props(&(cur_group->Mvir), &(cur_group->Rvir), -1, snapshot, true);
 
           fof_group[(*n_fof_groups_kept)++].FirstHalo = &(halo[*n_halos_kept]);
         } else {
@@ -511,7 +503,7 @@ void read_trees__gbptrees(int snapshot,
         else
           Len = cur_halo->Len;
 
-        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), NULL, Len, snapshot, false);
+        convert_input_virial_props(&(cur_halo->Mvir), &(cur_halo->Rvir), Len, snapshot, false);
 
         // // Replace the virial properties of the FOF group by those of the first
         // // subgroup

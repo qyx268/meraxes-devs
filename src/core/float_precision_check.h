@@ -80,8 +80,7 @@ extern "C"
   X(HaloMvir)                                                                                                         \
   X(HaloRvir)                                                                                                         \
   X(FOFGroupMvir)                                                                                                     \
-  X(FOFGroupRvir)                                                                                                     \
-  X(FOFGroupMvirModifier)
+  X(FOFGroupRvir)
 
 #define X_ENUM(name) FloatField_##name,
 typedef enum

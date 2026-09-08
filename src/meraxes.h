@@ -257,7 +257,6 @@ typedef struct run_params_t
   char ForestIDFile[STRLEN];
   char MvirCritFile[STRLEN];
   char MvirCritMCFile[STRLEN];
-  char MassRatioModifier[STRLEN];
   char BaryonFracModifier[STRLEN];
   char FFTW3WisdomDir[STRLEN];
 
@@ -797,8 +796,16 @@ typedef struct fof_group_t
   // value that used to be cached here. Dropping this one also removes
   // struct-alignment padding this tail was otherwise wasted on: 40 -> 32
   // bytes, not just 4.
-  float FOFMvirModifier;
-  int TotalSubhaloLen;
+  // N.B. FOFMvirModifier was dropped from this struct along with removing
+  // support for MassRatioModifier entirely: RequestedMassRatioModifier only
+  // ever became 1 (enabling the modifier) if the MassRatioModifier param
+  // pointed at a real table file, and no simulation config in this repo
+  // ever set it, so the modifier was unconditionally 1.0 (a no-op) in every
+  // real run. See read_halos-velociraptor.c/read_halos-gbptrees.c's
+  // convert_input_virial_props() and modifiers.c for the removed machinery.
+  //
+  // N.B. TotalSubhaloLen was dropped too -- it was write-only (set once in
+  // dracarys.c, never read anywhere).
 } fof_group_t;
 
 //! Tree info struct
@@ -882,7 +889,6 @@ typedef struct run_globals_t
   double* LTTime;
   double* rhocrit;
   long* RequestedForestId;
-  int RequestedMassRatioModifier;
   int RequestedBaryonFracModifier;
   int* ListOutputSnaps;
   halo_t** SnapshotHalo;
@@ -929,7 +935,6 @@ typedef struct run_globals_t
   int NstoreSnapshots_SFR;
 
   bool SelectForestsSwitch;
-  struct Modifier* mass_ratio_modifier;
   struct Modifier* baryon_frac_modifier;
 } run_globals_t;
 #ifdef _MAIN

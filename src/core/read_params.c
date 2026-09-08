@@ -351,12 +351,6 @@ void read_parameter_file(char* fname, int mode)
       params_type[n_param++] = PARAM_TYPE_STRING;
       *(run_params->MvirCritMCFile) = '\0';
 
-      strncpy(params_tag[n_param], "MassRatioModifier", tag_length);
-      params_addr[n_param] = &(run_params->MassRatioModifier);
-      required_tag[n_param] = 0;
-      params_type[n_param++] = PARAM_TYPE_STRING;
-      *(run_params->MassRatioModifier) = '\0';
-
       strncpy(params_tag[n_param], "BaryonFracModifier", tag_length);
       params_addr[n_param] = &(run_params->BaryonFracModifier);
       required_tag[n_param] = 0;

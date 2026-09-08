@@ -6,7 +6,6 @@
 #include "float_precision_check.h"
 #include "meraxes.h"
 #include "misc_tools.h"
-#include "modifiers.h"
 #include "read_halos.h"
 #include "tree_flags.h"
 #include "virial_properties.h"
@@ -67,12 +66,15 @@ static int id_to_snap(long id)
   return (int)(id / 1e12l);
 }
 
-// N.B. no longer takes/returns a Vvir -- neither halo_t nor fof_group_t
-// stores it any more (see meraxes.h); every caller just recomputes it with
-// calculate_Vvir(Mvir, Rvir) wherever it's actually needed instead.
+// N.B. no longer takes/returns a Vvir (neither halo_t nor fof_group_t
+// stores it any more, see meraxes.h) or a FOFMvirModifier (mass-ratio-
+// modifier support was removed entirely: RequestedMassRatioModifier only
+// became 1 if the MassRatioModifier param pointed at a real table file, and
+// no simulation config in this repo ever set it, so this was always a
+// no-op in practice). Every caller just recomputes Vvir with
+// calculate_Vvir(Mvir, Rvir) wherever it's actually needed.
 inline static void convert_input_virial_props(float* Mvir,
                                               float* Rvir,
-                                              float* FOFMvirModifier,
                                               const int len,
                                               const int snapshot,
                                               const bool fof_flag)
@@ -84,15 +86,6 @@ inline static void convert_input_virial_props(float* Mvir,
   if (mvir == -1) {
     assert(len > 0);
     mvir = calculate_Mvir(mvir, len);
-  } else {
-    if (fof_flag && (run_globals.RequestedMassRatioModifier == 1)) {
-      // Modifier the FoF mass and update the virial radius
-      assert(FOFMvirModifier != NULL);
-      double fof_mvir_modifier =
-        interpolate_modifier(run_globals.mass_ratio_modifier, log10(mvir / run_globals.params.Hubble_h) + 10.0);
-      *FOFMvirModifier = check_float_cast(fof_mvir_modifier, FloatField_FOFGroupMvirModifier);
-      mvir *= fof_mvir_modifier;
-    }
   }
 
   if (rvir == -1)
@@ -305,10 +298,7 @@ void read_trees__velociraptor(int snapshot,
             fof_group->Rvir = check_float_cast((double)R_200crit[ii] * hubble_h, FloatField_FOFGroupRvir);
           }
 
-          fof_group->FOFMvirModifier = check_float_cast(1.0, FloatField_FOFGroupMvirModifier);
-
-          convert_input_virial_props(
-            &fof_group->Mvir, &fof_group->Rvir, &fof_group->FOFMvirModifier, -1, snapshot, true);
+          convert_input_virial_props(&fof_group->Mvir, &fof_group->Rvir, -1, snapshot, true);
 
           halo->FOFGroup = &(fof_groups[*n_fof_groups]);
           fof_groups[(*n_fof_groups)++].FirstHalo = halo;
@@ -342,7 +332,7 @@ void read_trees__velociraptor(int snapshot,
         // TODO: What masses and radii should I use for satellites (inclusive vs. exclusive etc.)?
         halo->Mvir = check_float_cast((double)Mass_tot[ii] * hubble_h * mass_unit_to_internal, FloatField_HaloMvir);
         halo->Rvir = check_float_cast(-1, FloatField_HaloRvir);
-        convert_input_virial_props(&halo->Mvir, &halo->Rvir, NULL, -1, snapshot, false);
+        convert_input_virial_props(&halo->Mvir, &halo->Rvir, -1, snapshot, false);
 
         halo->AngMom = AngMom[ii] * hubble_h;
         halo->Galaxy = NULL;

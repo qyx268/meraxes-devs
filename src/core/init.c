@@ -284,9 +284,8 @@ void init_meraxes()
   init_magnitudes();
 #endif
 
-  // set RequestedMassRatioModifier and RequestedBaryonFracModifieruto be 1 first
-  // it will be set to -1 later if MassRatioModifier or BaryonFracModifier is not specified
-  run_globals.RequestedMassRatioModifier = 1;
+  // set RequestedBaryonFracModifier to be 1 first
+  // it will be set to -1 later if BaryonFracModifier is not specified
   run_globals.RequestedBaryonFracModifier = 1;
 
   // read in the mean Mvir_crit table (if needed, 1 for Reio 2 for LW)

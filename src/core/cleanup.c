@@ -25,8 +25,6 @@ void cleanup()
 
   free_grids_cache();
 
-  if (run_globals.RequestedMassRatioModifier != -1)
-    free(run_globals.mass_ratio_modifier);
   if (run_globals.RequestedBaryonFracModifier != -1)
     free(run_globals.baryon_frac_modifier);
 

@@ -31,7 +31,6 @@ extern "C"
 {
 #endif
 
-  void read_mass_ratio_modifiers(int snapshot);
   void read_baryon_frac_modifiers(int snapshot);
   double interpolate_modifier(Modifier* modifier_data, double logM);
 

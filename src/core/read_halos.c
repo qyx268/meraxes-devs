@@ -422,10 +422,7 @@ trees_info_t read_halos(const int snapshot,
        snapshot,
        run_globals.ZZ[snapshot]);
 
-  // Read mass ratio modifiers and baryon fraction modifiers if required
-  if (run_globals.RequestedMassRatioModifier == 1)
-    read_mass_ratio_modifiers(snapshot);
-
+  // Read baryon fraction modifiers if required
   if (run_globals.RequestedBaryonFracModifier == 1)
     read_baryon_frac_modifiers(snapshot);
 
