@@ -237,7 +237,7 @@ static void select_forests()
     gsl_sort_int_index(sort_ind, final_counts, 1, n_forests);
     {
       int ii = 0;
-      int jj = 0;
+      int jj = n_forests - 1;
       while (ii < jj) {
         int tmp = sort_ind[ii];
         sort_ind[ii] = sort_ind[jj];
