@@ -231,7 +231,13 @@ void init_meraxes()
   int i;
   int snaplist_len;
 
-  mlog("Meraxes git commit: %s", MLOG_MESG, MERAXES_GIT_COMMIT);
+  // Printed via a direct fprintf (not mlog()) so it always shows up on
+  // stdout, even when mhysa redirects mlog's info stream to /dev/null
+  // because it wasn't launched with --debug.
+  if (run_globals.mpi_rank == 0) {
+    fprintf(stdout, "Meraxes git commit: %s\n", MERAXES_GIT_COMMIT);
+    fflush(stdout);
+  }
 
   // initialize GPU
   init_gpu();
