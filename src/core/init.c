@@ -222,10 +222,16 @@ void init_storage()
   calc_hdf5_props();
 }
 
+#ifndef MERAXES_GIT_COMMIT
+#define MERAXES_GIT_COMMIT "unknown"
+#endif
+
 void init_meraxes()
 {
   int i;
   int snaplist_len;
+
+  mlog("Meraxes git commit: %s", MLOG_MESG, MERAXES_GIT_COMMIT);
 
   // initialize GPU
   init_gpu();

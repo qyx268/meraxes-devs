@@ -107,10 +107,35 @@ add_executable(meraxes ${CMAKE_CURRENT_SOURCE_DIR}/src/core/meraxes.c)
 set_target_properties(meraxes PROPERTIES C_STANDARD 99)
 target_link_libraries(meraxes PRIVATE meraxes_lib)
 
+# Capture the current git commit (as of this CMake configure, not necessarily
+# the latest if you only recompile without reconfiguring afterwards) so runs
+# can be traced back to the exact source state that produced them.
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE MERAXES_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE MERAXES_GIT_RESULT
+    ERROR_QUIET
+    )
+if(NOT MERAXES_GIT_RESULT EQUAL 0 OR MERAXES_GIT_COMMIT STREQUAL "")
+    set(MERAXES_GIT_COMMIT "unknown")
+else()
+    execute_process(
+        COMMAND git diff --quiet HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE MERAXES_GIT_DIRTY
+        )
+    if(NOT MERAXES_GIT_DIRTY EQUAL 0)
+        set(MERAXES_GIT_COMMIT "${MERAXES_GIT_COMMIT}-dirty")
+    endif()
+endif()
+
 target_compile_definitions(meraxes_lib PUBLIC
     N_HISTORY_SNAPS=${N_HISTORY_SNAPS}
     MAGS_N_SNAPS=${MAGS_N_SNAPS}
     MAGS_N_BANDS=${MAGS_N_BANDS}
+    MERAXES_GIT_COMMIT="${MERAXES_GIT_COMMIT}"
     $<$<BOOL:GDB>:GDB>
     $<$<CONFIG:Debug>:DEBUG>
     )
