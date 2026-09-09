@@ -209,19 +209,19 @@ void read_trees__velociraptor(int snapshot,
   MPI_Bcast(name, sizeof(type) * n_to_read, MPI_BYTE, target_rank % mpi_size, run_globals.mpi_comm);                   \
 }                                                                                                                      \
 
-	READ_TREE_ENTRY_PROP(ForestID,     long, H5T_NATIVE_LONG, 1);
-	READ_TREE_ENTRY_PROP(Head,         long, H5T_NATIVE_LONG, 2);
-	READ_TREE_ENTRY_PROP(hostHaloID,   long, H5T_NATIVE_LONG, 3);
-	READ_TREE_ENTRY_PROP(Mass_200crit, float, H5T_NATIVE_FLOAT, 4);
-	READ_TREE_ENTRY_PROP(Mass_tot,     float, H5T_NATIVE_FLOAT, 5);
-	READ_TREE_ENTRY_PROP(R_200crit,    float, H5T_NATIVE_FLOAT, 6);
-	READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT, 7);
-	READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT, 8);
-	READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT, 9);
-	READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);
-	READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);
-	READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG, 15);                                                          
-	READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG, 16);                                                          
+    READ_TREE_ENTRY_PROP(ForestID,     long, H5T_NATIVE_LONG, 1);
+    READ_TREE_ENTRY_PROP(Head,         long, H5T_NATIVE_LONG, 2);
+    READ_TREE_ENTRY_PROP(hostHaloID,   long, H5T_NATIVE_LONG, 3);
+    READ_TREE_ENTRY_PROP(Mass_200crit, float, H5T_NATIVE_FLOAT, 4);
+    READ_TREE_ENTRY_PROP(Mass_tot,     float, H5T_NATIVE_FLOAT, 5);
+    READ_TREE_ENTRY_PROP(R_200crit,    float, H5T_NATIVE_FLOAT, 6);
+    READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT, 7);
+    READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT, 8);
+    READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT, 9);
+    READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);
+    READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);
+    READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG, 15);                                                          
+    READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG, 16);                                                          
 
     H5Sclose(memspace_id);
 
