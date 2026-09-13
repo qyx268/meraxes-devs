@@ -180,11 +180,23 @@ void read_trees__velociraptor(int snapshot,
   unsigned long* npart = malloc(sizeof(unsigned long) * buffer_size);
 
   plist_id = H5Pcreate(H5P_DATASET_XFER);
-  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_INDEPENDENT); // or H5FD_MPIO_COLLECTIVE?
+  // Every rank reads its own genuinely disjoint slice of each column in the
+  // same collective call below (instead of one rank reading the whole chunk
+  // and broadcasting it to everyone), so collective mode actually applies
+  // here now -- it isn't valid when, as before, only one rank ever calls
+  // H5Dread for a given column.
+  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
   hid_t fspace_id = H5Screate_simple(1, (hsize_t[1]){ n_tree_entries }, NULL);
 
   double hubble_h = run_globals.params.Hubble_h;
   double box_size = run_globals.params.BoxSize;
+
+  // Even split of each chunk's rows across ranks, recomputed once per chunk
+  // and reused for every column's hyperslab selection and MPI_Allgatherv.
+  int* rank_n_rows = malloc(sizeof(int) * mpi_size);
+  int* rank_row_offset = malloc(sizeof(int) * mpi_size);
+  int* recvcounts_bytes = malloc(sizeof(int) * mpi_size);
+  int* displs_bytes = malloc(sizeof(int) * mpi_size);
 
   int n_read = 0;
   int n_to_read = buffer_size;
@@ -193,35 +205,59 @@ void read_trees__velociraptor(int snapshot,
     if (n_remaining < n_to_read)
       n_to_read = n_remaining;
 
+    {
+      int base = n_to_read / mpi_size;
+      int rem = n_to_read % mpi_size;
+      int offset = 0;
+      for (int r = 0; r < mpi_size; ++r) {
+        rank_n_rows[r] = base + (r < rem ? 1 : 0);
+        rank_row_offset[r] = offset;
+        offset += rank_n_rows[r];
+      }
+    }
+    int my_n_rows = rank_n_rows[mpi_rank];
+    int my_row_offset = rank_row_offset[mpi_rank];
 
-    // select a hyperslab in the filespace
-    H5Sselect_hyperslab(fspace_id, H5S_SELECT_SET, (hsize_t[1]){ n_read }, NULL, (hsize_t[1]){ n_to_read }, NULL);
-    hid_t memspace_id = H5Screate_simple(1, (hsize_t[1]){ n_to_read }, NULL);
+    // select this rank's own (disjoint) hyperslab of the current chunk
+    H5Sselect_hyperslab(
+      fspace_id, H5S_SELECT_SET, (hsize_t[1]){ n_read + my_row_offset }, NULL, (hsize_t[1]){ my_n_rows }, NULL);
+    hid_t memspace_id = H5Screate_simple(1, (hsize_t[1]){ my_n_rows }, NULL);
 
-#define READ_TREE_ENTRY_PROP(name, type, h5type, target_rank)                                                          \
+#define READ_TREE_ENTRY_PROP(name, type, h5type)                                                                       \
 {                                                                                                                      \
-  if (mpi_rank == target_rank % mpi_size){                                                                             \
-    hid_t dset_id = H5Dopen(snap_group, #name, H5P_DEFAULT);                                                           \
-    herr_t status = H5Dread(dset_id, h5type, memspace_id, fspace_id, plist_id, name);                                  \
-    assert(status >= 0);                                                                                               \
-    H5Dclose(dset_id);                                                                                                 \
-  }                                                                                                                    \
-  MPI_Bcast(name, sizeof(type) * n_to_read, MPI_BYTE, target_rank % mpi_size, run_globals.mpi_comm);                   \
+  type* my_slice = malloc(sizeof(type) * (size_t)my_n_rows);                                                          \
+  hid_t dset_id = H5Dopen(snap_group, #name, H5P_DEFAULT);                                                            \
+  herr_t status = H5Dread(dset_id, h5type, memspace_id, fspace_id, plist_id, my_slice);                                \
+  assert(status >= 0);                                                                                                 \
+  H5Dclose(dset_id);                                                                                                   \
+  for (int r = 0; r < mpi_size; ++r) {                                                                                 \
+    recvcounts_bytes[r] = rank_n_rows[r] * (int)sizeof(type);                                                          \
+    displs_bytes[r] = rank_row_offset[r] * (int)sizeof(type);                                                          \
+  }                                                                                                                     \
+  MPI_Allgatherv(my_slice,                                                                                             \
+                 my_n_rows * (int)sizeof(type),                                                                        \
+                 MPI_BYTE,                                                                                             \
+                 name,                                                                                                 \
+                 recvcounts_bytes,                                                                                     \
+                 displs_bytes,                                                                                         \
+                 MPI_BYTE,                                                                                             \
+                 run_globals.mpi_comm);                                                                                \
+  free(my_slice);                                                                                                      \
 }                                                                                                                      \
 
-    READ_TREE_ENTRY_PROP(ForestID,     long, H5T_NATIVE_LONG, 1);
-    READ_TREE_ENTRY_PROP(Head,         long, H5T_NATIVE_LONG, 2);
-    READ_TREE_ENTRY_PROP(hostHaloID,   long, H5T_NATIVE_LONG, 3);
-    READ_TREE_ENTRY_PROP(Mass_200crit, float, H5T_NATIVE_FLOAT, 4);
-    READ_TREE_ENTRY_PROP(Mass_tot,     float, H5T_NATIVE_FLOAT, 5);
-    READ_TREE_ENTRY_PROP(R_200crit,    float, H5T_NATIVE_FLOAT, 6);
-    READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT, 7);
-    READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT, 8);
-    READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT, 9);
-    READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);
-    READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);
-    READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG, 15);                                                          
-    READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG, 16);                                                          
+    READ_TREE_ENTRY_PROP(ForestID,     long, H5T_NATIVE_LONG);
+    READ_TREE_ENTRY_PROP(Head,         long, H5T_NATIVE_LONG);
+    READ_TREE_ENTRY_PROP(hostHaloID,   long, H5T_NATIVE_LONG);
+    READ_TREE_ENTRY_PROP(Mass_200crit, float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(Mass_tot,     float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(R_200crit,    float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT);
+    READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG);
+    READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG);
 
     H5Sclose(memspace_id);
 
@@ -357,6 +393,10 @@ void read_trees__velociraptor(int snapshot,
   free(AngMom);
   free(ID);
   free(npart);
+  free(rank_n_rows);
+  free(rank_row_offset);
+  free(recvcounts_bytes);
+  free(displs_bytes);
   H5Pclose(plist_id);
   H5Sclose(fspace_id);
   H5Gclose(snap_group);
