@@ -180,12 +180,16 @@ void read_trees__velociraptor(int snapshot,
   unsigned long* npart = malloc(sizeof(unsigned long) * buffer_size);
 
   plist_id = H5Pcreate(H5P_DATASET_XFER);
-  // Every rank reads its own genuinely disjoint slice of each column in the
-  // same collective call below (instead of one rank reading the whole chunk
-  // and broadcasting it to everyone), so collective mode actually applies
-  // here now -- it isn't valid when, as before, only one rank ever calls
-  // H5Dread for a given column.
-  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+  // Back to independent, not collective: every rank still reads its own
+  // genuinely disjoint slice of each column concurrently (see below), which
+  // is the actual parallelism win. But H5FD_MPIO_COLLECTIVE's two-phase I/O
+  // aggregation is only a net win when tuned to the filesystem (Lustre
+  // striping/aggregator-count hints), and H5Pset_fapl_mpio above passes no
+  // such hints (MPI_INFO_NULL) -- untuned, that machinery is pure
+  // coordination overhead on top of the read, and was observed to make
+  // things slower rather than faster. Independent transfers don't pay that
+  // coordination cost; each rank's H5Dread just proceeds on its own.
+  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_INDEPENDENT);
   hid_t fspace_id = H5Screate_simple(1, (hsize_t[1]){ n_tree_entries }, NULL);
 
   double hubble_h = run_globals.params.Hubble_h;
