@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <hdf5_hl.h>
 #include <math.h>
-#include <string.h>
 
 #include "debug.h"
 #include "float_precision_check.h"
@@ -96,60 +95,6 @@ inline static void convert_input_virial_props(float* Mvir,
   *Rvir = check_float_cast(rvir, fof_flag ? FloatField_FOFGroupRvir : FloatField_HaloRvir);
 }
 
-// Distributes one column's worth of the chunk rank 0 just read (full_data,
-// n_to_read elements of elem_size bytes, meaningful only on rank 0) to their
-// owning ranks via MPI_Scatterv, writing the rows this rank owns into
-// `dest`. `perm` groups the chunk's rows by destination rank (see the
-// caller; meaningful only on rank 0), sendcounts/sdispls are the (element,
-// not byte) counts/displacements for that grouping. Every rank, including
-// rank 0 itself, receives its own my_recv_count rows into `dest` -- rank 0
-// is just an ordinary (non-root-privileged) receiver here as far as the
-// receive side goes.
-static void scatter_column_from_root(const void* full_data,
-                                     const int* perm,
-                                     const int* sendcounts,
-                                     const int* sdispls,
-                                     int mpi_size,
-                                     int mpi_rank,
-                                     void* send_scratch,
-                                     void* dest,
-                                     int my_recv_count,
-                                     size_t elem_size,
-                                     MPI_Comm comm)
-{
-  int* send_counts_bytes = NULL;
-  int* send_displs_bytes = NULL;
-
-  if (mpi_rank == 0) {
-    char* send_buf = (char*)send_scratch;
-    int total_send = sdispls[mpi_size - 1] + sendcounts[mpi_size - 1];
-    for (int k = 0; k < total_send; ++k)
-      memcpy(send_buf + (size_t)k * elem_size, (const char*)full_data + (size_t)perm[k] * elem_size, elem_size);
-
-    send_counts_bytes = malloc(sizeof(int) * (size_t)mpi_size);
-    send_displs_bytes = malloc(sizeof(int) * (size_t)mpi_size);
-    for (int r = 0; r < mpi_size; ++r) {
-      send_counts_bytes[r] = sendcounts[r] * (int)elem_size;
-      send_displs_bytes[r] = sdispls[r] * (int)elem_size;
-    }
-  }
-
-  MPI_Scatterv(send_scratch,
-               send_counts_bytes,
-               send_displs_bytes,
-               MPI_BYTE,
-               dest,
-               my_recv_count * (int)elem_size,
-               MPI_BYTE,
-               0,
-               comm);
-
-  if (mpi_rank == 0) {
-    free(send_counts_bytes);
-    free(send_displs_bytes);
-  }
-}
-
 void read_trees__velociraptor(int snapshot,
                               halo_t* halos,
                               int* n_halos,
@@ -217,6 +162,7 @@ void read_trees__velociraptor(int snapshot,
   int buffer_size = (n_tree_entries > 100000) ? n_tree_entries / 10 : 10000;
   buffer_size = buffer_size > n_tree_entries ? n_tree_entries : buffer_size;
 
+  long* ForestID = malloc(sizeof(long) * buffer_size);
   long* Head = malloc(sizeof(long) * buffer_size);
   long* hostHaloID = malloc(sizeof(long) * buffer_size);
   float* Mass_200crit = malloc(sizeof(float) * buffer_size);
@@ -240,28 +186,6 @@ void read_trees__velociraptor(int snapshot,
   double hubble_h = run_globals.params.Hubble_h;
   double box_size = run_globals.params.BoxSize;
 
-  // Rank 0 always does the actual disk I/O (one big sequential read per
-  // column per chunk, same access pattern as before any of this
-  // parallelization work) and then targets its distribution using the
-  // global forest-id -> owning-rank map, instead of broadcasting the full
-  // chunk to everyone. All of this bookkeeping is only ever touched on rank
-  // 0 -- every other rank just receives its own share via MPI_Scatterv.
-  bool have_forest_map = (run_globals.RequestedForestId != NULL);
-  int* sendcounts = NULL;
-  int* sdispls = NULL;
-  int* dest_rank = NULL;
-  int* perm = NULL;
-  void* send_scratch = NULL;
-  if (mpi_rank == 0) {
-    sendcounts = malloc(sizeof(int) * mpi_size);
-    sdispls = malloc(sizeof(int) * mpi_size);
-    dest_rank = malloc(sizeof(int) * buffer_size);
-    perm = malloc(sizeof(int) * buffer_size);
-    // Big enough for any column (long/unsigned long are the largest of the
-    // three types we read).
-    send_scratch = malloc(sizeof(long) * buffer_size);
-  }
-
   int n_read = 0;
   int n_to_read = buffer_size;
   while (n_read < n_tree_entries) {
@@ -274,101 +198,44 @@ void read_trees__velociraptor(int snapshot,
     H5Sselect_hyperslab(fspace_id, H5S_SELECT_SET, (hsize_t[1]){ n_read }, NULL, (hsize_t[1]){ n_to_read }, NULL);
     hid_t memspace_id = H5Screate_simple(1, (hsize_t[1]){ n_to_read }, NULL);
 
-    // Rank 0 reads ForestID first -- everything else (who owns each row, so
-    // how to group this chunk for MPI_Scatterv) depends on it -- and
-    // computes the per-row destination grouping. Nothing here is needed by
-    // any other rank, so it's all local to rank 0.
-    if (mpi_rank == 0) {
-      long* full_forestid = malloc(sizeof(long) * (size_t)n_to_read);
-      {
-        hid_t dset_id = H5Dopen(snap_group, "ForestID", H5P_DEFAULT);
-        herr_t status = H5Dread(dset_id, H5T_NATIVE_LONG, memspace_id, fspace_id, plist_id, full_forestid);
-        assert(status >= 0);
-        H5Dclose(dset_id);
-      }
-
-      for (int r = 0; r < mpi_size; ++r)
-        sendcounts[r] = 0;
-      for (int ii = 0; ii < n_to_read; ++ii) {
-        dest_rank[ii] = have_forest_map ? get_forest_owner_rank(full_forestid[ii]) : 0;
-        if (dest_rank[ii] >= 0)
-          sendcounts[dest_rank[ii]]++;
-      }
-      free(full_forestid);
-
-      {
-        int offset = 0;
-        for (int r = 0; r < mpi_size; ++r) {
-          sdispls[r] = offset;
-          offset += sendcounts[r];
-        }
-      }
-      {
-        // fill_pos tracks, per destination rank, the next free slot in perm
-        // -- starts at sdispls and advances as each row of that destination
-        // is placed, so rows destined for the same rank stay in their
-        // original (original file) order.
-        int* fill_pos = malloc(sizeof(int) * mpi_size);
-        memcpy(fill_pos, sdispls, sizeof(int) * mpi_size);
-        for (int ii = 0; ii < n_to_read; ++ii)
-          if (dest_rank[ii] >= 0)
-            perm[fill_pos[dest_rank[ii]]++] = ii;
-        free(fill_pos);
-      }
-    }
-
-    // Every rank (including rank 0) learns how many rows it's about to
-    // receive this chunk before the real Scatterv calls, since each rank
-    // has to supply its own receive count up front.
-    int my_recv_count = 0;
-    MPI_Scatter(sendcounts, 1, MPI_INT, &my_recv_count, 1, MPI_INT, 0, run_globals.mpi_comm);
-
-#define READ_AND_SCATTER(name, type, h5type)                                                                          \
+#define READ_TREE_ENTRY_PROP(name, type, h5type, target_rank)                                                          \
 {                                                                                                                      \
-  type* full_col = NULL;                                                                                              \
-  if (mpi_rank == 0) {                                                                                                 \
-    full_col = malloc(sizeof(type) * (size_t)n_to_read);                                                              \
+  if (mpi_rank == target_rank % mpi_size){                                                                             \
     hid_t dset_id = H5Dopen(snap_group, #name, H5P_DEFAULT);                                                           \
-    herr_t status = H5Dread(dset_id, h5type, memspace_id, fspace_id, plist_id, full_col);                              \
+    herr_t status = H5Dread(dset_id, h5type, memspace_id, fspace_id, plist_id, name);                                  \
     assert(status >= 0);                                                                                               \
     H5Dclose(dset_id);                                                                                                 \
   }                                                                                                                    \
-  scatter_column_from_root(full_col,                                                                                   \
-                           perm,                                                                                       \
-                           sendcounts,                                                                                 \
-                           sdispls,                                                                                    \
-                           mpi_size,                                                                                   \
-                           mpi_rank,                                                                                   \
-                           send_scratch,                                                                               \
-                           name,                                                                                       \
-                           my_recv_count,                                                                              \
-                           sizeof(type),                                                                               \
-                           run_globals.mpi_comm);                                                                      \
-  if (mpi_rank == 0)                                                                                                   \
-    free(full_col);                                                                                                    \
+  MPI_Bcast(name, sizeof(type) * n_to_read, MPI_BYTE, target_rank % mpi_size, run_globals.mpi_comm);                   \
 }                                                                                                                      \
 
-    READ_AND_SCATTER(Head,         long, H5T_NATIVE_LONG);
-    READ_AND_SCATTER(hostHaloID,   long, H5T_NATIVE_LONG);
-    READ_AND_SCATTER(Mass_200crit, float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(Mass_tot,     float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(R_200crit,    float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(Vmax,         float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(Xc,           float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(Yc,           float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(Zc,           float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(AngMom,       float, H5T_NATIVE_FLOAT);
-    READ_AND_SCATTER(ID,           unsigned long, H5T_NATIVE_ULONG);
-    READ_AND_SCATTER(npart,        unsigned long, H5T_NATIVE_ULONG);
+    READ_TREE_ENTRY_PROP(ForestID,     long, H5T_NATIVE_LONG, 1);
+    READ_TREE_ENTRY_PROP(Head,         long, H5T_NATIVE_LONG, 2);
+    READ_TREE_ENTRY_PROP(hostHaloID,   long, H5T_NATIVE_LONG, 3);
+    READ_TREE_ENTRY_PROP(Mass_200crit, float, H5T_NATIVE_FLOAT, 4);
+    READ_TREE_ENTRY_PROP(Mass_tot,     float, H5T_NATIVE_FLOAT, 5);
+    READ_TREE_ENTRY_PROP(R_200crit,    float, H5T_NATIVE_FLOAT, 6);
+    READ_TREE_ENTRY_PROP(Vmax,         float, H5T_NATIVE_FLOAT, 7);
+    READ_TREE_ENTRY_PROP(Xc,           float, H5T_NATIVE_FLOAT, 8);
+    READ_TREE_ENTRY_PROP(Yc,           float, H5T_NATIVE_FLOAT, 9);
+    READ_TREE_ENTRY_PROP(Zc,           float, H5T_NATIVE_FLOAT, 10);
+    READ_TREE_ENTRY_PROP(AngMom,       float, H5T_NATIVE_FLOAT, 14);
+    READ_TREE_ENTRY_PROP(ID,           unsigned long, H5T_NATIVE_ULONG, 15);                                                          
+    READ_TREE_ENTRY_PROP(npart,        unsigned long, H5T_NATIVE_ULONG, 16);                                                          
 
     H5Sclose(memspace_id);
 
-    // Every row here was already distributed to this rank via
-    // MPI_Scatterv above because it owns that row's forest (see
-    // get_forest_owner_rank()), so there's no per-row forest-membership
-    // filter needed any more -- every row in [0, my_recv_count) is kept.
-    for (int ii = 0; ii < my_recv_count; ++ii) {
-      {
+    for (int ii = 0; ii < n_to_read; ++ii) {
+      bool keep_this_halo = true;
+
+      if ((run_globals.RequestedForestId != NULL) && (bsearch(&(ForestID[ii]),
+                                                              run_globals.RequestedForestId,
+                                                              (size_t)run_globals.NRequestedForests,
+                                                              sizeof(long),
+                                                              compare_longs)) == NULL)
+        keep_this_halo = false;
+
+      if (keep_this_halo) {
         halo_t* halo = &(halos[*n_halos]);
 
         // N.B. halo_t no longer stores the raw catalogue ID (it was only
@@ -404,14 +271,8 @@ void read_trees__velociraptor(int snapshot,
         if ((unsigned long)Head[ii] == ID[ii])
           halo->DescIndex = -1;
 
-        // N.B. no longer "ii + n_read" -- after distribution, ii no longer
-        // indexes contiguously into this chunk's original file rows (rows
-        // were regrouped by owning rank), so the original row index has to
-        // come from this halo's own ID instead (same id_to_ind() convention
-        // used above for Head/hostHaloID; ID is distributed alongside
-        // everything else, so it's still correct post-distribution).
         if (index_lookup)
-          index_lookup[*n_halos] = id_to_ind((long)ID[ii]);
+          index_lookup[*n_halos] = ii + n_read;
 
         // TODO: What masses and radii should I use for centrals (inclusive vs. exclusive etc.)?
         if (halo_get_type(halo) == 0) {
@@ -483,6 +344,7 @@ void read_trees__velociraptor(int snapshot,
     n_read += n_to_read;
   }
 
+  free(ForestID);
   free(Head);
   free(hostHaloID);
   free(Mass_200crit);
@@ -495,13 +357,6 @@ void read_trees__velociraptor(int snapshot,
   free(AngMom);
   free(ID);
   free(npart);
-  if (mpi_rank == 0) {
-    free(sendcounts);
-    free(sdispls);
-    free(dest_rank);
-    free(perm);
-    free(send_scratch);
-  }
   H5Pclose(plist_id);
   H5Sclose(fspace_id);
   H5Gclose(snap_group);
