@@ -358,6 +358,17 @@ int find_original_index(int index, int* lookup, int n_mappings)
   return new_index;
 }
 
+int get_forest_owner_rank(long forest_id)
+{
+  long* pointer = bsearch(
+    &forest_id, run_globals.ForestOwnerIds, (size_t)run_globals.NForestOwners, sizeof(long), compare_longs);
+
+  if (pointer == NULL)
+    return -1;
+
+  return run_globals.ForestOwnerRank[pointer - run_globals.ForestOwnerIds];
+}
+
 double interp(double xp, double* x, double* y, int nPts)
 {
   /* Interpolate a given points */

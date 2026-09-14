@@ -889,6 +889,14 @@ typedef struct run_globals_t
   double* LTTime;
   double* rhocrit;
   long* RequestedForestId;
+  // Global (all-ranks-visible) forest-id -> owning-rank map, built once in
+  // select_forests(). ForestOwnerIds is sorted, for bsearch; ForestOwnerRank
+  // is its parallel array of owning ranks. Lets the tree readers redistribute
+  // rows to their owning rank directly (MPI_Alltoallv), instead of every rank
+  // needing to see every row and filter by its own RequestedForestId.
+  long* ForestOwnerIds;
+  int* ForestOwnerRank;
+  int NForestOwners;
   int RequestedBaryonFracModifier;
   int* ListOutputSnaps;
   halo_t** SnapshotHalo;

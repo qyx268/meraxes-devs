@@ -46,6 +46,12 @@ extern "C"
 
   int isclosef(float a, float b, float rel_tol, float abs_tol);
   int find_original_index(int index, int* lookup, int n_mappings);
+  // bsearch's run_globals.ForestOwnerIds/ForestOwnerRank (built once in
+  // select_forests()) for the rank that owns forest_id. Returns -1 if
+  // forest_id isn't owned by anyone (e.g. filtered out by an external
+  // RequestedForestId subsampling file). Only valid to call once
+  // select_forests() has actually run (run_globals.ForestOwnerIds != NULL).
+  int get_forest_owner_rank(long forest_id);
   double interp(double xp, double* x, double* y, int nPts);
   double trapz_table(double* y, double* x, int nPts, double a, double b);
   bool check_for_flag(int flag, int tree_flags);

@@ -27,6 +27,19 @@ inline static void update_pointers_from_offsets(int n_fof_groups_kept,
     fof_group[ii].FirstHalo = &(halo[fof_FirstHalo_os[ii]]);
 }
 
+typedef struct forest_owner_pair_t
+{
+  long id;
+  int owner;
+} forest_owner_pair_t;
+
+static int compare_forest_owner_pairs(const void* a, const void* b)
+{
+  long ia = ((const forest_owner_pair_t*)a)->id;
+  long ib = ((const forest_owner_pair_t*)b)->id;
+  return (ia > ib) - (ia < ib);
+}
+
 static fof_group_t* init_fof_groups()
 {
   mlog("Allocating fof_group array with %d elements...", MLOG_MESG, run_globals.NFOFGroupsMax);
@@ -397,6 +410,54 @@ static void select_forests()
 
   // sort the requested forest ids so that they can be bsearch'd later
   qsort(run_globals.RequestedForestId, (size_t)run_globals.NRequestedForests, sizeof(long), compare_longs);
+
+  // Build a global (all-ranks-visible) forest-id -> owning-rank map, so the
+  // tree readers can redistribute rows directly to their owning rank via
+  // MPI_Alltoallv, instead of every rank needing to see every row and filter
+  // it against its own (private) RequestedForestId list.
+  {
+    int* all_n = malloc(sizeof(int) * run_globals.mpi_size);
+    MPI_Allgather(&run_globals.NRequestedForests, 1, MPI_INT, all_n, 1, MPI_INT, run_globals.mpi_comm);
+
+    int* all_displs = malloc(sizeof(int) * run_globals.mpi_size);
+    int total_owned = 0;
+    for (int r = 0; r < run_globals.mpi_size; ++r) {
+      all_displs[r] = total_owned;
+      total_owned += all_n[r];
+    }
+
+    long* all_ids = malloc(sizeof(long) * total_owned);
+    MPI_Allgatherv(run_globals.RequestedForestId,
+                    run_globals.NRequestedForests,
+                    MPI_LONG,
+                    all_ids,
+                    all_n,
+                    all_displs,
+                    MPI_LONG,
+                    run_globals.mpi_comm);
+
+    forest_owner_pair_t* pairs = malloc(sizeof(forest_owner_pair_t) * total_owned);
+    for (int r = 0; r < run_globals.mpi_size; ++r)
+      for (int k = 0; k < all_n[r]; ++k) {
+        int idx = all_displs[r] + k;
+        pairs[idx].id = all_ids[idx];
+        pairs[idx].owner = r;
+      }
+    qsort(pairs, (size_t)total_owned, sizeof(forest_owner_pair_t), compare_forest_owner_pairs);
+
+    run_globals.NForestOwners = total_owned;
+    run_globals.ForestOwnerIds = malloc(sizeof(long) * total_owned);
+    run_globals.ForestOwnerRank = malloc(sizeof(int) * total_owned);
+    for (int ii = 0; ii < total_owned; ++ii) {
+      run_globals.ForestOwnerIds[ii] = pairs[ii].id;
+      run_globals.ForestOwnerRank[ii] = pairs[ii].owner;
+    }
+
+    free(pairs);
+    free(all_ids);
+    free(all_displs);
+    free(all_n);
+  }
 
   mlog("...done.", MLOG_MESG | MLOG_TIMERSTOP);
 }
