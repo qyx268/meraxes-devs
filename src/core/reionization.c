@@ -3074,31 +3074,55 @@ void save_reion_output_grids(int snapshot)
   }
 
 #if USE_MINI_HALOS
-  if (run_globals.params.Flag_IncludeLymanWerner) {
+  // Flag_IncludeSpinTemp must match init.c's allocation guard, or these pointers are NULL.
+  if (run_globals.params.Flag_IncludeSpinTemp && run_globals.params.Flag_IncludeLymanWerner) {
+    // All ranks hold identical copies, so rank 0 writes and the others select none (avoids an overlapping-write race).
     hsize_t dims_LW[1] = { (hsize_t)run_globals.params.TsNumFilterSteps };
-    hid_t fspace_id_LW = H5Screate_simple(1, dims_LW, NULL);
-    hid_t memspace_id_LW = H5Screate_simple(1, dims_LW, NULL);
+    hsize_t dims_LWspec[2] = { (hsize_t)run_globals.params.TsNumFilterSteps, (hsize_t)LW_NLEV };
     hid_t dcpl_id_LW = H5Pcreate(H5P_DATASET_CREATE);
 
-    hid_t dset_id_LW =
-      H5Dcreate(file_id, "LW_shape_stellar", H5T_NATIVE_DOUBLE, fspace_id_LW, H5P_DEFAULT, dcpl_id_LW, H5P_DEFAULT);
-    hid_t plist_id_LW = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id_LW, H5FD_MPIO_COLLECTIVE);
-    H5Dwrite(dset_id_LW, H5T_NATIVE_DOUBLE, memspace_id_LW, fspace_id_LW, plist_id_LW, sum_lyn_LW);
-    H5Pclose(plist_id_LW);
-    H5Dclose(dset_id_LW);
+    struct
+    {
+      const char* name;
+      const void* buf;
+      int rank;
+    } lw_sets[] = {
+      { "LW_shape_stellar", sum_lyn_LW, 1 },
+      { "LW_shape_III", sum_lyn_LW_III, 1 },
+      { "LW_shape_AGN", sum_lyn_LW_AGN, 1 },
+      { "LW_zpp", LW_zpp, 1 },
+      { "LW_emissivity_stellar", LW_emissivity_stellar, 1 },
+      { "LW_emissivity_III", LW_emissivity_III, 1 },
+      { "LW_emissivity_AGN", LW_emissivity_AGN, 1 },
+      { "LW_spectral_stellar", LW_spectral_stellar, 2 },
+      { "LW_spectral_III", LW_spectral_III, 2 },
+      { "LW_spectral_AGN", LW_spectral_AGN, 2 },
+    };
 
-    dset_id_LW =
-      H5Dcreate(file_id, "LW_shape_AGN", H5T_NATIVE_DOUBLE, fspace_id_LW, H5P_DEFAULT, dcpl_id_LW, H5P_DEFAULT);
-    plist_id_LW = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id_LW, H5FD_MPIO_COLLECTIVE);
-    H5Dwrite(dset_id_LW, H5T_NATIVE_DOUBLE, memspace_id_LW, fspace_id_LW, plist_id_LW, sum_lyn_LW_AGN);
-    H5Pclose(plist_id_LW);
-    H5Dclose(dset_id_LW);
+    for (int i_set = 0; i_set < (int)(sizeof(lw_sets) / sizeof(lw_sets[0])); i_set++) {
+      hid_t fspace_id_LW = (lw_sets[i_set].rank == 1) ? H5Screate_simple(1, dims_LW, NULL)
+                                                      : H5Screate_simple(2, dims_LWspec, NULL);
+      hid_t memspace_id_LW = (lw_sets[i_set].rank == 1) ? H5Screate_simple(1, dims_LW, NULL)
+                                                        : H5Screate_simple(2, dims_LWspec, NULL);
+
+      hid_t dset_id_LW = H5Dcreate(
+        file_id, lw_sets[i_set].name, H5T_NATIVE_DOUBLE, fspace_id_LW, H5P_DEFAULT, dcpl_id_LW, H5P_DEFAULT);
+
+      if (run_globals.mpi_rank != 0) {
+        H5Sselect_none(fspace_id_LW);
+        H5Sselect_none(memspace_id_LW);
+      }
+
+      hid_t plist_id_LW = H5Pcreate(H5P_DATASET_XFER);
+      H5Pset_dxpl_mpio(plist_id_LW, H5FD_MPIO_COLLECTIVE);
+      H5Dwrite(dset_id_LW, H5T_NATIVE_DOUBLE, memspace_id_LW, fspace_id_LW, plist_id_LW, lw_sets[i_set].buf);
+      H5Pclose(plist_id_LW);
+      H5Dclose(dset_id_LW);
+      H5Sclose(memspace_id_LW);
+      H5Sclose(fspace_id_LW);
+    }
 
     H5Pclose(dcpl_id_LW);
-    H5Sclose(memspace_id_LW);
-    H5Sclose(fspace_id_LW);
   }
 #endif
 

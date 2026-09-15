@@ -86,6 +86,9 @@ void cleanup()
   free(stored_XrayEmissivity_hard);
   free(stored_XrayEmissivity_soft);
   free(stored_XrayEmissivity_HMXB);
+#if USE_MINI_HALOS
+  free_LW_diagnostics();
+#endif
 
   if (run_globals.gpu != NULL)
     free(run_globals.gpu);

@@ -50,11 +50,6 @@ int init_heat()
   sum_lyn = calloc(TsNumFilterSteps, sizeof(double));
 #if USE_MINI_HALOS
   sum_lyn_III = calloc(TsNumFilterSteps, sizeof(double));
-  if (run_globals.params.Flag_IncludeLymanWerner) {
-    sum_lyn_LW = calloc(TsNumFilterSteps, sizeof(double));
-    sum_lyn_LW_III = calloc(TsNumFilterSteps, sizeof(double));
-    sum_lyn_LW_AGN = calloc(TsNumFilterSteps, sizeof(double));
-  }
 #endif
 
   kappa_10(1.0, 1); // 1 is the flag, allocates memory.
@@ -91,13 +86,49 @@ void destruct_heat()
 
 #if USE_MINI_HALOS
   free(sum_lyn_III);
-  if (run_globals.params.Flag_IncludeLymanWerner) {
-    free(sum_lyn_LW);
-    free(sum_lyn_LW_III);
-    free(sum_lyn_LW_AGN);
-  }
 #endif
 }
+
+#if USE_MINI_HALOS
+// init_heat()/destruct_heat() run once per snapshot inside _ComputeTs(), but these arrays are
+// written later by save_reion_output_grids(), so they need run lifetime: allocated once from
+// init.c and released once from cleanup.c.
+void init_LW_diagnostics()
+{
+  if (!run_globals.params.Flag_IncludeLymanWerner)
+    return;
+
+  size_t n_filt = (size_t)run_globals.params.TsNumFilterSteps;
+
+  sum_lyn_LW = calloc(n_filt, sizeof(double));
+  sum_lyn_LW_III = calloc(n_filt, sizeof(double));
+  sum_lyn_LW_AGN = calloc(n_filt, sizeof(double));
+  LW_spectral_stellar = calloc(n_filt * (size_t)LW_NLEV, sizeof(double));
+  LW_spectral_III = calloc(n_filt * (size_t)LW_NLEV, sizeof(double));
+  LW_spectral_AGN = calloc(n_filt * (size_t)LW_NLEV, sizeof(double));
+  LW_zpp = calloc(n_filt, sizeof(double));
+  LW_emissivity_stellar = calloc(n_filt, sizeof(double));
+  LW_emissivity_III = calloc(n_filt, sizeof(double));
+  LW_emissivity_AGN = calloc(n_filt, sizeof(double));
+}
+
+void free_LW_diagnostics()
+{
+  if (!run_globals.params.Flag_IncludeLymanWerner)
+    return;
+
+  free(sum_lyn_LW);
+  free(sum_lyn_LW_III);
+  free(sum_lyn_LW_AGN);
+  free(LW_spectral_stellar);
+  free(LW_spectral_III);
+  free(LW_spectral_AGN);
+  free(LW_zpp);
+  free(LW_emissivity_stellar);
+  free(LW_emissivity_III);
+  free(LW_emissivity_AGN);
+}
+#endif
 
 // * IGM temperature from RECFAST; includes Compton heating and adiabatic expansion only. * //
 double T_RECFAST(float z, int flag)

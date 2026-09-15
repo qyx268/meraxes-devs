@@ -160,6 +160,10 @@ static void read_snap_list()
     stored_XrayEmissivity_hard = calloc((size_t)run_globals.params.SnaplistLength, sizeof(double));
     stored_XrayEmissivity_soft = calloc((size_t)run_globals.params.SnaplistLength, sizeof(double));
     stored_XrayEmissivity_HMXB = calloc((size_t)run_globals.params.SnaplistLength, sizeof(double));
+
+#if USE_MINI_HALOS
+    init_LW_diagnostics();
+#endif
   }
 }
 
