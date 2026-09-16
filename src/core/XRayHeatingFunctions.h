@@ -22,6 +22,8 @@
 #define Pop3_ion run_globals.params.physics.ReionNionPhotPerBaryIII
 
 #define NSPEC_MAX (int)23
+// Row stride for LW_spectral_*: the Lyman loop reaches n_ct = NSPEC_MAX, so rows need NSPEC_MAX+1.
+#define LW_NLEV (NSPEC_MAX + 1)
 #define RECFAST_NPTS (int)501
 #define KAPPA_10_NPTS (int)27
 #define KAPPA_10_elec_NPTS (int)20
@@ -54,6 +56,15 @@ double* sum_lyn_LW;
 double* sum_lyn_III;
 double* sum_lyn_LW_III;
 double* sum_lyn_LW_AGN;
+// Per-Lyman-level breakdown of the LW sums, indexed [R_ct*LW_NLEV + n_ct]; LW_zpp is each shell's source redshift.
+double* LW_spectral_stellar;
+double* LW_spectral_III;
+double* LW_spectral_AGN;
+double* LW_zpp;
+// Box-averaged source emissivity per filter shell; multiplies LW_spectral_* to give an absolute flux.
+double* LW_emissivity_stellar;
+double* LW_emissivity_III;
+double* LW_emissivity_AGN;
 double growth_factor_zp;
 double dgrowth_factor_dzp;
 double const_zp_prefactor_GAL;
@@ -76,6 +87,13 @@ extern double* sum_lyn_LW;
 extern double* sum_lyn_III;
 extern double* sum_lyn_LW_III;
 extern double* sum_lyn_LW_AGN;
+extern double* LW_spectral_stellar;
+extern double* LW_spectral_III;
+extern double* LW_spectral_AGN;
+extern double* LW_zpp;
+extern double* LW_emissivity_stellar;
+extern double* LW_emissivity_III;
+extern double* LW_emissivity_AGN;
 extern double growth_factor_zp;
 extern double dgrowth_factor_dzp;
 extern double const_zp_prefactor_GAL;
@@ -120,6 +138,10 @@ extern "C"
 
   /* returns the spectral emissity */
   double spectral_emissivity(double nu_norm, int flag, int flag_Pop);
+#if USE_MINI_HALOS
+  void init_LW_diagnostics(void);
+  void free_LW_diagnostics(void);
+#endif
 
   /* Ionization fraction from RECFAST. */
   double xion_RECFAST(float z, int flag);

@@ -169,6 +169,8 @@ void _ComputeTs(int snapshot)
   double XAGN_hard[TsNumFilterSteps];
 #if USE_MINI_HALOS
   double AGN_LW[TsNumFilterSteps];
+  double lw_term_stellar, lw_term_III, lw_term_AGN;
+  int i_spec;
 #endif
 
 #if USE_MINI_HALOS
@@ -872,6 +874,13 @@ void _ComputeTs(int snapshot)
         sum_lyn_LW[R_ct] = 0;
         sum_lyn_LW_III[R_ct] = 0;
         sum_lyn_LW_AGN[R_ct] = 0;
+        // per-Lyman-level breakdown, so the LW spectral shape is recoverable from the output
+        for (i_spec = 0; i_spec < LW_NLEV; i_spec++) {
+          LW_spectral_stellar[R_ct * LW_NLEV + i_spec] = 0;
+          LW_spectral_III[R_ct * LW_NLEV + i_spec] = 0;
+          LW_spectral_AGN[R_ct * LW_NLEV + i_spec] = 0;
+        }
+        LW_zpp[R_ct] = zpp;
       }
 #endif
 
@@ -889,18 +898,26 @@ void _ComputeTs(int snapshot)
           if (nuprime > nu_n(n_ct + 1))
             continue;
           // photons per stellar baryon
-          sum_lyn_LW[R_ct] += spectral_emissivity(nuprime, 2, 2); 
-          sum_lyn_LW_III[R_ct] += spectral_emissivity(nuprime, 2, 3);
+          lw_term_stellar = spectral_emissivity(nuprime, 2, 2);
+          lw_term_III = spectral_emissivity(nuprime, 2, 3);
 
           if (fabs(run_globals.params.physics.SpecIndexUVAGNSoft - 1.0) < REL_TOL) {
-            sum_lyn_LW_AGN[R_ct] +=
-              log(nu_n(n_ct + 1) / nuprime); //unitless
+            lw_term_AGN = log(nu_n(n_ct + 1) / nuprime); //unitless
           } else {
-            sum_lyn_LW_AGN[R_ct] +=
+            lw_term_AGN =
               (pow(nu_n(n_ct + 1) * NU_LA / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft) - 
                pow(nuprime * NU_LA / NU_1450, 1-run_globals.params.physics.SpecIndexUVAGNSoft)) /
               (1-run_globals.params.physics.SpecIndexUVAGNSoft);
           }
+
+          sum_lyn_LW[R_ct] += lw_term_stellar;
+          sum_lyn_LW_III[R_ct] += lw_term_III;
+          sum_lyn_LW_AGN[R_ct] += lw_term_AGN;
+
+          // keep the individual level so the sawtooth can be rebuilt; summing over n_ct reproduces sum_lyn_LW*
+          LW_spectral_stellar[R_ct * LW_NLEV + n_ct] = lw_term_stellar;
+          LW_spectral_III[R_ct * LW_NLEV + n_ct] = lw_term_III;
+          LW_spectral_AGN[R_ct * LW_NLEV + n_ct] = lw_term_AGN;
         }
 
 #endif
@@ -953,6 +970,13 @@ void _ComputeTs(int snapshot)
         if (run_globals.params.Flag_IncludeLymanWerner) {
           sum_lyn_LW[R_ct] = weight * sum_lyn_LW[R_ct - 1];
           sum_lyn_LW_AGN[R_ct] = weight * sum_lyn_LW_AGN[R_ct - 1];
+          // weight the per-level breakdown too, so it still sums to sum_lyn_LW* for this shell
+          for (i_spec = 0; i_spec < LW_NLEV; i_spec++) {
+            LW_spectral_stellar[R_ct * LW_NLEV + i_spec] =
+              weight * LW_spectral_stellar[(R_ct - 1) * LW_NLEV + i_spec];
+            LW_spectral_AGN[R_ct * LW_NLEV + i_spec] =
+              weight * LW_spectral_AGN[(R_ct - 1) * LW_NLEV + i_spec];
+          }
         }
 #endif
         first_radii = false;
@@ -1104,6 +1128,30 @@ void _ComputeTs(int snapshot)
     // important that this factor is included! Will mean the normalisation within Meraxes is (1/0.59) higher than
     // 21cmFAST, which can be trivially compensated for by reducing L_X. Ultimately the backgrounds in Meraxes will be
     // this same factor higher than 21cmFAST, but at least it is understood why and trivially accounted for.
+
+#if USE_MINI_HALOS
+    // Box-average the LW source emissivity per shell: LW_emissivity_X * LW_spectral_X is an absolute flux, not just a survival fraction.
+    if (run_globals.params.Flag_IncludeLymanWerner) {
+      for (R_ct = 0; R_ct < TsNumFilterSteps; R_ct++) {
+        double sum_gal = 0.0, sum_III = 0.0, sum_agn = 0.0;
+        for (int ix = 0; ix < local_nix; ix++)
+          for (int iy = 0; iy < ReionGridDim; iy++)
+            for (int iz = 0; iz < ReionGridDim; iz++) {
+              int i_sm = grid_index_smoothedSFR(R_ct, ix, iy, iz, TsNumFilterSteps, ReionGridDim);
+              sum_gal += SMOOTHED_SFR_GAL[i_sm];
+              sum_III += SMOOTHED_SFR_III[i_sm];
+              sum_agn += SMOOTHED_AGN_UV[i_sm];
+            }
+        MPI_Allreduce(MPI_IN_PLACE, &sum_gal, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
+        MPI_Allreduce(MPI_IN_PLACE, &sum_III, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
+        MPI_Allreduce(MPI_IN_PLACE, &sum_agn, 1, MPI_DOUBLE, MPI_SUM, run_globals.mpi_comm);
+        LW_emissivity_stellar[R_ct] = sum_gal / total_n_cells;
+        LW_emissivity_III[R_ct] = sum_III / total_n_cells;
+        // carry AGNLWEfficiency so 0 zeroes the AGN LW output, matching AGN_LW[] below
+        LW_emissivity_AGN[R_ct] = run_globals.params.physics.AGNLWEfficiency * sum_agn / total_n_cells;
+      }
+    }
+#endif
 
     // interpolate to correct nu integral value based on the cell's ionization state
     for (int ix = 0; ix < local_nix; ix++)
