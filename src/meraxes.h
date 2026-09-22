@@ -185,6 +185,7 @@ typedef struct physics_params_t
   double SpecIndexUVAGNHard;    /* lambda <= 912A (shortward of the break) — ionizing photon rate only */
   double AGNLWEfficiency;       /* scale factor on the AGN LW amplitude */ 
   int Flag_IncludeAGNLyAlpha;   /* 0=off, 1=direct AGN UV continuum Lya pumping */
+  int Flag_IncludeStarLya; /* 0=off, 1=direct stellar UV continuum Lya pumping (Wouthuysen-Field) */
 
   double ReionMaxHeatingRedshift;
 

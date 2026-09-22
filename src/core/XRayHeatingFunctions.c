@@ -1418,7 +1418,8 @@ void evolveInt(float zp,
       dxlya_dt_GAL += dt_dzpp * dzpp * zpp_integrand_GAL * freq_int_lya_GAL[zpp_ct];
       // Use this when using the SFR provided by Meraxes
       // Units should be M_solar/s. Factor of (dt_dzp * dzpp) converts from per s to per z'
-      dstarlya_dt_GAL += SFR_GAL[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn[zpp_ct] * dt_dzpp * dzpp;
+      if (run_globals.params.physics.Flag_IncludeStarLya)
+        dstarlya_dt_GAL += SFR_GAL[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn[zpp_ct] * dt_dzpp * dzpp;
 
 #if USE_MINI_HALOS
       dxheat_dt_III += dt_dzpp * dzpp * zpp_integrand_III *
@@ -1426,7 +1427,8 @@ void evolveInt(float zp,
       dxion_source_dt_III += dt_dzpp * dzpp * zpp_integrand_III * freq_int_ion_III[zpp_ct];
       dxlya_dt_III += dt_dzpp * dzpp * zpp_integrand_III * freq_int_lya_III[zpp_ct];
 
-      dstarlya_dt_III += SFR_III[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_III[zpp_ct] * dt_dzpp * dzpp;
+      if (run_globals.params.physics.Flag_IncludeStarLya)
+        dstarlya_dt_III += SFR_III[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_III[zpp_ct] * dt_dzpp * dzpp;
 
       // Direct AGN UV continuum Lya pumping. Same structure as the stellar term, but the
       // source is a UV emissivity rather than an SFR, so sum_lyn_AGN already carries 1/(h nu).
