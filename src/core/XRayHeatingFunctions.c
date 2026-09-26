@@ -1504,8 +1504,9 @@ void evolveInt(float zp,
      * f_rec(2) = 1, so it is omitted. AGN_UV_Lya[0] is the innermost shell, i.e. the local
      * emissivity. dtdz() is negative (it matches the negative dzpp in the loop), so fabs().
      *
-     * This is summed straight into duvlya_dt_AGN, so it flows through deriv[14] and
-     * deriv[2] exactly like the continuum. Flag off -> term is identically zero. */
+     * This is summed straight into duvlya_dt_AGN, so it flows through
+     * deriv[DERIV_JA_AGN_UV] and deriv[2] exactly like the continuum. Flag off ->
+     * term is identically zero. */
     if (run_globals.params.physics.Flag_IncludeAGNLyAlpha &&
         run_globals.params.physics.Flag_IncludeAGNLyaLine) {
       lya_line_ew_cm = run_globals.params.physics.AGNLyaLineEW * 1e-8; /* Angstrom -> cm */
