@@ -1339,7 +1339,10 @@ void evolveInt(float zp,
   double zpp, dzpp;
   double Conversion_factor =
     (SPEED_OF_LIGHT / (4. * M_PI)) / (PROTONMASS / SOLAR_MASS); // I am using this many times so it's worth save this
-  double Conversion_factor_AGN_LW = SPEED_OF_LIGHT / (4.0 * M_PI);
+  /* Shared by BOTH AGN direct-UV channels -- Lya (duvlya_dt_AGN) and Lyman-Werner
+   * (duvlyLW_dt_AGN) -- so it is named for the UV continuum they share, not for one
+   * of the two bands. */
+  double Conversion_factor_AGN_UV = SPEED_OF_LIGHT / (4.0 * M_PI);
 
   int zpp_ct;
   double T, TII, x_e, zpp_integrand_GAL;
@@ -1348,7 +1351,10 @@ void evolveInt(float zp,
   // Do this to differentiate between Pop III and Pop II contribution
   double dxlya_dt_III, dstarlya_dt_III, dstarlyLW_dt_III, dxheat_dt_III, dxion_source_dt_III, zpp_integrand_III;
   double dspec_dzp_II, dxheat_dzp_II;
-  double dstarlya_dt_AGN;
+  /* Prefix marks HOW the Lya was produced, suffix marks WHO produced it:
+   *   dx...   X-ray excitation      dstar... stellar UV      duv... AGN UV continuum
+   * so the AGN direct-UV terms are duv*, not dstar* -- they have nothing to do with stars. */
+  double duvlya_dt_AGN;
 #endif
 
   double dxheat_dt_AGN_soft      = 0.0;
@@ -1359,7 +1365,8 @@ void evolveInt(float zp,
   double dxion_source_dt_AGN_hard = 0.0;
   double dxlya_dt_AGN_hard       = 0.0;
   double zpp_integrand_AGN_hard;
-  double dstarlyLW_dt_AGN = 0.0;
+  double duvlyLW_dt_AGN = 0.0;
+  double lya_line_ew_cm, lya_line_nphot; /* AGN broad Lya line: EW in cm, photons per erg */
 
   x_e = y[0];
   T = y[1];
@@ -1381,7 +1388,7 @@ void evolveInt(float zp,
   dxlya_dt_III = 0;
   dstarlya_dt_III = 0;
   dstarlyLW_dt_III = 0;
-  dstarlya_dt_AGN = 0;
+  duvlya_dt_AGN = 0;
 #endif
   deriv[5] = 0.0;
   deriv[6] = 0.0;
@@ -1433,12 +1440,12 @@ void evolveInt(float zp,
       // Direct AGN UV continuum Lya pumping. Same structure as the stellar term, but the
       // source is a UV emissivity rather than an SFR, so sum_lyn_AGN already carries 1/(h nu).
       if (run_globals.params.physics.Flag_IncludeAGNLyAlpha)
-        dstarlya_dt_AGN += AGN_UV_Lya[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_AGN[zpp_ct] * dt_dzpp * dzpp;
+        duvlya_dt_AGN += AGN_UV_Lya[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_AGN[zpp_ct] * dt_dzpp * dzpp;
 
       if (run_globals.params.Flag_IncludeLymanWerner) {
         dstarlyLW_dt_GAL += SFR_GAL[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_LW[zpp_ct] * dt_dzpp * dzpp;
         dstarlyLW_dt_III += SFR_III[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_LW_III[zpp_ct] * dt_dzpp * dzpp;
-        dstarlyLW_dt_AGN += AGN_LW[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_LW_AGN[zpp_ct] * dt_dzpp * dzpp;
+        duvlyLW_dt_AGN += AGN_LW[zpp_ct] * pow(1 + zp, 2) * (1 + zpp) * sum_lyn_LW_AGN[zpp_ct] * dt_dzpp * dzpp;
       }
 #endif
 
@@ -1482,13 +1489,40 @@ void evolveInt(float zp,
 
     dstarlya_dt_III *= Conversion_factor;
 
+    /* AGN broad Lya EMISSION LINE, absorbed locally.
+     *
+     * Continuum photons are emitted blueward of Lya and redshift INTO resonance far from
+     * the source, which is what the zpp shell loop above integrates. Line photons are
+     * emitted AT resonance, so they are absorbed essentially at the source and couple gas
+     * at the EMISSION redshift instead. In the shell integral that is a delta function in
+     * emitted frequency, which collapses the sum to a single local term at zpp == zp:
+     *
+     *   dstarlya_line = eps_1450(zp) * (1+zp)^4 * f_rec(2) * N_line * |dt/dz| / nu_alpha
+     *
+     * using nu' = nu_alpha (1+zpp)/(1+zp)  =>  dzpp = (1+zp) dnu' / nu_alpha, and
+     *   N_line = EW * (nu_alpha/nu_1450)^-alpha * nu_alpha / (c * h)   [photons per erg].
+     * f_rec(2) = 1, so it is omitted. AGN_UV_Lya[0] is the innermost shell, i.e. the local
+     * emissivity. dtdz() is negative (it matches the negative dzpp in the loop), so fabs().
+     *
+     * This is summed straight into duvlya_dt_AGN, so it flows through deriv[14] and
+     * deriv[2] exactly like the continuum. Flag off -> term is identically zero. */
+    if (run_globals.params.physics.Flag_IncludeAGNLyAlpha &&
+        run_globals.params.physics.Flag_IncludeAGNLyaLine) {
+      lya_line_ew_cm = run_globals.params.physics.AGNLyaLineEW * 1e-8; /* Angstrom -> cm */
+      lya_line_nphot = lya_line_ew_cm *
+                       pow(NU_LA / NU_1450, -run_globals.params.physics.SpecIndexUVAGNSoft) *
+                       NU_LA / (SPEED_OF_LIGHT * PLANCK);
+      duvlya_dt_AGN += AGN_UV_Lya[0] * pow(1 + zp, 4) * lya_line_nphot *
+                         fabs(dtdz(zp)) / NU_LA;
+    }
+
     if (run_globals.params.physics.Flag_IncludeAGNLyAlpha)
-      dstarlya_dt_AGN *= Conversion_factor_AGN_LW;
+      duvlya_dt_AGN *= Conversion_factor_AGN_UV;
 
     if (run_globals.params.Flag_IncludeLymanWerner) {
       dstarlyLW_dt_GAL *= Conversion_factor;
       dstarlyLW_dt_III *= Conversion_factor;
-      dstarlyLW_dt_AGN *= Conversion_factor_AGN_LW;
+      duvlyLW_dt_AGN *= Conversion_factor_AGN_UV;
     }
 #endif
 
@@ -1574,17 +1608,25 @@ void evolveInt(float zp,
              + (dstarlya_dt_GAL + dstarlya_dt_III);
   deriv[10] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
   if (run_globals.params.physics.Flag_IncludeAGNLyAlpha) {
-    deriv[2] += dstarlya_dt_AGN;
-    deriv[10] += dstarlya_dt_AGN;
+    deriv[2] += duvlya_dt_AGN;
+    deriv[10] += duvlya_dt_AGN;
   }
 
   /* Diagnostics: split the two AGN Lya channels so they can be told apart within a
-   * single run. deriv[14] is the direct UV continuum, deriv[15] the X-ray excitation
-   * already folded into deriv[2] above. Neither feeds back into the ODE. */
-  deriv[14] = run_globals.params.physics.Flag_IncludeAGNLyAlpha ? dstarlya_dt_AGN : 0.0;
-  deriv[15] = dxlya_dt_AGN_soft + dxlya_dt_AGN_hard;
+   * single run. DERIV_JA_AGN_UV is the direct UV continuum, DERIV_JA_AGN_XRAY the
+   * X-ray excitation already folded into deriv[2] above. Neither feeds back into
+   * the ODE. Both are set in BOTH builds: _ComputeTs() reads them unconditionally,
+   * so leaving either unwritten hands it an uninitialised stack slot. */
+  deriv[DERIV_JA_AGN_UV] = run_globals.params.physics.Flag_IncludeAGNLyAlpha ? duvlya_dt_AGN : 0.0;
+  deriv[DERIV_JA_AGN_XRAY] = dxlya_dt_AGN_soft + dxlya_dt_AGN_hard;
 #else
   deriv[2] = dxlya_dt_GAL + dxlya_dt_AGN_soft + dxlya_dt_AGN_hard + dstarlya_dt_GAL;
+
+  /* No mini-halos -> duvlya_dt_AGN does not exist in this build (the AGN direct-UV
+   * Lya channel is compiled out entirely), so the UV diagnostic is identically zero.
+   * The X-ray one is still meaningful: dxlya_dt_AGN_soft/hard are declared in both. */
+  deriv[DERIV_JA_AGN_UV] = 0.0;
+  deriv[DERIV_JA_AGN_XRAY] = dxlya_dt_AGN_soft + dxlya_dt_AGN_hard;
 #endif
 
   // stuff for marcos
@@ -1596,11 +1638,11 @@ void evolveInt(float zp,
     // Band-average both contributions over the LW band and convert to J_21. The stellar terms
     // carry PLANCK because sum_lyn_LW* is a photon count; the AGN term is already an energy and
     // is normalised to NU_1450 rather than NU_LA.
-    deriv[8] = ((dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA * PLANCK + dstarlyLW_dt_AGN * NU_1450) /
+    deriv[8] = ((dstarlyLW_dt_GAL + dstarlyLW_dt_III) * NU_LA * PLANCK + duvlyLW_dt_AGN * NU_1450) /
                (NUIONIZATION - NU_LW) * 1e21;
-    deriv[13] = (dstarlyLW_dt_GAL * NU_LA * PLANCK + dstarlyLW_dt_AGN * NU_1450) /
+    deriv[13] = (dstarlyLW_dt_GAL * NU_LA * PLANCK + duvlyLW_dt_AGN * NU_1450) /
                 (NUIONIZATION - NU_LW) * 1e21;
-    deriv[7] = dstarlyLW_dt_AGN * NU_1450 / (NUIONIZATION - NU_LW) * 1e21;
+    deriv[7] = duvlyLW_dt_AGN * NU_1450 / (NUIONIZATION - NU_LW) * 1e21;
   }
 
   deriv[4] = dt_dzp * (dxion_source_dt_GAL + dxion_source_dt_III

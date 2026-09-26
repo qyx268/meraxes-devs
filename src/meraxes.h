@@ -185,6 +185,14 @@ typedef struct physics_params_t
   double SpecIndexUVAGNHard;    /* lambda <= 912A (shortward of the break) — ionizing photon rate only */
   double AGNLWEfficiency;       /* scale factor on the AGN LW amplitude */ 
   int Flag_IncludeAGNLyAlpha;   /* 0=off, 1=direct AGN UV continuum Lya pumping */
+  int Flag_IncludeAGNLyaLine;   /* 0=off, 1=also add the AGN broad Lya EMISSION LINE. Those photons
+                                 * are emitted AT resonance, so they are absorbed at the source and
+                                 * couple gas at the EMISSION redshift. Summed into the continuum. */
+  double AGNLyaLineEW;          /* rest-frame EW (Angstrom) of that Lya line. Lusso+15 Table 2: 74.0 */
+  double AGNBandLineEW;         /* rest-frame EW (Angstrom) of the BLR line inside Lyman band 2, at
+                                 * AGN_BAND_LINE_LAMBDA. Lusso+15 Table 2 blended Lyb+OIV = 8.5 (use
+                                 * 9.8 to also count FeII+FeIII 1122A). 0 = pure power law. The band-2
+                                 * multiplier is DERIVED from this and SpecIndexUVAGNSoft. */
   int Flag_IncludeStarLya; /* 0=off, 1=direct stellar UV continuum Lya pumping (Wouthuysen-Field) */
 
   double ReionMaxHeatingRedshift;

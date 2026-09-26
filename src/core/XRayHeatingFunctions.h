@@ -21,6 +21,46 @@
 #define Pop2_ion run_globals.params.physics.ReionNionPhotPerBary
 #define Pop3_ion run_globals.params.physics.ReionNionPhotPerBaryIII
 
+/* Rest wavelength (Angstrom) of the BLR emission line inside Lyman band 2. Lusso+15 Table 2
+ * lists it as the blended 'Lyb + OIV' feature. Fixed by the blend identification, not a
+ * tunable - only its equivalent width (AGNBandLineEW) is a parameter. */
+#define AGN_BAND_LINE_LAMBDA (double)1029.7
+
+/* deriv[]/dansdz[] layout, shared by evolveInt() and _ComputeTs().
+ *
+ * Slots 0-6 exist in every build. 7-13 are the mini-halo (Pop III / Lyman-Werner)
+ * quantities, which only exist under USE_MINI_HALOS. The two AGN Lya diagnostics
+ * are appended after whichever of those is the last live slot, so a non-mini build
+ * carries 9 doubles instead of 16 and every entry it declares is one it writes.
+ * They are diagnostics only: nothing here feeds back into the ODE. */
+#if USE_MINI_HALOS
+#define DERIV_NUM          16
+#define DERIV_JA_AGN_UV    14
+#define DERIV_JA_AGN_XRAY  15
+#else
+#define DERIV_NUM           9
+#define DERIV_JA_AGN_UV     7
+#define DERIV_JA_AGN_XRAY   8
+#endif
+
+/* The AGN UV emissivity grid (BHUVEmissivity: allocation, construction, the FFT /
+ * filter / inverse-FFT pipeline, then SMOOTHED_AGN_UV) feeds TWO channels, so it is
+ * needed if either one is on. Gating it on Flag_IncludeSpinTemp instead is always
+ * true wherever it is tested -- all of this code only runs under that flag -- so the
+ * grid gets allocated, filled and transformed even when nothing reads it.
+ * Used by both _ComputeTs() and the reionization grid bookkeeping; keep them in step. */
+static inline bool agn_uv_grid_needed(void)
+{
+  return run_globals.params.Flag_IncludeLymanWerner || run_globals.params.physics.Flag_IncludeAGNLyAlpha;
+}
+
+/* SMOOTHED_AGN_UV is STORED scaled by 1/AGN_UV_UNIT, i.e. in units of 1e21
+ * erg/s/Hz/cm^3, so the grid holds O(1) numbers instead of O(1e21). Every consumer
+ * multiplies by AGN_UV_UNIT to get back to CGS before it is used in any physics.
+ * Keep those two in step: scaling the store without compensating a consumer would
+ * silently make that channel 1e21 too weak. */
+#define AGN_UV_UNIT (double)1e21
+
 #define NSPEC_MAX (int)23
 // Row stride for LW_spectral_*: the Lyman loop reaches n_ct = NSPEC_MAX, so rows need NSPEC_MAX+1.
 #define LW_NLEV (NSPEC_MAX + 1)

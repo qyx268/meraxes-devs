@@ -156,9 +156,9 @@ void _ComputeTs(int snapshot)
   int snapshot_counter_backwards[TsNumFilterSteps];
   double zedge;
 #if USE_MINI_HALOS
-  double ans[3], dansdz[16];
+  double ans[3], dansdz[DERIV_NUM];
 #else
-  double ans[2], dansdz[16];
+  double ans[2], dansdz[DERIV_NUM];
 #endif
   double xHII_call;
   double SFR_GAL[TsNumFilterSteps];
@@ -172,6 +172,7 @@ void _ComputeTs(int snapshot)
   double AGN_UV_Lya[TsNumFilterSteps];
   double lw_term_stellar, lw_term_III, lw_term_AGN;
   double nu_emit; /* emitted-frame frequency in Hz, for the AGN Lya weight */
+  double lya_band_boost; /* band-2 multiplier from the BLR line; derived, see below */
   int i_spec;
 #endif
 
@@ -488,7 +489,7 @@ void _ComputeTs(int snapshot)
           BHXrayEmissivity_soft_unfiltered[ii] /= (float)total_n_cells;
       }
 #if USE_MINI_HALOS
-      if (run_globals.params.Flag_IncludeSpinTemp) {
+      if (agn_uv_grid_needed()) {
         fftwf_execute(run_globals.reion_grids.BHUVEmissivity_forward_plan);
         for (int ii = 0; ii < slab_n_complex; ii++)
           BHUVEmissivity_unfiltered[ii] /= (float)total_n_cells;
@@ -507,7 +508,7 @@ void _ComputeTs(int snapshot)
       if (agn_soft_needed)
         memcpy(BHXrayEmissivity_soft_filtered, BHXrayEmissivity_soft_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
 #if USE_MINI_HALOS
-      if (run_globals.params.Flag_IncludeSpinTemp)
+      if (agn_uv_grid_needed())
         memcpy(BHUVEmissivity_filtered, BHUVEmissivity_unfiltered, sizeof(fftwf_complex) * slab_n_complex);
 #endif
 
@@ -526,7 +527,7 @@ void _ComputeTs(int snapshot)
         if (agn_soft_needed)
           filter(BHXrayEmissivity_soft_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
 #if USE_MINI_HALOS
-        if (run_globals.params.Flag_IncludeSpinTemp)
+        if (agn_uv_grid_needed())
           filter(BHUVEmissivity_filtered, local_ix_start, local_nix, ReionGridDim, (float)R, run_globals.params.TsHeatingFilterType);
 #endif
       }
@@ -544,7 +545,7 @@ void _ComputeTs(int snapshot)
       if (agn_soft_needed)
         fftwf_execute(run_globals.reion_grids.BHXrayEmissivity_soft_filtered_reverse_plan);
 #if USE_MINI_HALOS
-      if (run_globals.params.Flag_IncludeSpinTemp)
+      if (agn_uv_grid_needed())
         fftwf_execute(run_globals.reion_grids.BHUVEmissivity_filtered_reverse_plan);
 #endif
 
@@ -601,12 +602,13 @@ void _ComputeTs(int snapshot)
                 agn_xray_soft_ave += SMOOTHED_AGN_soft[i_smoothed_heating];
               }
 #if USE_MINI_HALOS
-              if (run_globals.params.Flag_IncludeSpinTemp) {
+              if (agn_uv_grid_needed()) {
                 ((float*)BHUVEmissivity_filtered)[i_padded] = fmaxf(((float*)BHUVEmissivity_filtered)[i_padded], 0.0);
 
                 bh_uv = ((float*)BHUVEmissivity_filtered)[i_padded];
-                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 * SOLAR_LUM / NU_1450 / pixel_volume
-                                                  * pow(units->UnitLength_in_cm, -3.0); // erg/s/Hz/cm^3
+                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 / AGN_UV_UNIT * SOLAR_LUM / NU_1450 /
+                                                  pixel_volume
+                                                  * pow(units->UnitLength_in_cm, -3.0); // 1e21 erg/s/Hz/cm^3
               }
 #endif
 
@@ -705,12 +707,13 @@ void _ComputeTs(int snapshot)
                                                    * pow(units->UnitLength_in_cm, -3.0);
               }
 #if USE_MINI_HALOS
-              if (run_globals.params.Flag_IncludeSpinTemp) {
+              if (agn_uv_grid_needed()) {
                 ((float*)BHUVEmissivity_filtered)[i_padded] = fmaxf(((float*)BHUVEmissivity_filtered)[i_padded], 0.0);
 
                 bh_uv = ((float*)BHUVEmissivity_filtered)[i_padded];
-                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 * SOLAR_LUM / NU_1450 / pixel_volume
-                                                  * pow(units->UnitLength_in_cm, -3.0); // erg/s/Hz/cm^3
+                SMOOTHED_AGN_UV[i_smoothed_heating] = (double)bh_uv * 1e10 / AGN_UV_UNIT * SOLAR_LUM / NU_1450 /
+                                                  pixel_volume
+                                                  * pow(units->UnitLength_in_cm, -3.0); // 1e21 erg/s/Hz/cm^3
               }
 #endif
             }
@@ -730,6 +733,29 @@ void _ComputeTs(int snapshot)
     } else {
       NO_LIGHT = 1;
     }
+
+#if USE_MINI_HALOS
+    /* Band-2 multiplier for the BLR emission line on the AGN UV continuum. DERIVED here from
+     * the measured equivalent width and the continuum slope, so the two can never fall out of
+     * step (a hand-set multiplier silently stops matching its EW once SpecIndexUVAGNSoft moves).
+     *   line photons = EW * (nu_L/nu_1450)^-a * nu_L / (c h)
+     *   band-2 cont. = (nu_1450^a / h) * (nu_2^-a - nu_3^-a) / a
+     * Band 2 runs from Lya (nu_n(2)=1) to Lyb (nu_n(3)), in units of NU_LA. */
+    lya_band_boost = 1.0;
+    if (run_globals.params.physics.AGNBandLineEW > 0.0) {
+      double a_uv = run_globals.params.physics.SpecIndexUVAGNSoft;
+      double nu_lo = nu_n(2) * NU_LA;
+      double nu_hi = nu_n(3) * NU_LA;
+      double nu_L = SPEED_OF_LIGHT / (AGN_BAND_LINE_LAMBDA * 1e-8);
+      double n_cont = pow(NU_1450, a_uv) / PLANCK * (pow(nu_lo, -a_uv) - pow(nu_hi, -a_uv)) / a_uv;
+      double n_line = (run_globals.params.physics.AGNBandLineEW * 1e-8) *
+                      pow(nu_L / NU_1450, -a_uv) * nu_L / (SPEED_OF_LIGHT * PLANCK);
+      lya_band_boost = 1.0 + n_line / n_cont;
+      mlog("AGN band-2 BLR line: EW = %.2f A at %.1f A, alpha = %.3f -> boost = %.6f",
+           MLOG_MESG, run_globals.params.physics.AGNBandLineEW, AGN_BAND_LINE_LAMBDA,
+           a_uv, lya_band_boost);
+    }
+#endif
 
     // Populate the initial ionisation/heating tables
     for (R_ct = 0; R_ct < TsNumFilterSteps; R_ct++) {
@@ -902,7 +928,10 @@ void _ComputeTs(int snapshot)
          * the 1/(h nu') factor, so it is photons per unit L_1450 per Hz. */
         if (run_globals.params.physics.Flag_IncludeAGNLyAlpha) {
           nu_emit = nuprime * NU_LA;
-          sum_lyn_AGN[R_ct] += frecycle(n_ct) *
+          /* Band-2 BLR line: only lines blueward of Lya in a band with f_rec > 0 reach lower-z
+           * gas. Lya 1216A is at resonance (handled as a separate local term in evolveInt);
+           * NV 1240A is redward; f_rec(3)=0 kills CIII 977A. So band 2 only. */
+          sum_lyn_AGN[R_ct] += ((n_ct == 2) ? lya_band_boost : 1.0) * frecycle(n_ct) *
                                pow(nu_emit / NU_1450, -run_globals.params.physics.SpecIndexUVAGNSoft) /
                                (PLANCK * nu_emit);
         }
@@ -1163,7 +1192,8 @@ void _ComputeTs(int snapshot)
         LW_emissivity_stellar[R_ct] = sum_gal / total_n_cells;
         LW_emissivity_III[R_ct] = sum_III / total_n_cells;
         // carry AGNLWEfficiency so 0 zeroes the AGN LW output, matching AGN_LW[] below
-        LW_emissivity_AGN[R_ct] = run_globals.params.physics.AGNLWEfficiency * sum_agn / total_n_cells;
+        LW_emissivity_AGN[R_ct] =
+          run_globals.params.physics.AGNLWEfficiency * sum_agn / total_n_cells * AGN_UV_UNIT;
       }
     }
 #endif
@@ -1194,8 +1224,13 @@ void _ComputeTs(int snapshot)
             }
 #if USE_MINI_HALOS
             SFR_III[R_ct] = SMOOTHED_SFR_III[i_smoothed_heating];
-            AGN_LW[R_ct] = run_globals.params.Flag_IncludeLymanWerner ? run_globals.params.physics.AGNLWEfficiency * SMOOTHED_AGN_UV[i_smoothed_heating] : 0.0;
-            AGN_UV_Lya[R_ct] = run_globals.params.physics.Flag_IncludeAGNLyAlpha ? SMOOTHED_AGN_UV[i_smoothed_heating] : 0.0;
+            AGN_LW[R_ct] = run_globals.params.Flag_IncludeLymanWerner
+                             ? run_globals.params.physics.AGNLWEfficiency *
+                                 SMOOTHED_AGN_UV[i_smoothed_heating] * AGN_UV_UNIT
+                             : 0.0;
+            AGN_UV_Lya[R_ct] = run_globals.params.physics.Flag_IncludeAGNLyAlpha
+                                 ? SMOOTHED_AGN_UV[i_smoothed_heating] * AGN_UV_UNIT
+                                 : 0.0;
 #endif
             xHII_call = x_e_box_prev[i_padded];
 
@@ -1352,8 +1387,8 @@ void _ComputeTs(int snapshot)
                     ans,
                     dansdz);
 #endif
-          J_alpha_ave_AGN_UV += dansdz[14];
-          J_alpha_ave_AGN_Xray += dansdz[15];
+          J_alpha_ave_AGN_UV += dansdz[DERIV_JA_AGN_UV];
+          J_alpha_ave_AGN_Xray += dansdz[DERIV_JA_AGN_XRAY];
           Xheat_ave_AGN_soft += dansdz[5];
           Xheat_ave_AGN_hard += dansdz[6];
 
