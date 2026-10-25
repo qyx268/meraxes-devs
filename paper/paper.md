@@ -11,21 +11,22 @@ tags:
 authors:
   # TODO: confirm the author list, its order, ORCIDs and current affiliations with every
   # contributor; JOSS requires each co-author's agreement. This draft lists the code
-  # contributors named in the README; contributors who directed the project (e.g. J. Stuart
-  # B. Wyithe) also qualify under JOSS's authorship policy.
+  # contributors named in the README, and the project lead.
   - name: Yuxiang Qin
     # orcid: TODO (add for every author)
     corresponding: true
     affiliation: 1
   - name: Simon J. Mutch
     affiliation: 2  # TODO: current affiliation
+  - name: Bradley Greig
+    affiliation: 2  # TODO
   - name: Emanuele M. Ventura
     affiliation: 2  # TODO
+  - name: Shihai Zhu
+    affiliation: 1
   - name: Sreedhar Balu
     affiliation: 3  # TODO
   - name: Yisheng Qiu
-    affiliation: 2  # TODO
-  - name: Bradley Greig
     affiliation: 2  # TODO
   - name: Gregory B. Poole
     affiliation: 3  # TODO
@@ -35,7 +36,7 @@ authors:
     affiliation: 2  # TODO
   - name: Han-Seek Kim  # TODO: listed as "Hansik Kim" in the README; confirm
     affiliation: 2  # TODO
-  - name: Shihai Zhu
+  - name: J. Stuart B. Wyithe
     affiliation: 1
 affiliations:
   - name: Research School of Astronomy and Astrophysics, Australian National University, Australia  # TODO: check
@@ -128,14 +129,15 @@ the IGM calculation use two different parallel decompositions:
   per-forest statistics computed in advance, which balance the work and bound the memory
   each rank needs.
 - **IGM grids.** The radiation grids are divided into slabs for parallel Fourier
-  transforms with FFTW [@frigo2005]. At each snapshot, galaxies deposit their star
+  transforms with FFTW. At each snapshot, galaxies deposit their star
   formation and black-hole accretion onto the grids. The excursion-set filtering of
-  21cmFAST [@mesinger2011] is then applied in Fourier space, and the resulting
+  21cmFAST [@mesinger2011; @murray2020] is then applied in Fourier space, and the resulting
   ionization and feedback fields are returned to the galaxies on their own ranks.
 
 **Inputs and outputs.** Meraxes reads merger trees from gbpTrees [@poole2017] and from
 VELOCIraptor and TreeFrog [@elahi2019a; @elahi2019b]. This includes augmented trees,
-such as those super-resolved with a generative model [@brennan2025]. It also reads
+such as those extended to lower-mass haloes with the Monte Carlo algorithm darkforest
+[@qiu2021] or super-resolved with a generative model [@brennan2025]. It also reads
 density and velocity grids from the N-body simulation. Output is written with parallel
 HDF5, in one file per rank plus a master file that links them. It includes galaxy
 catalogues, IGM grids (ionization, gas temperature, spin temperature and 21-cm
@@ -144,14 +146,21 @@ functions.
 
 **Configuration.** Run parameters come from text files layered over a defaults file and
 a per-simulation file. Optional physics that changes the galaxy data structure is
-selected at compile time with CMake, so runs that don't use it pay no memory for it.
-This includes Population III stars and minihaloes, magnitudes computed during the run
-with sector, and stochastic source properties.
+selected at compile time with CMake, so runs that don't use it pay no memory for it:
+
+- `USE_MINI_HALOS`: molecular cooling in minihaloes, Population III star formation,
+  Lyman–Werner feedback and metal enrichment of the IGM [@ventura2024; @ventura2025].
+- `CALC_MAGS`: galaxy magnitudes computed during the run with sector, including dust
+  attenuation [@qiu2019], in rest-frame bands or in HST and JWST filters (`USE_HST`,
+  `USE_JWST`).
+- `USE_STOCHASTICITY`: galaxy-to-galaxy scatter in the escape fraction of ionizing
+  photons and in X-ray luminosity, and recalibration of the source properties.
 
 **Parameter inference.** Meraxes can also be built as a shared library. In this mode it
 keeps haloes and grids in memory between runs, so an external driver can re-run the
-model with new parameters without reading the merger trees again.
-<!-- TODO: cite or name the Python inference wrapper (mhysa) once it is public. -->
+model with new parameters without reading the merger trees again. Mhysa, a companion
+Python package, uses this to connect Meraxes to Python samplers and optimisers for
+Bayesian parameter inference [@mutch2024]; it is not yet publicly released.
 
 **Testing and documentation.** Unit tests built with Criterion check individual physics
 routines. A regression suite runs six physics configurations on a public 10 $h^{-1}$ Mpc
@@ -177,11 +186,17 @@ study:
 - high-redshift black holes [@marshall2020]
 - the thermal and reionization history of a large volume [@balu2023]
 - Population III star formation and its imprint on the 21-cm signal [@ventura2024; @ventura2025]
+- the evolution of the ionizing escape fraction, inferred jointly from galaxy and
+  reionization observations [@mutch2024]
+- analogues of the galaxies JWST has found at $z \gtrsim 12$ [@qin2023]
+- the robustness of reionization histories inferred from the Lyman-$\alpha$ forest
+  [@qin2026]
+- the impact of galaxy-to-galaxy stochasticity on reionization and the 21-cm signal
+  [@zhu2026]
 
 <!-- TODO: give the number of papers in the public ADS library of Meraxes papers
-(https://ui.adsabs.harvard.edu/public-libraries/CWUcYnt3TsmG6BuOKjR0Fw), add current
-applications (e.g. [O III] luminosity functions and parameter inference against JWST
-data), and note any users outside the core team. -->
+(https://ui.adsabs.harvard.edu/public-libraries/CWUcYnt3TsmG6BuOKjR0Fw) and note any
+users outside the core team. -->
 
 The code has been developed openly since 2013 by contributors at several Australian
 institutions, and its history is preserved in the public repository.
@@ -207,7 +222,12 @@ DOI record. All scientific and design decisions were made by the authors.
 
 # Acknowledgements
 
-<!-- TODO: funding (grants and fellowships), computing resources (e.g. NCI Australia
-and the Gadi supercomputer) and any other acknowledgements. -->
+The development of Meraxes has received continuous support from the Australian Research
+Council (ARC), including J.S.B.W.'s Australian Laureate Fellowship (FL110100072), the ARC
+Centre of Excellence for All Sky Astrophysics in 3 Dimensions (ASTRO 3D; project number
+CE170100013), and Y.Q.'s Discovery Early Career Researcher Award (DECRA; DE240101129).
+
+<!-- TODO: consider acknowledging computing (e.g. Gadi at NCI Australia and OzSTAR at
+Swinburne). -->
 
 # References
