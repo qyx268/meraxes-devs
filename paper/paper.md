@@ -9,45 +9,51 @@ tags:
   - reionization
   - 21-cm
 authors:
-  # TODO: confirm the author list, its order, ORCIDs and current affiliations with every
-  # contributor; JOSS requires each co-author's agreement. This draft lists the code
-  # contributors and the project lead, ordered mostly by lines of model code added over
-  # the whole git history; contributors with none, then the project lead, come last.
   - name: Yuxiang Qin
-    # orcid: TODO (add for every author)
+    orcid: 0000-0002-4314-1810
     corresponding: true
     affiliation: 1
   - name: Simon J. Mutch
+    orcid: 0000-0002-3166-4614
     affiliation: 2  # TODO: current affiliation
   - name: Emanuele M. Ventura
+    orcid: 0000-0003-3502-4929
     affiliation: 2  # TODO
   - name: Bradley Greig
+    orcid: 0000-0002-4085-2094
     affiliation: 2  # TODO
   - name: Gregory B. Poole
-    affiliation: 3  # TODO
+    orcid: 0000-0003-1777-7388
+    affiliation: 2  # TODO
   - name: Shihai Zhu
+    orcid: 0009-0001-6409-0012
     affiliation: 1
   - name: Fatma Shaban
-    affiliation: 3  # TODO
+    # orcid: TODO (none found in the ORCID registry)
+    affiliation: 1  # TODO
   - name: Paul M. Geil
+    # orcid: TODO (none found in the ORCID registry)
     affiliation: 2  # TODO
   - name: Yisheng Qiu
+    orcid: 0000-0002-7716-1094
     affiliation: 2  # TODO
   - name: Sreedhar Balu
-    affiliation: 3  # TODO
-  - name: James E. Davies
+    orcid: 0000-0002-5281-5151
     affiliation: 2  # TODO
-  - name: Han-Seek Kim  # TODO: listed as "Hansik Kim" in the README; confirm
+  - name: James E. Davies
+    orcid: 0000-0001-9688-4071
+    affiliation: 2  # TODO
+  - name: Han-Seek Kim
+    # orcid: TODO (none found in the ORCID registry)
     affiliation: 2  # TODO
   - name: J. Stuart B. Wyithe
+    orcid: 0000-0001-7956-9758
     affiliation: 1
 affiliations:
   - name: Research School of Astronomy and Astrophysics, Australian National University, Australia  # TODO: check
     index: 1
   - name: School of Physics, The University of Melbourne, Australia  # TODO: check per author
     index: 2
-  - name: TODO
-    index: 3
 date: 23 October 2026
 bibliography: paper.bib
 ---
