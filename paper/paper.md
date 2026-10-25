@@ -11,16 +11,14 @@ tags:
 authors:
   # TODO: confirm the author list, its order, ORCIDs and current affiliations with every
   # contributor; JOSS requires each co-author's agreement. This draft lists the code
-  # contributors and the project lead. Ordered by lines of model code added over the
-  # whole git history; contributors with none, then the project lead, come last.
-  - name: Simon J. Mutch
-    affiliation: 2  # TODO: current affiliation
+  # contributors and the project lead, ordered mostly by lines of model code added over
+  # the whole git history; contributors with none, then the project lead, come last.
   - name: Yuxiang Qin
     # orcid: TODO (add for every author)
     corresponding: true
     affiliation: 1
-  - name: Fatma Shaban
-    affiliation: 3  # TODO
+  - name: Simon J. Mutch
+    affiliation: 2  # TODO: current affiliation
   - name: Emanuele M. Ventura
     affiliation: 2  # TODO
   - name: Bradley Greig
@@ -29,6 +27,8 @@ authors:
     affiliation: 3  # TODO
   - name: Shihai Zhu
     affiliation: 1
+  - name: Fatma Shaban
+    affiliation: 3  # TODO
   - name: Paul M. Geil
     affiliation: 2  # TODO
   - name: Yisheng Qiu
