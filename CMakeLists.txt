@@ -151,10 +151,14 @@ target_compile_definitions(meraxes_lib PUBLIC
     $<$<CONFIG:Debug>:DEBUG>
     )
 
+# An undeclared function is assumed to return int, so a double result is read
+# from the wrong register: make that an error in every build type, not just Debug.
 target_compile_options(meraxes_lib PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:-Werror=implicit-function-declaration>
     $<$<CONFIG:Debug>:-Wall -Wextra -Werror=implicit ${SANITIZE_FLAGS}>
     $<$<CONFIG:Release>:-march=native -ffast-math>
     )
+target_compile_options(meraxes PRIVATE -Werror=implicit-function-declaration)
 
 # Profiling
 if(ENABLE_PROFILING)
