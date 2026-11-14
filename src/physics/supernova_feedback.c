@@ -4,9 +4,9 @@
 #include "core/float_precision_check.h"
 #include "core/misc_tools.h"
 #include "core/stellar_feedback.h"
+#include "core/virial_properties.h"
 #if USE_MINI_HALOS
 #include "core/PopIII.h"
-#include "core/virial_properties.h"
 #endif
 #include "meraxes.h"
 #include "supernova_feedback.h"
