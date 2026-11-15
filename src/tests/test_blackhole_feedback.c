@@ -1,8 +1,8 @@
 #define _MAIN
+#include "meraxes.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include <math.h>
-#include "meraxes.h"
 #include <mpi.h>
 #include <string.h>
 
@@ -27,9 +27,9 @@ void setup(void)
   run_globals.params.Hubble_h = 0.6774;
 
   // Set up units (typical cosmological simulation units)
-  run_globals.units.UnitLength_in_cm = 3.085678e24;     // 1 Mpc/h
-  run_globals.units.UnitMass_in_g = 1.989e43;           // 1e10 Msun/h
-  run_globals.units.UnitVelocity_in_cm_per_s = 1.0e5;   // 1 km/s
+  run_globals.units.UnitLength_in_cm = 3.085678e24;   // 1 Mpc/h
+  run_globals.units.UnitMass_in_g = 1.989e43;         // 1e10 Msun/h
+  run_globals.units.UnitVelocity_in_cm_per_s = 1.0e5; // 1 km/s
 
   // Initialize derived units
   set_units();
@@ -55,7 +55,7 @@ TestSuite(blackhole_feedback, .init = setup, .fini = teardown);
 // Test calculate_BHemissivity function
 Test(blackhole_feedback, calculate_BHemissivity_basic)
 {
-  double BlackHoleMass = 1e-3;  // 1e7 Msun in internal units (1e10 Msun/h)
+  double BlackHoleMass = 1e-3; // 1e7 Msun in internal units (1e10 Msun/h)
   double accreted_mass = 1e-4; // 1e6 Msun accreted
   double emissivity, accretion_time;
 
@@ -117,27 +117,28 @@ Test(blackhole_feedback, velocity_scale_constant)
 }
 
 // Parameterized test for various BH masses
-struct bh_mass_param {
-  double mass;  // in internal units (1e10 Msun/h)
+struct bh_mass_param
+{
+  double mass; // in internal units (1e10 Msun/h)
 };
 
 ParameterizedTestParameters(blackhole_feedback, mass_sweep)
 {
   static struct bh_mass_param params[] = {
-    { 1e-6 },  // 1e4 Msun
-    { 1e-5 },  // 1e5 Msun
-    { 1e-4 },  // 1e6 Msun
-    { 1e-3 },  // 1e7 Msun
-    { 1e-2 },  // 1e8 Msun
-    { 1e-1 },  // 1e9 Msun
-    { 1.0 },   // 1e10 Msun
+    { 1e-6 }, // 1e4 Msun
+    { 1e-5 }, // 1e5 Msun
+    { 1e-4 }, // 1e6 Msun
+    { 1e-3 }, // 1e7 Msun
+    { 1e-2 }, // 1e8 Msun
+    { 1e-1 }, // 1e9 Msun
+    { 1.0 },  // 1e10 Msun
   };
   return cr_make_param_array(struct bh_mass_param, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct bh_mass_param* param, blackhole_feedback, mass_sweep)
 {
-  double accreted_mass = param->mass * 0.1;  // 10% of BH mass accreted
+  double accreted_mass = param->mass * 0.1; // 10% of BH mass accreted
   double emissivity, accretion_time;
 
   calculate_BHemissivity(param->mass, accreted_mass, &emissivity, &accretion_time);

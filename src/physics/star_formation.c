@@ -4,10 +4,10 @@
 #include "core/magnitudes.h"
 #include "core/misc_tools.h"
 #include "core/reionization.h"
+#include "emission_lines.h"
 #include "meraxes.h"
 #include "star_formation.h"
 #include "supernova_feedback.h"
-#include "emission_lines.h"
 
 static void backfill_ghost_star_formation(galaxy_t* gal, double m_stars, double sfr, double metallicity, int snapshot)
 {
@@ -23,12 +23,14 @@ static void backfill_ghost_star_formation(galaxy_t* gal, double m_stars, double 
 #endif
       if (ii < N_HISTORY_SNAPS) {
         gal->NewStars[ii] = check_float_cast((double)(gal->NewStars[ii]) + (m_stars), FloatField_NewStars);
-        gal->NewMetals[0] = check_float_cast((double)(gal->NewMetals[0]) + (m_stars * metallicity), FloatField_NewMetals);
+        gal->NewMetals[0] =
+          check_float_cast((double)(gal->NewMetals[0]) + (m_stars * metallicity), FloatField_NewMetals);
 #if USE_MINI_HALOS
         if (gal->Galaxy_Population == 2)
           gal->NewStars_II[ii] = check_float_cast((double)(gal->NewStars_II[ii]) + (m_stars), FloatField_NewStars_II);
         else if (gal->Galaxy_Population == 3)
-          gal->NewStars_III[ii] = check_float_cast((double)(gal->NewStars_III[ii]) + (m_stars), FloatField_NewStars_III);
+          gal->NewStars_III[ii] =
+            check_float_cast((double)(gal->NewStars_III[ii]) + (m_stars), FloatField_NewStars_III);
 #endif
       }
       update_galaxy_fesc_vals(gal, m_stars, snap);
@@ -54,25 +56,32 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
       gal->StellarMass_II = check_float_cast((double)(gal->StellarMass_II) + (new_stars), FloatField_StellarMass_II);
       gal->Sfr = check_float_cast((double)(gal->Sfr) + (sfr), FloatField_Sfr);
       assert(gal->Sfr >= 0);
-      gal->GrossStellarMass = check_float_cast((double)(gal->GrossStellarMass) + (new_stars), FloatField_GrossStellarMass);
+      gal->GrossStellarMass =
+        check_float_cast((double)(gal->GrossStellarMass) + (new_stars), FloatField_GrossStellarMass);
     } else if (gal->Galaxy_Population == 3) {
       gal->StellarMass_III = check_float_cast((double)(gal->StellarMass_III) + (new_stars), FloatField_StellarMass_III);
       gal->SfrIII = check_float_cast((double)(gal->SfrIII) + (sfr), FloatField_SfrIII);
       assert(gal->SfrIII >= 0);
-      gal->GrossStellarMassIII = check_float_cast((double)(gal->GrossStellarMassIII) + (new_stars), FloatField_GrossStellarMassIII);
+      gal->GrossStellarMassIII =
+        check_float_cast((double)(gal->GrossStellarMassIII) + (new_stars), FloatField_GrossStellarMassIII);
     }
 #else
     gal->Sfr = check_float_cast((double)(gal->Sfr) + (sfr), FloatField_Sfr);
     assert(gal->Sfr >= 0);
-    gal->GrossStellarMass = check_float_cast((double)(gal->GrossStellarMass) + (new_stars), FloatField_GrossStellarMass); // If you are not distinguishing III/II you just have one variable which is the total one
+    gal->GrossStellarMass =
+      check_float_cast((double)(gal->GrossStellarMass) + (new_stars),
+                       FloatField_GrossStellarMass); // If you are not distinguishing III/II you just have one variable
+                                                     // which is the total one
 #endif
 
-	compute_LOIII(gal, snapshot);
+    compute_LOIII(gal, snapshot);
 
     gal->ColdGas = check_float_cast((double)(gal->ColdGas) - (new_stars), FloatField_ColdGas);
-    gal->MetalsColdGas = check_float_cast((double)(gal->MetalsColdGas) - (new_stars * metallicity), FloatField_MetalsColdGas);
+    gal->MetalsColdGas =
+      check_float_cast((double)(gal->MetalsColdGas) - (new_stars * metallicity), FloatField_MetalsColdGas);
     gal->StellarMass = check_float_cast((double)(gal->StellarMass) + (new_stars), FloatField_StellarMass);
-    gal->MetalsStellarMass = check_float_cast((double)(gal->MetalsStellarMass) + (new_stars * metallicity), FloatField_MetalsStellarMass);
+    gal->MetalsStellarMass =
+      check_float_cast((double)(gal->MetalsStellarMass) + (new_stars * metallicity), FloatField_MetalsStellarMass);
 
     if ((type == INSITU) && !Flag_IRA && (gal->LastIdentSnap < (snapshot - 1))) {
       // If this is a reidentified ghost, then back fill NewStars and
@@ -92,7 +101,8 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
       else if (gal->Galaxy_Population == 3)
         gal->NewStars_III[0] = check_float_cast((double)(gal->NewStars_III[0]) + (new_stars), FloatField_NewStars_III);
 #endif
-      gal->NewMetals[0] = check_float_cast((double)(gal->NewMetals[0]) + (new_stars * metallicity), FloatField_NewMetals);
+      gal->NewMetals[0] =
+        check_float_cast((double)(gal->NewMetals[0]) + (new_stars * metallicity), FloatField_NewMetals);
 
       update_galaxy_fesc_vals(gal, new_stars, snapshot);
     }
@@ -198,7 +208,7 @@ void insitu_star_formation(galaxy_t* gal, int snapshot)
     }
     if (m_stars > gal->ColdGas)
       m_stars = gal->ColdGas;
-	
+
     // calculate the total supernova feedback which would occur if this star
     // formation happened continuously and evenly throughout the snapshot
     contemporaneous_supernova_feedback(
@@ -215,4 +225,3 @@ void insitu_star_formation(galaxy_t* gal, int snapshot)
 #endif
   }
 }
-

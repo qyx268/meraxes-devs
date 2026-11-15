@@ -153,8 +153,7 @@ static void accumulate_cached_luminosity_functions(const galaxy_output_t* galaxy
     return;
 
   if (luminosity_function_cache.valid[MERAXES_LF_HMF] && galaxy->Mvir > 0.0f)
-    add_to_cached_luminosity_function(
-      MERAXES_LF_HMF, log10(galaxy->Mvir * 1e10 / run_globals.params.Hubble_h), 1.0);
+    add_to_cached_luminosity_function(MERAXES_LF_HMF, log10(galaxy->Mvir * 1e10 / run_globals.params.Hubble_h), 1.0);
 
   if (luminosity_function_cache.valid[MERAXES_LF_SMF] && galaxy->StellarMass > 0.0f)
     add_to_cached_luminosity_function(
@@ -213,9 +212,7 @@ int meraxes_copy_luminosity_function(int snapshot,
   return 0;
 }
 
-static void prepare_cached_luminosity_function_output(galaxy_t* galaxy,
-                                                       int snapshot,
-                                                       galaxy_output_t* output)
+static void prepare_cached_luminosity_function_output(galaxy_t* galaxy, int snapshot, galaxy_output_t* output)
 {
   memset(output, 0, sizeof(*output));
   output->GhostFlag = (int)galaxy->ghost_flag;
@@ -301,10 +298,10 @@ static float current_mwmsa(galaxy_t* gal, int i_snap)
     mwmsa_num += gal->NewStars[ii] * LTTime[jj];
     mwmsa_denom += gal->NewStars[ii];
   }
-  if (mwmsa_denom >0)
-      return (float)((mwmsa_num / mwmsa_denom) - LTTime[snapshot]);
+  if (mwmsa_denom > 0)
+    return (float)((mwmsa_num / mwmsa_denom) - LTTime[snapshot]);
   else
-      return 0;
+    return 0;
 }
 
 void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap)
@@ -347,7 +344,8 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->DiskScaleLength = gal.DiskScaleLength;
   galout->MetalsStellarMass = gal.MetalsStellarMass;
   galout->Sfr = (float)(gal.Sfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  galout->FescWeightedSfr = (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  galout->FescWeightedSfr =
+    (float)(gal.FescWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
   galout->EjectedGas = gal.EjectedGas;
   galout->MetalsEjectedGas = gal.MetalsEjectedGas;
   galout->Rcool = gal.Rcool;
@@ -361,7 +359,8 @@ void prepare_galaxy_for_output(galaxy_t gal, galaxy_output_t* galout, int i_snap
   galout->GrossStellarMassIII = gal.GrossStellarMassIII;
   galout->FescIII = gal.FescIII;
   galout->FescIIIWeightedGSM = gal.FescIIIWeightedGSM;
-  galout->FescIIIWeightedSfr = (float)(gal.FescIIIWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  galout->FescIIIWeightedSfr =
+    (float)(gal.FescIIIWeightedSfr * units->UnitMass_in_g / units->UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
 
   galout->MvirCrit_MC = gal.MvirCrit_MC;
 
@@ -426,9 +425,9 @@ void calc_hdf5_props()
     int i; // dummy
 
     h5props->n_props = 38; // Vel, HaloID, ID, Cos_Inc, MergerStartRadius, MaxLen, (galaxy-level)
-                            // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
-                            // BlackHoleAccretedColdMass, ionization_param, FescBH, tau_cgm, LOIII
-                            // dropped -- see galaxies.c
+                           // FOFMvirModifier, MergerBurstMass, BlackHoleAccretedHotMass,
+                           // BlackHoleAccretedColdMass, ionization_param, FescBH, tau_cgm, LOIII
+                           // dropped -- see galaxies.c
 #if USE_MINI_HALOS
     h5props->n_props += 15; // Double check later
 #endif
@@ -666,14 +665,14 @@ void calc_hdf5_props()
     h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
 
-  #ifdef CALC_MAGS
+#ifdef CALC_MAGS
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, LOIII_dusty);
     h5props->dst_field_sizes[i] = sizeof(galout.LOIII_dusty);
     h5props->field_names[i] = "LOIII_dusty";
     h5props->field_units[i] = "1e40 erg/s";
     h5props->field_h_conv[i] = "None";
     h5props->field_types[i++] = H5T_NATIVE_FLOAT;
-  #endif
+#endif
 
     h5props->dst_offsets[i] = HOFFSET(galaxy_output_t, FescWeightedSfr);
     h5props->dst_field_sizes[i] = sizeof(galout.FescWeightedSfr);
@@ -1200,26 +1199,26 @@ void create_master_file()
     sprintf(source_file, "%s/%s_0.hdf5", run_globals.params.OutputDir, run_globals.params.FileNameGalaxies);
     sprintf(relative_source_file, "%s_0.hdf5", run_globals.params.FileNameGalaxies);
     sprintf(source_group, "Snap%03d", run_globals.ListOutputSnaps[i_out]);
-    
+
     source_file_id = H5Fopen(source_file, H5F_ACC_RDONLY, H5P_DEFAULT);
     source_group_id = H5Gopen(source_file_id, source_group, H5P_DEFAULT);
-    
+
     if (run_globals.params.Flag_OutputHMF && H5LTfind_dataset(source_group_id, "HMF")) {
       sprintf(source_ds, "Snap%03d/HMF", run_globals.ListOutputSnaps[i_out]);
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "HMF", H5P_DEFAULT, H5P_DEFAULT);
     }
-    
+
     if (run_globals.params.Flag_OutputSMF && H5LTfind_dataset(source_group_id, "SMF")) {
       sprintf(source_ds, "Snap%03d/SMF", run_globals.ListOutputSnaps[i_out]);
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "SMF", H5P_DEFAULT, H5P_DEFAULT);
     }
-    
+
 #ifdef CALC_MAGS
     if (run_globals.params.Flag_OutputUVLF && H5LTfind_dataset(source_group_id, "UVLF")) {
       sprintf(source_ds, "Snap%03d/UVLF", run_globals.ListOutputSnaps[i_out]);
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "UVLF", H5P_DEFAULT, H5P_DEFAULT);
     }
-    
+
     if (run_globals.params.Flag_OutputDustyLF && H5LTfind_dataset(source_group_id, "DustyLF")) {
       sprintf(source_ds, "Snap%03d/DustyLF", run_globals.ListOutputSnaps[i_out]);
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "DustyLF", H5P_DEFAULT, H5P_DEFAULT);
@@ -1230,7 +1229,7 @@ void create_master_file()
       H5Lcreate_external(relative_source_file, source_ds, snap_group_id, "OIIIDustyLF", H5P_DEFAULT, H5P_DEFAULT);
     }
 #endif
-    
+
     // QuasarLF external link (not dependent on CALC_MAGS)
     if (run_globals.params.Flag_OutputQuasarLF && H5LTfind_dataset(source_group_id, "QuasarLF")) {
       sprintf(source_ds, "Snap%03d/QuasarLF", run_globals.ListOutputSnaps[i_out]);
@@ -1421,7 +1420,6 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
                    NULL);
   }
 
-
   // If the immediately preceding snapshot was also written, then save the
   // descendent indices (skip for FlagInteractive==2)
   prev_snapshot = run_globals.ListOutputSnaps[i_out] - 1;
@@ -1588,8 +1586,8 @@ void write_snapshot(int n_write, int i_out, int* last_n_write)
   free(output_buffer);
 
   if ((run_globals.params.Flag_PatchyReion) && check_if_reionization_ongoing(run_globals.ListOutputSnaps[i_out]) &&
-       (run_globals.params.Flag_OutputGrids))
-      save_reion_output_grids(run_globals.ListOutputSnaps[i_out]);
+      (run_globals.params.Flag_OutputGrids))
+    save_reion_output_grids(run_globals.ListOutputSnaps[i_out]);
 
   // MPI reduction and output for all distribution functions
   reduce_luminosity_function_cache();

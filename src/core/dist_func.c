@@ -2,8 +2,8 @@
 #include <hdf5_hl.h>
 #include <math.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -126,7 +126,7 @@ void df_write_hdf5(hid_t file_id,
   }
 
   // Create 2D array: (n_bins, 3) for [center, density, uncertainty]
-  hsize_t dims[2] = {(hsize_t)df->n_bins, 3};
+  hsize_t dims[2] = { (hsize_t)df->n_bins, 3 };
   double* data = (double*)malloc(df->n_bins * 3 * sizeof(double));
   assert(data != NULL);
 
@@ -149,7 +149,7 @@ void df_write_hdf5(hid_t file_id,
   H5LTset_attribute_double(group_id, dataset_prefix, "volume", (double*)&df->volume, 1);
   H5LTset_attribute_string(group_id, dataset_prefix, "description", df->description);
   H5LTset_attribute_string(group_id, dataset_prefix, "units", (char*)units);
-  
+
   // Add column labels as attribute
   const char* column_names = "center,density,uncertainty";
   H5LTset_attribute_string(group_id, dataset_prefix, "columns", (char*)column_names);

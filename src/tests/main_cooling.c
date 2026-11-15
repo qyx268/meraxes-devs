@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meraxes.h"
 #include "cooling.h"
+#include "meraxes.h"
 
 // Forward declarations from cooling.c
 extern void read_cooling_functions(void);
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
   // Default values
   char cooling_dir[STRLEN] = "../input/cooling_functions";
   double logT = 6.0;
-  double logZ = log10(0.02);  // Solar metallicity
+  double logZ = log10(0.02); // Solar metallicity
   int do_sweep = 0;
 #if USE_MINI_HALOS
   int do_mini_halos = 0;

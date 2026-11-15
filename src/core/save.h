@@ -52,7 +52,8 @@ typedef struct galaxy_output_t
   float DutyCycleAGN;
 
 #if USE_MINI_HALOS
-  int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
+  int
+    Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
   float GrossStellarMassIII;
   float FescIII;
   float FescIIIWeightedGSM;

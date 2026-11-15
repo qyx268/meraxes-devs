@@ -229,11 +229,7 @@ static void read_catalog_halos(FILE** fin,
 // no simulation config in this repo ever set it, so this was always a
 // no-op in practice). Every caller just recomputes Vvir with
 // calculate_Vvir(Mvir, Rvir) wherever it's actually needed.
-static void inline convert_input_virial_props(float* Mvir,
-                                              float* Rvir,
-                                              int len,
-                                              int snapshot,
-                                              const bool fof_flag)
+static void inline convert_input_virial_props(float* Mvir, float* Rvir, int len, int snapshot, const bool fof_flag)
 {
   double mvir = (double)(*Mvir);
   double rvir = (double)(*Rvir);
@@ -488,7 +484,9 @@ void read_trees__gbptrees(int snapshot,
         cur_halo->Pos[2] = cur_cat_halo->position_MBP[2];
         cur_halo->Rvir = check_float_cast((double)cur_cat_halo->R_vir, FloatField_HaloRvir);
         cur_halo->Vmax = cur_cat_halo->V_max;
-        cur_halo->AngMom = sqrt(cur_cat_halo->ang_mom[0] * cur_cat_halo->ang_mom[0] + cur_cat_halo->ang_mom[1] * cur_cat_halo->ang_mom[1] + cur_cat_halo->ang_mom[2]* cur_cat_halo->ang_mom[2]);
+        cur_halo->AngMom = sqrt(cur_cat_halo->ang_mom[0] * cur_cat_halo->ang_mom[0] +
+                                cur_cat_halo->ang_mom[1] * cur_cat_halo->ang_mom[1] +
+                                cur_cat_halo->ang_mom[2] * cur_cat_halo->ang_mom[2]);
         cur_halo->Galaxy = NULL;
         cur_halo->Mvir = check_float_cast((double)cur_cat_halo->M_vir, FloatField_HaloMvir);
 

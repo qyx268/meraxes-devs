@@ -24,7 +24,7 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
   double total_coldgas = 0.0;
   double total_ejectedgas = 0.0;
   double total_blackholemass = 0.0;
-#if USE_MINI_HALOS 
+#if USE_MINI_HALOS
   double total_remnantmass = 0.0; // This come either from the BHs formed after Pop III stars that fail becoming SN and
                                   // directly collapse or from CCSN. Atm these don't accrete and they don't do anything.
 #endif
@@ -40,13 +40,15 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
       total_coldgas += gal->ColdGas;
       total_ejectedgas += gal->EjectedGas;
       total_blackholemass += gal->BlackHoleMass + gal->BlackHoleAccretingColdMass;
-#if USE_MINI_HALOS 
+#if USE_MINI_HALOS
       total_remnantmass += gal->Remnant_Mass;
 #endif
 
       if (gal != central) {
-        central->HotGas = check_float_cast((double)(central->HotGas) + (gal->HotGas + gal->EjectedGas), FloatField_HotGas);
-        central->MetalsHotGas = check_float_cast((double)(central->MetalsHotGas) + (gal->MetalsHotGas + gal->MetalsEjectedGas), FloatField_MetalsHotGas);
+        central->HotGas =
+          check_float_cast((double)(central->HotGas) + (gal->HotGas + gal->EjectedGas), FloatField_HotGas);
+        central->MetalsHotGas = check_float_cast(
+          (double)(central->MetalsHotGas) + (gal->MetalsHotGas + gal->MetalsEjectedGas), FloatField_MetalsHotGas);
         gal->HotGas = check_float_cast((double)(0.0), FloatField_HotGas);
         gal->MetalsHotGas = check_float_cast((double)(0.0), FloatField_MetalsHotGas);
         gal->EjectedGas = check_float_cast((double)(0.0), FloatField_EjectedGas);
@@ -62,14 +64,15 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
     // no infall and no hydrstatic hot halo in this case
     central->BaryonFracModifier = check_float_cast((double)(0.0), FloatField_BaryonFracModifier);
     central->EjectedGas = check_float_cast((double)(central->EjectedGas) + (central->HotGas), FloatField_EjectedGas);
-    central->MetalsEjectedGas = check_float_cast((double)(central->MetalsEjectedGas) + (central->MetalsHotGas), FloatField_MetalsEjectedGas);
+    central->MetalsEjectedGas =
+      check_float_cast((double)(central->MetalsEjectedGas) + (central->MetalsHotGas), FloatField_MetalsEjectedGas);
     central->HotGas = check_float_cast((double)(0.0), FloatField_HotGas);
     central->MetalsHotGas = check_float_cast((double)(0.0), FloatField_MetalsHotGas);
     return 0.0;
   }
 
   total_baryons = total_stellarmass + total_hotgas + total_coldgas + total_ejectedgas + total_blackholemass;
-#if USE_MINI_HALOS 
+#if USE_MINI_HALOS
   total_baryons += total_remnantmass;
 #endif
 
@@ -80,8 +83,8 @@ double gas_infall(fof_group_t* FOFgroup, int snapshot)
     // N.B. no longer divides by a FOFMvirModifier (fof_group_t no longer has
     // one -- see meraxes.h) -- it was always exactly 1.0 in every real run,
     // since mass-ratio-modifier support has been removed entirely.
-    fb_modifier *= interpolate_modifier(run_globals.baryon_frac_modifier,
-                                        log10(FOF_Mvir / run_globals.params.Hubble_h) + 10.0);
+    fb_modifier *=
+      interpolate_modifier(run_globals.baryon_frac_modifier, log10(FOF_Mvir / run_globals.params.Hubble_h) + 10.0);
   infall_mass = fb_modifier * run_globals.params.BaryonFrac * FOF_Mvir - total_baryons;
 
   // record the infall modifier
@@ -101,7 +104,8 @@ void add_infall_to_hot(galaxy_t* central, double infall_mass)
 #if USE_MINI_HALOS
     if (Flag_Metals == true) {
       if (central->Flag_ExtMetEnr == 1) // If the halo is externally enriched, it will accrete polluted gas (metals).
-        central->MetalsHotGas = check_float_cast((double)(central->MetalsHotGas) + (infall_mass * central->Metallicity_IGM), FloatField_MetalsHotGas);
+        central->MetalsHotGas = check_float_cast(
+          (double)(central->MetalsHotGas) + (infall_mass * central->Metallicity_IGM), FloatField_MetalsHotGas);
     }
 #endif
   } else {
@@ -115,7 +119,8 @@ void add_infall_to_hot(galaxy_t* central, double infall_mass)
         central->EjectedGas = check_float_cast((double)(0.0), FloatField_EjectedGas);
         central->MetalsEjectedGas = check_float_cast((double)(0.0), FloatField_MetalsEjectedGas);
       } else {
-        central->MetalsEjectedGas = check_float_cast((double)(central->MetalsEjectedGas) - (metallicity * strip_mass), FloatField_MetalsEjectedGas);
+        central->MetalsEjectedGas = check_float_cast((double)(central->MetalsEjectedGas) - (metallicity * strip_mass),
+                                                     FloatField_MetalsEjectedGas);
         strip_mass = 0.0;
       }
     }
@@ -129,7 +134,8 @@ void add_infall_to_hot(galaxy_t* central, double infall_mass)
         central->HotGas = check_float_cast((double)(0.0), FloatField_HotGas);
         central->MetalsHotGas = check_float_cast((double)(0.0), FloatField_MetalsHotGas);
       } else
-        central->MetalsHotGas = check_float_cast((double)(central->MetalsHotGas) - (metallicity * strip_mass), FloatField_MetalsHotGas);
+        central->MetalsHotGas =
+          check_float_cast((double)(central->MetalsHotGas) - (metallicity * strip_mass), FloatField_MetalsHotGas);
     }
   }
 }

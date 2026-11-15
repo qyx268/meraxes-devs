@@ -25,13 +25,13 @@ static inline double tau_e_prefactor_at_z(double z)
   double zplus1 = 1.0 + z;
   double Hz = hubble_at_z(z) * run_globals.params.Hubble_h / run_globals.units.UnitTime_in_s; // [s^-1]
   return SPEED_OF_LIGHT * SIGMA_T_CGS * zplus1 * zplus1 / Hz;
-}// cm^3
+} // cm^3
 
 static inline double tau_e_sim_integrand_at_snapshot(int snapshot, double xHII)
 {
   // Follow post-processing convention: n_e ~ xHII * (n_H + n_He)
   return tau_e_prefactor_at_z(run_globals.ZZ[snapshot]) * N_b0 * xHII;
-}// unitless
+} // unitless
 
 static inline double tau_e_postsim_integrand(double z, void* params)
 {
@@ -41,7 +41,7 @@ static inline double tau_e_postsim_integrand(double z, void* params)
   // z  > 4: singly-ionized helium (n_H + n_He)
   double ne = (z <= 4.0) ? (No + 2.0 * He_No) : N_b0;
   return tau_e_prefactor_at_z(z) * ne;
-}// unitless
+} // unitless
 
 double integrate_tau_e_postEoR(double zmax)
 {
@@ -130,21 +130,21 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
 
       break;
     case 3: // star formation rate (Msun / yr)
-      if (gal->Sfr > 0.0) 
+      if (gal->Sfr > 0.0)
         fesc *=
           pow(gal->Sfr * run_globals.units.UnitMass_in_g / run_globals.units.UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS,
               params->EscapeFracPropScaling);
       else
         fesc = 0.0;
 #if USE_MINI_HALOS
-      if (gal->SfrIII > 0.0) 
-        fescIII *=
-          pow(gal->SfrIII * run_globals.units.UnitMass_in_g / run_globals.units.UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS,
-              params->EscapeFracPropScaling);
+      if (gal->SfrIII > 0.0)
+        fescIII *= pow(gal->SfrIII * run_globals.units.UnitMass_in_g / run_globals.units.UnitTime_in_s * SEC_PER_YEAR /
+                         SOLAR_MASS,
+                       params->EscapeFracPropScaling);
       else
         fescIII = 0.0;
 #endif
-      
+
       break;
     case 4: // cold gas density (Msun / pc^2)
       if ((gal->ColdGas > 0.0) && (gal->DiskScaleLength > 0.0)) {
@@ -177,14 +177,14 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
       }
       break;
     case 6: // specific star formation rate (10/ Gyr)
-      if ((gal->Sfr > 0.0) && (gal->StellarMass > 0.0)) 
+      if ((gal->Sfr > 0.0) && (gal->StellarMass > 0.0))
         fesc *= pow(gal->Sfr / gal->StellarMass / run_globals.units.UnitTime_in_s * SEC_PER_MEGAYEAR * 100,
                     params->EscapeFracPropScaling);
       else
         fesc = 0.0;
 #if USE_MINI_HALOS
       // TODO: why are stellar masses not III
-      if ((gal->SfrIII > 0.0) && (gal->StellarMass > 0.0)) 
+      if ((gal->SfrIII > 0.0) && (gal->StellarMass > 0.0))
         fescIII *= pow(gal->SfrIII / gal->StellarMass / run_globals.units.UnitTime_in_s * SEC_PER_MEGAYEAR * 100,
                        params->EscapeFracPropScaling);
       else
@@ -204,21 +204,26 @@ void update_galaxy_fesc_vals(galaxy_t* gal, double new_stars, int snapshot)
 #if USE_MINI_HALOS
   if (gal->Galaxy_Population == 2) {
     gal->Fesc = check_float_cast((double)(fesc), FloatField_Fesc);
-    gal->FescWeightedGSM = check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
-    gal->FescWeightedSfr = check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * fesc), FloatField_FescWeightedSfr);
+    gal->FescWeightedGSM =
+      check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
+    gal->FescWeightedSfr =
+      check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * fesc), FloatField_FescWeightedSfr);
   }
 
   if (gal->Galaxy_Population == 3) {
     gal->FescIII = check_float_cast((double)(fescIII), FloatField_FescIII);
-    gal->FescIIIWeightedGSM = check_float_cast((double)(gal->FescIIIWeightedGSM) + (new_stars * fescIII), FloatField_FescIIIWeightedGSM);
-    gal->FescIIIWeightedSfr = check_float_cast((double)(gal->FescIIIWeightedSfr) + (gal->SfrIII * fescIII), FloatField_FescIIIWeightedSfr);
+    gal->FescIIIWeightedGSM =
+      check_float_cast((double)(gal->FescIIIWeightedGSM) + (new_stars * fescIII), FloatField_FescIIIWeightedGSM);
+    gal->FescIIIWeightedSfr =
+      check_float_cast((double)(gal->FescIIIWeightedSfr) + (gal->SfrIII * fescIII), FloatField_FescIIIWeightedSfr);
   }
 #else
   gal->Fesc = check_float_cast((double)(fesc), FloatField_Fesc);
-  gal->FescWeightedGSM = check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
-  gal->FescWeightedSfr = check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * gal->Fesc), FloatField_FescWeightedSfr);
+  gal->FescWeightedGSM =
+    check_float_cast((double)(gal->FescWeightedGSM) + (new_stars * fesc), FloatField_FescWeightedGSM);
+  gal->FescWeightedSfr =
+    check_float_cast((double)(gal->FescWeightedSfr) + (gal->Sfr * gal->Fesc), FloatField_FescWeightedSfr);
 #endif
-
 }
 
 void set_quasar_fobs()
@@ -325,10 +330,10 @@ void call_find_HII_bubbles(int snapshot, int nout_gals, timer_info* timer)
     read_grid(DENSITY, snapshot, grids->deltax);
 
     // save the grids prior to doing FFTs to avoid precision loss and aliasing etc.
-    // NOTE: I dont think we are reusing them... 
-    if (!run_globals.params.FlagMCMC){
+    // NOTE: I dont think we are reusing them...
+    if (!run_globals.params.FlagMCMC) {
       for (int i_out = 0; i_out < run_globals.NOutputSnaps; i_out++)
-        if (snapshot == run_globals.ListOutputSnaps[i_out] && run_globals.params.Flag_OutputGrids){
+        if (snapshot == run_globals.ListOutputSnaps[i_out] && run_globals.params.Flag_OutputGrids) {
           save_reion_input_grids(snapshot);
           flag_output = 1;
         }
@@ -349,13 +354,28 @@ void call_find_HII_bubbles(int snapshot, int nout_gals, timer_info* timer)
 
   mlog("global quantities = volume-weighted VS mass-weighted", MLOG_MESG);
   mlog("xH = %g VS %g", MLOG_MESG, grids->volume_weighted_global_xH, grids->mass_weighted_global_xH);
-  mlog("r_bubble = %g VS %g (h**-1 Mpc)", MLOG_MESG, grids->volume_weighted_global_r_bubble, grids->mass_weighted_global_r_bubble);
-  mlog("temp_kinetic_all_gas = %g VS %g (K)", MLOG_MESG, grids->volume_weighted_global_temp_kinetic_all_gas, grids->mass_weighted_global_temp_kinetic_all_gas);
+  mlog("r_bubble = %g VS %g (h**-1 Mpc)",
+       MLOG_MESG,
+       grids->volume_weighted_global_r_bubble,
+       grids->mass_weighted_global_r_bubble);
+  mlog("temp_kinetic_all_gas = %g VS %g (K)",
+       MLOG_MESG,
+       grids->volume_weighted_global_temp_kinetic_all_gas,
+       grids->mass_weighted_global_temp_kinetic_all_gas);
   if (run_globals.params.Flag_IncludeRecombinations) {
-    mlog("Gamma12 = %g VS %g (h**2 1e-12 /s)", MLOG_MESG, grids->volume_weighted_global_Gamma12, grids->mass_weighted_global_Gamma12);
+    mlog("Gamma12 = %g VS %g (h**2 1e-12 /s)",
+         MLOG_MESG,
+         grids->volume_weighted_global_Gamma12,
+         grids->mass_weighted_global_Gamma12);
     mlog("N_rec = %g VS %g (/N_b)", MLOG_MESG, grids->volume_weighted_global_N_rec, grids->mass_weighted_global_N_rec);
-    mlog("residual_xH = %g VS %g (x10**-4)", MLOG_MESG, grids->volume_weighted_global_residual_xH, grids->mass_weighted_global_residual_xH);
-    mlog("clumping_factor = %g VS %g", MLOG_MESG, grids->volume_weighted_global_clumping_factor, grids->mass_weighted_global_clumping_factor);
+    mlog("residual_xH = %g VS %g (x10**-4)",
+         MLOG_MESG,
+         grids->volume_weighted_global_residual_xH,
+         grids->mass_weighted_global_residual_xH);
+    mlog("clumping_factor = %g VS %g",
+         MLOG_MESG,
+         grids->volume_weighted_global_clumping_factor,
+         grids->mass_weighted_global_clumping_factor);
   }
 
   mlog("sfr = %g (Msun/yr)", MLOG_MESG, grids->volume_weighted_global_weighted_sfr);
@@ -369,7 +389,7 @@ void call_find_HII_bubbles(int snapshot, int nout_gals, timer_info* timer)
        MLOG_MESG,
        grids->mass_weighted_global_tau_e,
        grids->mass_weighted_global_tau_e_sim,
-      run_globals.tau_e_postEoR);
+       run_globals.tau_e_postEoR);
 
   mlog("...done", MLOG_CLOSE | MLOG_TIMERSTOP);
 }
@@ -400,7 +420,7 @@ void call_ComputeTs(int snapshot, int nout_gals, timer_info* timer)
   }
 
   // save the grids prior to doing FFTs to avoid precision loss and aliasing etc.
-  if (!run_globals.params.FlagMCMC){
+  if (!run_globals.params.FlagMCMC) {
     for (int i_out = 0; i_out < run_globals.NOutputSnaps; i_out++)
       if (snapshot == run_globals.ListOutputSnaps[i_out]) {
         save_reion_input_grids(snapshot);
@@ -599,9 +619,9 @@ void init_reion_grids()
       grids->sfrIII[ii] = 0;
 #endif
       for (int jj = 0; jj < run_globals.NstoreSnapshots_SFR; jj++) {
-        grids->sfr_histories[jj*run_globals.NstoreSnapshots_SFR+ii] = 0;
+        grids->sfr_histories[jj * run_globals.NstoreSnapshots_SFR + ii] = 0;
 #if USE_MINI_HALOS
-        grids->sfrIII_histories[jj*run_globals.NstoreSnapshots_SFR+ii] = 0;
+        grids->sfrIII_histories[jj * run_globals.NstoreSnapshots_SFR + ii] = 0;
 #endif
       }
     }
@@ -819,40 +839,40 @@ void malloc_reionization_grids()
       grids->effective_bhm = fftwf_alloc_real((size_t)slab_n_complex * 2);
       grids->effective_bhm_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
       grids->effective_bhm_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
-  
+
       grids->effective_bhm_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
-                                                            ReionGridDim,
-                                                            ReionGridDim,
-                                                            grids->effective_bhm,
-                                                            grids->effective_bhm_unfiltered,
-                                                            run_globals.mpi_comm,
-                                                            plan_flags);
+                                                                    ReionGridDim,
+                                                                    ReionGridDim,
+                                                                    grids->effective_bhm,
+                                                                    grids->effective_bhm_unfiltered,
+                                                                    run_globals.mpi_comm,
+                                                                    plan_flags);
       grids->effective_bhm_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
-                                                                     ReionGridDim,
-                                                                     ReionGridDim,
-                                                                     grids->effective_bhm_filtered,
-                                                                     (float*)grids->effective_bhm_filtered,
-                                                                     run_globals.mpi_comm,
-                                                                     plan_flags);
-  
+                                                                             ReionGridDim,
+                                                                             ReionGridDim,
+                                                                             grids->effective_bhm_filtered,
+                                                                             (float*)grids->effective_bhm_filtered,
+                                                                             run_globals.mpi_comm,
+                                                                             plan_flags);
+
       grids->effective_bhar = fftwf_alloc_real((size_t)slab_n_complex * 2);
       grids->effective_bhar_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
       grids->effective_bhar_filtered = fftwf_alloc_complex((size_t)slab_n_complex);
-  
+
       grids->effective_bhar_forward_plan = fftwf_mpi_plan_dft_r2c_3d(ReionGridDim,
-                                                            ReionGridDim,
-                                                            ReionGridDim,
-                                                            grids->effective_bhar,
-                                                            grids->effective_bhar_unfiltered,
-                                                            run_globals.mpi_comm,
-                                                            plan_flags);
-      grids->effective_bhar_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
                                                                      ReionGridDim,
                                                                      ReionGridDim,
-                                                                     grids->effective_bhar_filtered,
-                                                                     (float*)grids->effective_bhar_filtered,
+                                                                     grids->effective_bhar,
+                                                                     grids->effective_bhar_unfiltered,
                                                                      run_globals.mpi_comm,
                                                                      plan_flags);
+      grids->effective_bhar_filtered_reverse_plan = fftwf_mpi_plan_dft_c2r_3d(ReionGridDim,
+                                                                              ReionGridDim,
+                                                                              ReionGridDim,
+                                                                              grids->effective_bhar_filtered,
+                                                                              (float*)grids->effective_bhar_filtered,
+                                                                              run_globals.mpi_comm,
+                                                                              plan_flags);
     }
     grids->deltax = fftwf_alloc_real((size_t)slab_n_complex * 2);
     grids->deltax_unfiltered = fftwf_alloc_complex((size_t)slab_n_complex);
@@ -1507,11 +1527,13 @@ void assign_Mvir_crit_to_galaxies(int ngals_in_slabs, int flag_feed)
 
         // Record the Mvir_crit (filtering mass) value
         if (flag_feed == 1)
-          gal->MvirCrit = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit);
+          gal->MvirCrit =
+            check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit);
 
 #if USE_MINI_HALOS
         if (flag_feed == 2)
-          gal->MvirCrit_MC = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]), FloatField_MvirCrit_MC);
+          gal->MvirCrit_MC = check_float_cast((double)(buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)]),
+                                              FloatField_MvirCrit_MC);
 #endif
 
         // increment counters
@@ -1565,11 +1587,12 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     for (int ii = 0; ii < local_n_complex * 2; ii++) {
       sfr_grid[ii] = 0.0;
       for (int snap = run_globals.NstoreSnapshots_SFR - 2; snap >= 0; snap--)
-          sfr_histories_grid[(snap+1)*local_n_complex * 2+ii] = sfr_histories_grid[snap*local_n_complex * 2+ii];
+        sfr_histories_grid[(snap + 1) * local_n_complex * 2 + ii] = sfr_histories_grid[snap * local_n_complex * 2 + ii];
 #if USE_MINI_HALOS
       sfrIII_grid[ii] = 0.0;
       for (int snap = run_globals.NstoreSnapshots_SFR - 2; snap >= 0; snap--)
-          sfrIII_histories_grid[(snap+1)*local_n_complex * 2+ii] = sfrIII_histories_grid[snap*local_n_complex * 2+ii];
+        sfrIII_histories_grid[(snap + 1) * local_n_complex * 2 + ii] =
+          sfrIII_histories_grid[snap * local_n_complex * 2 + ii];
 #endif
     }
   }
@@ -1607,7 +1630,8 @@ void construct_baryon_grids(int snapshot, int local_ngals)
       continue;
 
     // no need to bh grids if not using BHFeedback
-    if ((!run_globals.params.physics.Flag_BHFeedback) && ((prop == prop_effective_bhm) || (prop == prop_effective_bhar)))
+    if ((!run_globals.params.physics.Flag_BHFeedback) &&
+        ((prop == prop_effective_bhm) || (prop == prop_effective_bhar)))
       continue;
 
     int i_gal = 0;
@@ -1672,7 +1696,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
               buffer[ind] += gal->FescIIIWeightedSfr;
               break;
 
-            // still keeping this flag but only for xray 
+            // still keeping this flag but only for xray
             case prop_sfrIII:
               if (run_globals.params.Flag_InstantaneousSFR)
                 buffer[ind] += gal->SfrIII;
@@ -1695,7 +1719,7 @@ void construct_baryon_grids(int snapshot, int local_ngals)
               if (run_globals.params.Flag_InstantaneousSFR)
                 buffer[ind] += gal->Sfr;
               else
-               buffer[ind] += gal->GrossStellarMass;
+                buffer[ind] += gal->GrossStellarMass;
               // this sfr grid is used for X-ray and Lyman, PopII.
               break;
 
@@ -1746,7 +1770,8 @@ void construct_baryon_grids(int snapshot, int local_ngals)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
                   double val = (double)buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
                   CLAMP_NEGATIVE(val);
-                  if (!run_globals.params.Flag_InstantaneousSFR) val /= sfr_timescale;
+                  if (!run_globals.params.Flag_InstantaneousSFR)
+                    val /= sfr_timescale;
                   sfrIII_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = (float)val;
                   sfrIII_histories_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = (float)val;
                 }
@@ -1768,7 +1793,8 @@ void construct_baryon_grids(int snapshot, int local_ngals)
                 for (int iz = 0; iz < ReionGridDim; iz++) {
                   double val = (double)buffer[grid_index(ix, iy, iz, ReionGridDim, INDEX_REAL)];
                   CLAMP_NEGATIVE(val);
-                  if (!run_globals.params.Flag_InstantaneousSFR) val /= sfr_timescale;
+                  if (!run_globals.params.Flag_InstantaneousSFR)
+                    val /= sfr_timescale;
                   sfr_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = (float)val;
                   sfr_histories_grid[grid_index(ix, iy, iz, ReionGridDim, INDEX_PADDED)] = (float)val;
                 }
@@ -1811,20 +1837,15 @@ void construct_baryon_grids(int snapshot, int local_ngals)
     MPI_Allreduce(MPI_IN_PLACE, &N_BlackHoleMassLimitReion, 1, MPI_LONG, MPI_SUM, run_globals.mpi_comm);
     if (prop == prop_stellar)
       mlog("%d quasars are smaller than %g",
-         MLOG_MESG,
-         N_BlackHoleMassLimitReion,
-         run_globals.params.physics.BlackHoleMassLimitReion);
+           MLOG_MESG,
+           N_BlackHoleMassLimitReion,
+           run_globals.params.physics.BlackHoleMassLimitReion);
   }
 
   mlog("done", MLOG_CLOSE | MLOG_TIMERSTOP);
 }
 
-void write_grid_float(const char* name,
-                      float* data,
-                      hid_t file_id,
-                      hid_t fspace_id,
-                      hid_t memspace_id,
-                      hid_t dcpl_id)
+void write_grid_float(const char* name, float* data, hid_t file_id, hid_t fspace_id, hid_t memspace_id, hid_t dcpl_id)
 {
   // create the dataset
   hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_FLOAT, fspace_id, H5P_DEFAULT, dcpl_id, H5P_DEFAULT);
@@ -1936,13 +1957,13 @@ void save_reion_input_grids(int snapshot)
           grid[grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] =
             (grids->effective_bhm)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)];
     write_grid_float("effective_bhm", grid, file_id, fspace_id, memspace_id, dcpl_id);
-  
+
     for (int ii = 0; ii < local_nix; ii++)
       for (int jj = 0; jj < ReionGridDim; jj++)
         for (int kk = 0; kk < ReionGridDim; kk++)
           grid[grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] =
             (float)((grids->effective_bhar)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] * UnitMass_in_g /
-			        UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+                    UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
     write_grid_float("effective_bhar", grid, file_id, fspace_id, memspace_id, dcpl_id);
   }
 
@@ -1989,23 +2010,34 @@ void load_reion_sfr_grids(int snapshot_counter_backwards, float weight, const in
   int local_nix = (int)(run_globals.reion_grids.slab_nix[run_globals.mpi_rank]);
   int local_n_complex = (int)(run_globals.reion_grids.slab_n_complex[run_globals.mpi_rank]);
 
-  if (new_load){
+  if (new_load) {
     for (int ii = 0; ii < local_nix; ii++)
       for (int jj = 0; jj < ReionGridDim; jj++)
-        for (int kk = 0; kk < ReionGridDim; kk++){
-            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)]  * weight;
+        for (int kk = 0; kk < ReionGridDim; kk++) {
+          (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
+            grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                 grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] *
+            weight;
 #if USE_MINI_HALOS
-            (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] = grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)]  * weight;
+          (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] =
+            grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                    grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] *
+            weight;
 #endif
         }
-  }
-  else{
+  } else {
     for (int ii = 0; ii < local_nix; ii++)
       for (int jj = 0; jj < ReionGridDim; jj++)
-        for (int kk = 0; kk < ReionGridDim; kk++){
-            (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)]  * weight;
+        for (int kk = 0; kk < ReionGridDim; kk++) {
+          (grids->sfr)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
+            grids->sfr_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                 grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] *
+            weight;
 #if USE_MINI_HALOS
-            (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] += grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2+grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)]  * weight;
+          (grids->sfrIII)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)] +=
+            grids->sfrIII_histories[snapshot_counter_backwards * local_n_complex * 2 +
+                                    grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] *
+            weight;
 #endif
         }
   }
@@ -2071,7 +2103,7 @@ void save_reion_output_grids(int snapshot)
       for (int jj = 0; jj < ReionGridDim; jj++)
         for (int kk = 0; kk < ReionGridDim; kk++)
           grid[grid_index(ii, jj, kk, ReionGridDim, INDEX_REAL)] =
-              (grids->N_rec)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)];
+            (grids->N_rec)[grid_index(ii, jj, kk, ReionGridDim, INDEX_PADDED)];
     write_grid_float("N_rec", grid, file_id, fspace_id, memspace_id, dcpl_id);
   }
 
@@ -2265,18 +2297,18 @@ void save_reion_output_attributes(int snapshot)
   H5Pclose(plist_id);
 
   // Create a scalar dataspace with 0-sized dimension (empty)
-  hsize_t dims[1] = {0};  // zero-length dataset
+  hsize_t dims[1] = { 0 }; // zero-length dataset
   hid_t fspace_id = H5Screate_simple(1, dims, NULL);
 
-  // Ensure datasets exist so attribute writes succeed in both code paths:
-  // (1) after full grid output, (2) when only attribute placeholders are needed.
-  #define ENSURE_DATASET(name)                                                                      \
-    do {                                                                                             \
-      if (H5Lexists(file_id, name, H5P_DEFAULT) <= 0) {                                              \
-        hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_FLOAT, fspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT); \
-        H5Dclose(dset_id);                                                                           \
-      }                                                                                              \
-    } while (0)
+// Ensure datasets exist so attribute writes succeed in both code paths:
+// (1) after full grid output, (2) when only attribute placeholders are needed.
+#define ENSURE_DATASET(name)                                                                                           \
+  do {                                                                                                                 \
+    if (H5Lexists(file_id, name, H5P_DEFAULT) <= 0) {                                                                  \
+      hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_FLOAT, fspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);    \
+      H5Dclose(dset_id);                                                                                               \
+    }                                                                                                                  \
+  } while (0)
 
   ENSURE_DATASET("xH");
   ENSURE_DATASET("r_bubble");
@@ -2287,36 +2319,68 @@ void save_reion_output_attributes(int snapshot)
   H5LTset_attribute_double(file_id, "xH", "mass_weighted_global_tau_e", &(grids->mass_weighted_global_tau_e), 1);
   H5LTset_attribute_double(
     file_id, "xH", "mass_weighted_global_tau_e_sim", &(grids->mass_weighted_global_tau_e_sim), 1);
-  H5LTset_attribute_double(file_id, "r_bubble", "volume_weighted_global_r_bubble", &(grids->volume_weighted_global_r_bubble), 1);
-  H5LTset_attribute_double(file_id, "r_bubble", "mass_weighted_global_r_bubble", &(grids->mass_weighted_global_r_bubble), 1);
-  H5LTset_attribute_double(file_id, "temp_kinetic_all_gas", "volume_weighted_global_temp_kinetic_all_gas", &(grids->volume_weighted_global_temp_kinetic_all_gas), 1);
-  H5LTset_attribute_double(file_id, "temp_kinetic_all_gas", "mass_weighted_global_temp_kinetic_all_gas", &(grids->mass_weighted_global_temp_kinetic_all_gas), 1);
+  H5LTset_attribute_double(
+    file_id, "r_bubble", "volume_weighted_global_r_bubble", &(grids->volume_weighted_global_r_bubble), 1);
+  H5LTset_attribute_double(
+    file_id, "r_bubble", "mass_weighted_global_r_bubble", &(grids->mass_weighted_global_r_bubble), 1);
+  H5LTset_attribute_double(file_id,
+                           "temp_kinetic_all_gas",
+                           "volume_weighted_global_temp_kinetic_all_gas",
+                           &(grids->volume_weighted_global_temp_kinetic_all_gas),
+                           1);
+  H5LTset_attribute_double(file_id,
+                           "temp_kinetic_all_gas",
+                           "mass_weighted_global_temp_kinetic_all_gas",
+                           &(grids->mass_weighted_global_temp_kinetic_all_gas),
+                           1);
 
   if (run_globals.params.Flag_IncludeRecombinations) {
     ENSURE_DATASET("Gamma12");
     ENSURE_DATASET("N_rec");
     ENSURE_DATASET("residual_xH");
     ENSURE_DATASET("clumping_factor");
-    H5LTset_attribute_double(file_id, "Gamma12", "volume_weighted_global_Gamma12", &(grids->volume_weighted_global_Gamma12), 1);
-    H5LTset_attribute_double(file_id, "Gamma12", "mass_weighted_global_Gamma12", &(grids->mass_weighted_global_Gamma12), 1);
-    H5LTset_attribute_double(file_id, "N_rec", "volume_weighted_global_N_rec", &(grids->volume_weighted_global_N_rec), 1);
+    H5LTset_attribute_double(
+      file_id, "Gamma12", "volume_weighted_global_Gamma12", &(grids->volume_weighted_global_Gamma12), 1);
+    H5LTset_attribute_double(
+      file_id, "Gamma12", "mass_weighted_global_Gamma12", &(grids->mass_weighted_global_Gamma12), 1);
+    H5LTset_attribute_double(
+      file_id, "N_rec", "volume_weighted_global_N_rec", &(grids->volume_weighted_global_N_rec), 1);
     H5LTset_attribute_double(file_id, "N_rec", "mass_weighted_global_N_rec", &(grids->mass_weighted_global_N_rec), 1);
-    H5LTset_attribute_double(file_id, "residual_xH", "volume_weighted_global_residual_xH", &(grids->volume_weighted_global_residual_xH), 1);
-    H5LTset_attribute_double(file_id, "residual_xH", "mass_weighted_global_residual_xH", &(grids->mass_weighted_global_residual_xH), 1);
-    H5LTset_attribute_double(file_id, "clumping_factor", "volume_weighted_global_clumping_factor", &(grids->volume_weighted_global_clumping_factor), 1);
-    H5LTset_attribute_double(file_id, "clumping_factor", "mass_weighted_global_clumping_factor", &(grids->mass_weighted_global_clumping_factor), 1);
+    H5LTset_attribute_double(
+      file_id, "residual_xH", "volume_weighted_global_residual_xH", &(grids->volume_weighted_global_residual_xH), 1);
+    H5LTset_attribute_double(
+      file_id, "residual_xH", "mass_weighted_global_residual_xH", &(grids->mass_weighted_global_residual_xH), 1);
+    H5LTset_attribute_double(file_id,
+                             "clumping_factor",
+                             "volume_weighted_global_clumping_factor",
+                             &(grids->volume_weighted_global_clumping_factor),
+                             1);
+    H5LTset_attribute_double(file_id,
+                             "clumping_factor",
+                             "mass_weighted_global_clumping_factor",
+                             &(grids->mass_weighted_global_clumping_factor),
+                             1);
   }
 
   ENSURE_DATASET("weighted_sfr");
-  H5LTset_attribute_double(file_id, "weighted_sfr", "volume_weighted_global_weighted_sfr", &(grids->volume_weighted_global_weighted_sfr), 1);
+  H5LTset_attribute_double(
+    file_id, "weighted_sfr", "volume_weighted_global_weighted_sfr", &(grids->volume_weighted_global_weighted_sfr), 1);
 #if USE_MINI_HALOS
   ENSURE_DATASET("weighted_sfrIII");
-  H5LTset_attribute_double(file_id, "weighted_sfrIII", "volume_weighted_global_weighted_sfrIII", &(grids->volume_weighted_global_weighted_sfrIII), 1);
+  H5LTset_attribute_double(file_id,
+                           "weighted_sfrIII",
+                           "volume_weighted_global_weighted_sfrIII",
+                           &(grids->volume_weighted_global_weighted_sfrIII),
+                           1);
 #endif
 
   if (run_globals.params.physics.Flag_BHFeedback) {
     ENSURE_DATASET("effective_bhar");
-    H5LTset_attribute_double(file_id, "effective_bhar", "volume_weighted_global_effective_bhar", &(grids->volume_weighted_global_effective_bhar), 1);
+    H5LTset_attribute_double(file_id,
+                             "effective_bhar",
+                             "volume_weighted_global_effective_bhar",
+                             &(grids->volume_weighted_global_effective_bhar),
+                             1);
   }
 
   if (run_globals.params.Flag_IncludeSpinTemp) {
@@ -2360,13 +2424,11 @@ void save_reion_output_attributes(int snapshot)
 #endif
   }
 
-  #undef ENSURE_DATASET
+#undef ENSURE_DATASET
   H5Sclose(fspace_id);
   H5Fclose(file_id);
   mlog("...done", MLOG_CLOSE); // Saving tocf grids
-
 }
-
 
 bool check_if_reionization_ongoing(int snapshot)
 {

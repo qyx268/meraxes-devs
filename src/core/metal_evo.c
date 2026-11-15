@@ -832,21 +832,27 @@ void assign_probability_to_galaxies(int ngals_in_metal_slabs, int snapshot, int 
         assert(ix < slab_nix_metals[recv_from_rank]);
 
         if (flag_property == 0) //{
-          gal->Metal_Probability = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_Metal_Probability);
+          gal->Metal_Probability = check_float_cast(
+            (double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_Metal_Probability);
 
         if (flag_property == 1)
-          gal->Metals_IGM = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_Metals_IGM);
+          gal->Metals_IGM = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]),
+                                             FloatField_Metals_IGM);
 
         if (flag_property == 2) {
-          gal->Gas_IGM = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_Gas_IGM);
-          gal->Metallicity_IGM = check_float_cast((double)(calc_metallicity(gal->Gas_IGM, gal->Metals_IGM)), FloatField_Metallicity_IGM);
+          gal->Gas_IGM = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]),
+                                          FloatField_Gas_IGM);
+          gal->Metallicity_IGM =
+            check_float_cast((double)(calc_metallicity(gal->Gas_IGM, gal->Metals_IGM)), FloatField_Metallicity_IGM);
         }
 
         if (flag_property == 3)
-          gal->AveBubble = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_AveBubble);
+          gal->AveBubble = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]),
+                                            FloatField_AveBubble);
 
         if (flag_property == 4)
-          gal->MaxBubble = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]), FloatField_MaxBubble);
+          gal->MaxBubble = check_float_cast((double)(buffer_metals[grid_index(ix, iy, iz, MetalGridDim, INDEX_REAL)]),
+                                            FloatField_MaxBubble);
 
         // increment counters
         i_gal++;

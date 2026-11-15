@@ -81,7 +81,8 @@ galaxy_t* new_galaxy(void)
   gal->AveBubble = check_float_cast((double)(0.), FloatField_AveBubble);
   gal->MaxBubble = check_float_cast((double)(0.), FloatField_MaxBubble);
   gal->Flag_ExtMetEnr = 0;
-  gal->GalMetal_Probability = check_float_cast((double)(gsl_rng_uniform(run_globals.random_generator)), FloatField_GalMetal_Probability);
+  gal->GalMetal_Probability =
+    check_float_cast((double)(gsl_rng_uniform(run_globals.random_generator)), FloatField_GalMetal_Probability);
 
   if (run_globals.params.Flag_IncludeMetalEvo ==
       false) // If you don't have the external metal enrichment all galaxies will start as pristine (Pop.III forming)
@@ -171,8 +172,11 @@ void reset_galaxy_properties(galaxy_t* gal, int snapshot)
   // with N_HISTORY_SNAPS.
   assert(snapshot > 0);
   if (snapshot >= N_HISTORY_SNAPS) {
-    gal->mwmsa_denom = check_float_cast((double)(gal->mwmsa_denom) + (gal->NewStars[N_HISTORY_SNAPS - 1]), FloatField_mwmsa_denom);
-    gal->mwmsa_num = check_float_cast((double)(gal->mwmsa_num) + (gal->NewStars[N_HISTORY_SNAPS - 1] * run_globals.LTTime[snapshot - N_HISTORY_SNAPS]), FloatField_mwmsa_num);
+    gal->mwmsa_denom =
+      check_float_cast((double)(gal->mwmsa_denom) + (gal->NewStars[N_HISTORY_SNAPS - 1]), FloatField_mwmsa_denom);
+    gal->mwmsa_num = check_float_cast(
+      (double)(gal->mwmsa_num) + (gal->NewStars[N_HISTORY_SNAPS - 1] * run_globals.LTTime[snapshot - N_HISTORY_SNAPS]),
+      FloatField_mwmsa_num);
   }
 
   // roll over the baryonic history arrays
@@ -300,7 +304,8 @@ void create_new_galaxy(int snapshot, halo_t* halo, int* NGal, int* new_gal_count
     run_globals.FirstGal = gal;
 
   run_globals.LastGal = gal;
-  gal->dt = check_float_cast((double)(run_globals.LTTime[gal->LastIdentSnap] - run_globals.LTTime[snapshot]), FloatField_dt);
+  gal->dt =
+    check_float_cast((double)(run_globals.LTTime[gal->LastIdentSnap] - run_globals.LTTime[snapshot]), FloatField_dt);
   *NGal = *NGal + 1;
   *new_gal_counter = *new_gal_counter + 1;
 }

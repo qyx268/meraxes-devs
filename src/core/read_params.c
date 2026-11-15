@@ -20,16 +20,15 @@ static void check_problem_params(run_params_t* run_params)
       "Spin temperature features are not currently available in the GPU version of find_HII_bubbles!  Exiting...");
     ABORT(EXIT_FAILURE);
 #endif
-    if (run_globals.params.FlagMCMC != 0){
+    if (run_globals.params.FlagMCMC != 0) {
       mlog_error("Currently we have to store input sfr grids for all snapshots, so cannot MCMC :(");
       ABORT(EXIT_FAILURE);
     }
   }
 
-  if ((run_params->physics.SnMetalRetentionFraction < 0.0) ||
-            (run_params->physics.SnMetalRetentionFraction > 1.0)) {
-      mlog_error("SnMetalRetentionFraction must be between 0 and 1.");
-      ABORT(EXIT_FAILURE);
+  if ((run_params->physics.SnMetalRetentionFraction < 0.0) || (run_params->physics.SnMetalRetentionFraction > 1.0)) {
+    mlog_error("SnMetalRetentionFraction must be between 0 and 1.");
+    ABORT(EXIT_FAILURE);
   }
 }
 
@@ -1319,22 +1318,22 @@ void read_parameter_file(char* fname, int mode)
 
       strncpy(params_tag[n_param], "Flag_OutputQuasarLF", tag_length);
       params_addr[n_param] = &(run_params->Flag_OutputQuasarLF);
-      required_tag[n_param] = 1; 
+      required_tag[n_param] = 1;
       params_type[n_param++] = PARAM_TYPE_INT;
 
       strncpy(params_tag[n_param], "Flag_OutputOIIILF", tag_length);
       params_addr[n_param] = &(run_params->Flag_OutputOIIILF);
-      required_tag[n_param] = 1; 
+      required_tag[n_param] = 1;
       params_type[n_param++] = PARAM_TYPE_INT;
 
       strncpy(params_tag[n_param], "OIIILF_MinLogL", tag_length);
       params_addr[n_param] = &(run_params->OIIILF_MinLogL);
-      required_tag[n_param] = 1; 
+      required_tag[n_param] = 1;
       params_type[n_param++] = PARAM_TYPE_DOUBLE;
 
       strncpy(params_tag[n_param], "OIIILF_MaxLogL", tag_length);
       params_addr[n_param] = &(run_params->OIIILF_MaxLogL);
-      required_tag[n_param] = 1; 
+      required_tag[n_param] = 1;
       params_type[n_param++] = PARAM_TYPE_DOUBLE;
 
       strncpy(params_tag[n_param], "OIIILF_BinsPerDex", tag_length);

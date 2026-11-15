@@ -81,7 +81,7 @@ Test(emission_lines, compute_LOIII_invalid_inputs_set_zero)
   configure_default_units_and_params();
   set_OIII_coeffs(1e4);
 
-  double zz[] = {7.0};
+  double zz[] = { 7.0 };
   run_globals.ZZ = zz;
 
   galaxy_t gal = make_valid_test_galaxy();

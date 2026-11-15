@@ -38,7 +38,7 @@
 #define NU_LW (double)(2.71e15)
 #define PLANCK_EV (double)(4.1357e-15)
 #define T_RE 1e4
-#define EDDINGTON_TIME_SCALE 450.514890  // Eddington timescale in Megayears
+#define EDDINGTON_TIME_SCALE 450.514890 // Eddington timescale in Megayears
 #define SIGMA_T_CGS (double)(6.652e-25)
 #define EnergySN (double)(1e51) // Energy of a single supernova in ergs
 // Pop III stuff (Atm ENOVA_CC and ENOVA_PISN are the same but you could change)
@@ -46,13 +46,13 @@
 #define ENOVA_PISN (double)(1e51)
 
 // Extra constants for emission-line calculations
-#define HBAR_SI (PLANCK * 1e-7 / 2 / M_PI)       // [J s]
-#define BOLTZMANN_SI (BOLTZMANN * 1e-7)   // [J/K]
-#define ELECTRON_MASS_SI 9.1093837015e-31 // [kg]
-#define PLANCK_SI (PLANCK * 1e-7)         // [J s], converted from PLANCK [erg s]
-#define ALPHA_HII 2.6e-13                 // [cm^3/s]
-#define Z_SUN 0.0134                      // solar metallicity fraction
-#define SN_PROGENITOR_MASS_MSUN 12.26     // [Msun]
+#define HBAR_SI (PLANCK * 1e-7 / 2 / M_PI) // [J s]
+#define BOLTZMANN_SI (BOLTZMANN * 1e-7)    // [J/K]
+#define ELECTRON_MASS_SI 9.1093837015e-31  // [kg]
+#define PLANCK_SI (PLANCK * 1e-7)          // [J s], converted from PLANCK [erg s]
+#define ALPHA_HII 2.6e-13                  // [cm^3/s]
+#define Z_SUN 0.0134                       // solar metallicity fraction
+#define SN_PROGENITOR_MASS_MSUN 12.26      // [Msun]
 
 // ======================================================
 // Don't change these unless you know what you are doing!
@@ -323,24 +323,24 @@ typedef struct run_params_t
   int PS_Length;
   int Flag_OutputGrids;
   int Flag_OutputGridsPostReion;
-  int Flag_OutputHMF;     //!< Flag to enable/disable HMF output
-  double HMF_MinMass;     //!< Minimum log10(M) for HMF bins (solar masses/h)
-  double HMF_MaxMass;     //!< Maximum log10(M) for HMF bins
-  int HMF_BinsPerDex;     //!< Number of HMF bins per dex
-  int Flag_OutputSMF;     //!< Flag to enable/disable Stellar Mass Function output
-  double SMF_MinMass;     //!< Minimum log10(M*) for SMF bins (solar masses)
-  double SMF_MaxMass;     //!< Maximum log10(M*) for SMF bins
-  int SMF_BinsPerDex;     //!< Number of SMF bins per dex
-  int Flag_OutputUVLF;    //!< Flag to enable/disable UV Luminosity Function output
-  double UVLF_MinMag;     //!< Minimum magnitude for UVLF bins
-  double UVLF_MaxMag;     //!< Maximum magnitude for UVLF bins
-  int UVLF_BinsPerMag;    //!< Number of UVLF bins per magnitude (linear bins)
-  int Flag_OutputDustyLF; //!< Flag to enable/disable Dusty UV Luminosity Function output
+  int Flag_OutputHMF;      //!< Flag to enable/disable HMF output
+  double HMF_MinMass;      //!< Minimum log10(M) for HMF bins (solar masses/h)
+  double HMF_MaxMass;      //!< Maximum log10(M) for HMF bins
+  int HMF_BinsPerDex;      //!< Number of HMF bins per dex
+  int Flag_OutputSMF;      //!< Flag to enable/disable Stellar Mass Function output
+  double SMF_MinMass;      //!< Minimum log10(M*) for SMF bins (solar masses)
+  double SMF_MaxMass;      //!< Maximum log10(M*) for SMF bins
+  int SMF_BinsPerDex;      //!< Number of SMF bins per dex
+  int Flag_OutputUVLF;     //!< Flag to enable/disable UV Luminosity Function output
+  double UVLF_MinMag;      //!< Minimum magnitude for UVLF bins
+  double UVLF_MaxMag;      //!< Maximum magnitude for UVLF bins
+  int UVLF_BinsPerMag;     //!< Number of UVLF bins per magnitude (linear bins)
+  int Flag_OutputDustyLF;  //!< Flag to enable/disable Dusty UV Luminosity Function output
   int Flag_OutputQuasarLF; //!< Flag to enable/disable Quasar UV Luminosity Function output
-  int Flag_OutputOIIILF;  //!< Flag to enable/disable OIII Luminosity Function output
-  double OIIILF_MinLogL;  //!< Minimum log10(LOIII [erg/s]) for OIIILF bins
-  double OIIILF_MaxLogL;  //!< Maximum log10(LOIII [erg/s]) for OIIILF bins
-  int OIIILF_BinsPerDex;  //!< Number of OIIILF bins per dex
+  int Flag_OutputOIIILF;   //!< Flag to enable/disable OIII Luminosity Function output
+  double OIIILF_MinLogL;   //!< Minimum log10(LOIII [erg/s]) for OIIILF bins
+  double OIIILF_MaxLogL;   //!< Maximum log10(LOIII [erg/s]) for OIIILF bins
+  int OIIILF_BinsPerDex;   //!< Number of OIIILF bins per dex
   int FlagIgnoreProgIndex;
 } run_params_t;
 
@@ -521,7 +521,7 @@ typedef struct reion_grids_t
   float* Gamma12;
   float* residual_xH;
   float* clumping_factor;
-  float* t_resp;  // Relaxation timescale grid: 1/(Gamma + alpha_B * n_e)
+  float* t_resp; // Relaxation timescale grid: 1/(Gamma + alpha_B * n_e)
 
   // Grids necessary for the 21cm brightness temperature
   float* delta_T;
@@ -553,7 +553,7 @@ typedef struct reion_grids_t
 
   double volume_weighted_global_xH;
   double volume_weighted_global_Gamma12;
-  double volume_weighted_global_r_bubble;	
+  double volume_weighted_global_r_bubble;
   double volume_weighted_global_temp_kinetic_all_gas;
   double volume_weighted_global_N_rec;
   double volume_weighted_global_residual_xH;
@@ -564,7 +564,7 @@ typedef struct reion_grids_t
 
   double mass_weighted_global_xH;
   double mass_weighted_global_Gamma12;
-  double mass_weighted_global_r_bubble;	
+  double mass_weighted_global_r_bubble;
   double mass_weighted_global_temp_kinetic_all_gas;
   double mass_weighted_global_N_rec;
   double mass_weighted_global_residual_xH;
@@ -663,13 +663,14 @@ typedef struct galaxy_t
   float MetalsEjectedGas;
   float BlackHoleMass;
   float BHemissivity;
-  float QuasarLuv;  //!< UV luminosity LUV of quasar (1e10 Lsun, summable for mergers)
+  float QuasarLuv; //!< UV luminosity LUV of quasar (1e10 Lsun, summable for mergers)
   float EffectiveBHM;
   float EffectiveBHAR;
   float DutyCycleAGN;
   float BlackHoleAccretingColdMass;
 #if USE_MINI_HALOS
-  int Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
+  int
+    Galaxy_Population; // Disentangles Pop III/Pop II; not needed when Mini_halos is off, since all galaxies are Pop II
   // Differentiation Pop III / Pop II
   float SfrIII;
   float StellarMass_II;
@@ -680,7 +681,7 @@ typedef struct galaxy_t
   float FescIIIWeightedSfr;
 
   float Remnant_Mass; // Coming from Pop III with M between 40 and 140 and larger than 260 Msol and remnant of CCSN
-                       // [8,40]Msun. Atm those are silent.
+                      // [8,40]Msun. Atm those are silent.
 
   float MvirCrit_MC;
 
@@ -694,7 +695,7 @@ typedef struct galaxy_t
   float Gas_IGM;
   float Metallicity_IGM; //
   float MaxBubble;       // Need this for Boost probability
-  float AveBubble;   // Same (you will likely use only one of the two). You could actually save only the boost factor
+  float AveBubble;    // Same (you will likely use only one of the two). You could actually save only the boost factor
   int Flag_ExtMetEnr; // 0 if not enriched from a bubble, 1 yes.
 
   float Prefactor[N_HISTORY_SNAPS]; // here you store the prefactors of the metal bubbles
@@ -750,7 +751,7 @@ typedef struct halo_t
   // (virial_properties.c) and copy_halo_props_to_galaxy() (galaxies.c) for
   // the two places that used to read halo->Vvir directly.
 
-  float Vmax; //!< Maximum circular velocity [km/s]
+  float Vmax;    //!< Maximum circular velocity [km/s]
   int DescIndex; //!< Index of descendant in next relevant snapshot
   // N.B. ProgIndex (index of progenitor in previous relevant snapshot) was
   // dropped from this struct -- it was write-only. The VELOCIraptor reader
