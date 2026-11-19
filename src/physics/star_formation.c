@@ -51,6 +51,16 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
     // update the galaxy's SFR value
     double sfr = new_stars / gal->dt;
 
+    // [O III] emission of this event, from its own SFR and the gas metallicity
+    // before the reservoirs are updated. Star formation removes gas at this Z, so it
+    // is also the cold-gas Z after star formation and before this event's SN
+    // feedback recycles, enriches or reheats the gas. Luminosities add over events
+    // and in mergers.
+#if USE_MINI_HALOS
+    if (gal->Galaxy_Population == 2)
+#endif
+      compute_LOIII(gal, sfr, metallicity);
+
 #if USE_MINI_HALOS
     if (gal->Galaxy_Population == 2) {
       gal->StellarMass_II = check_float_cast((double)(gal->StellarMass_II) + (new_stars), FloatField_StellarMass_II);
@@ -73,8 +83,6 @@ void update_reservoirs_from_sf(galaxy_t* gal, double new_stars, int snapshot, SF
                        FloatField_GrossStellarMass); // If you are not distinguishing III/II you just have one variable
                                                      // which is the total one
 #endif
-
-    compute_LOIII(gal, snapshot);
 
     gal->ColdGas = check_float_cast((double)(gal->ColdGas) - (new_stars), FloatField_ColdGas);
     gal->MetalsColdGas =
