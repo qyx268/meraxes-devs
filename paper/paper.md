@@ -13,9 +13,12 @@ authors:
     orcid: 0000-0002-4314-1810
     corresponding: true
     affiliation: 1
-  - name: Simon J. Mutch
-    orcid: 0000-0002-3166-4614
-    affiliation: 2  # TODO: current affiliation
+  - name: Fatma Shaban
+    # orcid: TODO (none found in the ORCID registry)
+    affiliation: 1  # TODO
+  - name: Shihai Zhu
+    orcid: 0009-0001-6409-0012
+    affiliation: 1
   - name: Emanuele M. Ventura
     orcid: 0000-0003-3502-4929
     affiliation: 2  # TODO
@@ -25,12 +28,6 @@ authors:
   - name: Gregory B. Poole
     orcid: 0000-0003-1777-7388
     affiliation: 2  # TODO
-  - name: Shihai Zhu
-    orcid: 0009-0001-6409-0012
-    affiliation: 1
-  - name: Fatma Shaban
-    # orcid: TODO (none found in the ORCID registry)
-    affiliation: 1  # TODO
   - name: Paul M. Geil
     # orcid: TODO (none found in the ORCID registry)
     affiliation: 2  # TODO
@@ -49,6 +46,9 @@ authors:
   - name: J. Stuart B. Wyithe
     orcid: 0000-0001-7956-9758
     affiliation: 1
+  - name: Simon J. Mutch
+    orcid: 0000-0002-3166-4614
+    affiliation: 2  # TODO: current affiliation
 affiliations:
   - name: Research School of Astronomy and Astrophysics, Australian National University, Australia  # TODO: check
     index: 1
@@ -232,9 +232,12 @@ DOI record. All scientific and design decisions were made by the authors.
 # Acknowledgements
 
 The development of Meraxes has received continuous support from the Australian Research
-Council (ARC), including J.S.B.W.'s Australian Laureate Fellowship (FL110100072), the ARC
-Centre of Excellence for All Sky Astrophysics in 3 Dimensions (ASTRO 3D; project number
-CE170100013), and Y.Q.'s Discovery Early Career Researcher Award (DECRA; DE240101129).
+Council (ARC), including J.S.B.W.'s Australian Laureate Fellowship (FL110100072) and the
+ARC Centre of Excellence for All Sky Astrophysics in 3 Dimensions (ASTRO 3D; project
+number CE170100013). Over this period S.J.M. started Meraxes and led its development,
+with contributions from several team members who have since left astronomy. Y.Q.'s
+Discovery Early Career Researcher Award (DECRA; DE240101129) supports its current
+development, which Y.Q. now leads with ongoing contributions from F.S. and S.Z.
 
 <!-- TODO: consider acknowledging computing (e.g. Gadi at NCI Australia and OzSTAR at
 Swinburne). -->
