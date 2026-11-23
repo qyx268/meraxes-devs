@@ -120,6 +120,10 @@ Established semi-analytic models, including L-Galaxies [@henriques2015], SAGE
 [@croton2016] and Shark [@lagos2018], model galaxies in detail but treat reionization as
 a uniform, prescribed background. 
 
+ASTRAEUS [@hutter2021] couples the two: it runs a semi-analytic model on the merger trees
+of an N-body simulation together with a semi-numerical reionization scheme, so that
+reionization feedback acts on the galaxies that drive it.
+
 Meraxes was designed around this coupling from its first release [@mutch2016]. It has
 since been extended to follow the IGM through cosmic dawn, with X-ray heating,
 Lyman-$\alpha$ coupling and the spin temperature [@balu2023]. It also models Population
