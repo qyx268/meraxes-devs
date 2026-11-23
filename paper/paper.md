@@ -226,7 +226,6 @@ Claude Opus 5.5 model) was used in 2026 to:
   formatting tools
 - fix and review code changes in recent pull requests
 - update the documentation
-- draft this paper
 
 GitHub Copilot was also used to review pull requests. However, the authors reviewed all
 AI-generated code and text. Code changes were built and tested on the CI and on the
