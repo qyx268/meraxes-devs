@@ -218,18 +218,14 @@ institutions, and its history is preserved in the public repository.
 <!-- TODO: every author should check this statement and add any other use (for example
 in the documentation or earlier code). -->
 
-Generative AI was used in preparing this submission. Claude Code (Anthropic, using the
-Claude Opus 5.5 model) was used in 2026 to:
-
-- implement the regression-test suite, the continuous-integration workflows and the
-  formatting tools
-- fix and review code changes in recent pull requests
-- update the documentation
-
-GitHub Copilot was also used to review pull requests. However, the authors reviewed all
-AI-generated code and text. Code changes were built and tested on the CI and on the
-authors' own computing systems, and every bibliographic entry was checked against its
-DOI record. All scientific and design decisions were made by the authors.
+Generative AI was used in preparing this submission. In 2026, Claude Code (Anthropic,
+using the Claude Opus 5.5 model) was used to implement the regression-test suite, the
+continuous-integration workflows and the formatting tools, to fix and review code changes
+in recent pull requests, and to update the documentation. GitHub Copilot was also used to
+review pull requests. However, the authors reviewed all AI-generated code and text. Code
+changes were built and tested on the CI and on the authors' own computing systems, and
+every bibliographic entry was checked against its DOI record. All scientific and design
+decisions were made by the authors.
 
 # Acknowledgements
 
